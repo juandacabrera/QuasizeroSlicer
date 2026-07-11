@@ -1,0 +1,42 @@
+name: Quasizero Build
+
+# Fork-specific workflow for the Quasizero Slicer MVP branch.
+# Reuses OrcaSlicer's upstream build chain (build_check_cache -> build_deps ->
+# build_orca), which produces the Windows x64 portable zip and NSIS installer.
+
+on:
+  push:
+    branches:
+      - quasizero-slicer-mvp
+  workflow_dispatch:
+
+concurrency:
+  group: quasizero-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qz_core_tests:
+    name: QZmini core tests (standalone)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            src/libslic3r/QuasiZero
+            tests/qzmini
+      - name: Build and run QuasiZero standalone tests
+        run: |
+          if [ -f tests/qzmini/standalone/run_standalone.sh ]; then
+            bash tests/qzmini/standalone/run_standalone.sh
+          else
+            echo "standalone tests not present yet"; exit 1
+          fi
+
+  build_windows_x64:
+    name: Build Windows x64 (portable + installer)
+    needs: qz_core_tests
+    uses: ./.github/workflows/build_check_cache.yml
+    with:
+      os: windows-latest
+      arch: x64
+    secrets: inherit
