@@ -1,0 +1,149 @@
+{
+ "gcode_flavor": "marlin",
+ "printable_area": [
+  "0x0",
+  "256x0",
+  "256x256",
+  "0x256"
+ ],
+ "printable_height": "250",
+ "bed_exclude_area": [
+  "0x0",
+  "18x0",
+  "18x28",
+  "0x28"
+ ],
+ "machine_max_acceleration_extruding": [
+  "20000",
+  "20000",
+  "20000",
+  "20000"
+ ],
+ "machine_max_acceleration_retracting": [
+  "5000",
+  "5000",
+  "5000",
+  "5000"
+ ],
+ "machine_max_acceleration_travel": [
+  "9000",
+  "9000",
+  "9000",
+  "9000"
+ ],
+ "machine_max_acceleration_x": [
+  "20000",
+  "20000",
+  "20000",
+  "20000"
+ ],
+ "machine_max_acceleration_y": [
+  "20000",
+  "20000",
+  "20000",
+  "20000"
+ ],
+ "machine_max_acceleration_z": [
+  "500",
+  "200",
+  "200",
+  "200"
+ ],
+ "machine_max_speed_e": [
+  "30",
+  "30",
+  "30",
+  "30"
+ ],
+ "machine_max_speed_x": [
+  "500",
+  "200",
+  "200",
+  "200"
+ ],
+ "machine_max_speed_y": [
+  "500",
+  "200",
+  "200",
+  "200"
+ ],
+ "machine_max_speed_z": [
+  "20",
+  "20",
+  "20",
+  "20"
+ ],
+ "machine_max_jerk_e": [
+  "2.5",
+  "2.5",
+  "2.5",
+  "2.5"
+ ],
+ "machine_max_jerk_x": [
+  "9",
+  "9",
+  "9",
+  "9"
+ ],
+ "machine_max_jerk_y": [
+  "9",
+  "9",
+  "9",
+  "9"
+ ],
+ "machine_max_jerk_z": [
+  "3",
+  "3",
+  "3",
+  "3"
+ ],
+ "auxiliary_fan": "1",
+ "layer_change_gcode": ";AFTER_LAYER_CHANGE\n;[layer_z]",
+ "scan_first_layer": "0",
+ "silent_mode": "0",
+ "support_air_filtration": "1",
+ "printer_structure": "corexy",
+ "from": "system",
+ "type": "machine",
+ "instantiation": "true",
+ "nozzle_diameter": [
+  "3.0"
+ ],
+ "min_layer_height": [
+  "0.6"
+ ],
+ "max_layer_height": [
+  "3.2"
+ ],
+ "retraction_length": [
+  "0"
+ ],
+ "retract_length_toolchange": [
+  "0"
+ ],
+ "retraction_speed": [
+  "10"
+ ],
+ "deretraction_speed": [
+  "0"
+ ],
+ "z_hop": [
+  "0"
+ ],
+ "single_extruder_multi_material": "0",
+ "change_filament_gcode": "",
+ "default_filament_profile": [
+  "QZ Sawdust Biomaterial - Cold Extrusion"
+ ],
+ "default_print_profile": "QZmini 3 mm - Smooth Biomaterial",
+ "printer_settings_id": "Quasizero",
+ "nozzle_type": "undefine",
+ "setting_id": "QZM003",
+ "name": "QZmini @ Bambu Lab P1S 3.0 nozzle",
+ "printer_model": "QZmini @ Bambu Lab P1S",
+ "printer_variant": "3.0",
+ "machine_start_gcode": "; =====================================================================\n; QZmini cold-extrusion start G-code (Quasizero Slicer) - Bambu Lab family\n; STATUS: EXPERIMENTAL / SLICE-ONLY. NOT hardware validated.\n; Cold-extrusion enablement on Bambu firmware is UNVERIFIED: stock firmware\n; may reject extrusion below its minimum extrusion temperature. Do not send\n; this job to a printer until this behaviour has been physically verified.\n; No AMS load/unload, no purge line, no nozzle wipe, no calibration sequence.\n; =====================================================================\nG90 ; absolute XYZ\nM83 ; relative E (QZmini plunger drive)\nG28 ; home all axes (preserved)\nG1 Z10 F600 ; safe Z lift\nG92 E0 ; reset logical E\n",
+ "machine_end_gcode": "; QZmini cold end G-code (Quasizero Slicer) - Bambu Lab family - EXPERIMENTAL / SLICE-ONLY\nM400\nG92 E0\nG91\nG1 Z5 F600\nG90\nM106 S0 ; part-cooling fan off only; chamber/aux/electronics cooling untouched\nM84\n",
+ "machine_pause_gcode": "M400 U1",
+ "before_layer_change_gcode": ";BEFORE_LAYER_CHANGE\n;[layer_z]"
+}

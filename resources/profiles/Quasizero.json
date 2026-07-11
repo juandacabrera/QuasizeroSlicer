@@ -1,0 +1,46 @@
+{
+ "name": "Quasizero",
+ "version": "02.04.00.00",
+ "force_update": "0",
+ "description": "Quasizero QZmini biomaterial cold-extrusion configurations (based on OrcaSlicer profile architecture)",
+ "machine_model_list": [
+  {
+   "name": "QZmini @ Artillery Sidewinder X2",
+   "sub_path": "machine/QZmini @ Artillery Sidewinder X2.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab A1 mini",
+   "sub_path": "machine/QZmini @ Bambu Lab A1 mini.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab P1S",
+   "sub_path": "machine/QZmini @ Bambu Lab P1S.json"
+  }
+ ],
+ "process_list": [
+  {
+   "name": "QZmini 3 mm - Smooth Biomaterial",
+   "sub_path": "process/QZmini 3 mm - Smooth Biomaterial.json"
+  }
+ ],
+ "filament_list": [
+  {
+   "name": "QZ Sawdust Biomaterial - Cold Extrusion",
+   "sub_path": "filament/QZ Sawdust Biomaterial - Cold Extrusion.json"
+  }
+ ],
+ "machine_list": [
+  {
+   "name": "QZmini @ Artillery Sidewinder X2 3.0 nozzle",
+   "sub_path": "machine/QZmini @ Artillery Sidewinder X2 3.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab A1 mini 3.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab A1 mini 3.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab P1S 3.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab P1S 3.0 nozzle.json"
+  }
+ ]
+}

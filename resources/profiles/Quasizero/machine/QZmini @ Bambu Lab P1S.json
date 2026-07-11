@@ -1,0 +1,11 @@
+{
+ "type": "machine_model",
+ "name": "QZmini @ Bambu Lab P1S",
+ "model_id": "QZmini-BBL-P1S",
+ "nozzle_diameter": "3.0",
+ "machine_tech": "FFF",
+ "family": "Quasizero",
+ "bed_model": "qz_bbl_p1s_bed.stl",
+ "bed_texture": "",
+ "default_materials": "QZ Sawdust Biomaterial - Cold Extrusion"
+}

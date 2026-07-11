@@ -1,0 +1,11 @@
+{
+ "type": "machine_model",
+ "name": "QZmini @ Artillery Sidewinder X2",
+ "model_id": "QZmini-Artillery-SW-X2",
+ "nozzle_diameter": "3.0",
+ "machine_tech": "FFF",
+ "family": "Quasizero",
+ "bed_model": "qz_artillery_x2_bed.stl",
+ "bed_texture": "",
+ "default_materials": "QZ Sawdust Biomaterial - Cold Extrusion"
+}
