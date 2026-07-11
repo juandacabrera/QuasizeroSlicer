@@ -142,11 +142,13 @@ void QzCalibrationDialog::apply_to_printer_preset()
     Tab *tab = wxGetApp().get_tab(Preset::TYPE_PRINTER);
     if (tab == nullptr)
         return;
-    // Write through the standard tab mechanism so the change is tracked as a
-    // preset modification and can be saved as a user preset by the user.
-    tab->load_key_value("qzmini_barrel_inner_diameter", field(m_barrel_diameter, 35.0));
-    tab->load_key_value("qzmini_plunger_mm_per_e_unit", m_mm_per_e);
-    tab->update_dirty();
+    // Write through the public Tab::load_config mechanism (same path the preset
+    // combo boxes use), so the change is tracked as a preset modification and
+    // can be saved as a user preset by the user.
+    DynamicPrintConfig cfg;
+    cfg.set_key_value("qzmini_barrel_inner_diameter", new ConfigOptionFloat(field(m_barrel_diameter, 35.0)));
+    cfg.set_key_value("qzmini_plunger_mm_per_e_unit", new ConfigOptionFloat(m_mm_per_e));
+    tab->load_config(cfg);
 }
 
 }} // namespace Slic3r::GUI
