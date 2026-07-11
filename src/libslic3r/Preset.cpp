@@ -1370,6 +1370,13 @@ static std::vector<std::string> s_Preset_printer_options {
     "default_print_profile", "inherits",
     "silent_mode",
     "scan_first_layer", "enable_power_loss_recovery", "wrapping_detection_layers", "wrapping_exclude_area", "machine_load_filament_time", "machine_unload_filament_time", "machine_tool_change_time", "time_cost", "machine_pause_gcode", "template_custom_gcode",
+    // Quasizero QZmini
+    "qzmini_enable", "qzmini_barrel_inner_diameter", "qzmini_nominal_syringe_capacity_ml",
+    "qzmini_usable_syringe_capacity_ml", "qzmini_usable_plunger_stroke_mm", "qzmini_plunger_mm_per_e_unit",
+    "qzmini_refill_enable", "qzmini_refill_threshold_ml", "qzmini_park_x", "qzmini_park_y", "qzmini_park_z_lift",
+    "qzmini_plunger_reset_enable", "qzmini_plunger_reset_feedrate", "qzmini_prime_after_refill_enable",
+    "qzmini_prime_after_refill_ml", "qzmini_prime_feedrate", "qzmini_pause_strategy", "qzmini_pause_custom_gcode",
+    "qzmini_refill_show_in_preview",
     "nozzle_type", "nozzle_hrc","auxiliary_fan", "nozzle_volume","upward_compatible_machine", "z_hop_types", "travel_slope", "retract_lift_enforce","support_chamber_temp_control","support_air_filtration","printer_structure",
     "best_object_pos", "head_wrap_detect_zone",
     "host_type", "print_host", "printhost_apikey", "flashforge_serial_number", "bbl_use_printhost", "printer_agent",

@@ -4578,6 +4578,41 @@ void TabPrinter::build_fff()
 
         auto edit_custom_gcode_fn = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
 
+    // ===================== Quasizero QZmini =====================
+    page = add_options_page(L("QZmini"), "printer");
+        optgroup = page->new_optgroup(L("QZmini extrusion system"), L"param_machine_settings");
+        optgroup->append_single_option_line("qzmini_enable");
+        optgroup->append_single_option_line("qzmini_barrel_inner_diameter");
+        optgroup->append_single_option_line("qzmini_nominal_syringe_capacity_ml");
+        optgroup->append_single_option_line("qzmini_usable_syringe_capacity_ml");
+        optgroup->append_single_option_line("qzmini_usable_plunger_stroke_mm");
+        optgroup->append_single_option_line("qzmini_plunger_mm_per_e_unit");
+
+        optgroup = page->new_optgroup(L("QZmini Refill Assist"), L"param_machine_settings");
+        optgroup->append_single_option_line("qzmini_refill_enable");
+        optgroup->append_single_option_line("qzmini_refill_threshold_ml");
+        optgroup->append_single_option_line("qzmini_park_x");
+        optgroup->append_single_option_line("qzmini_park_y");
+        optgroup->append_single_option_line("qzmini_park_z_lift");
+        optgroup->append_single_option_line("qzmini_plunger_reset_enable");
+        optgroup->append_single_option_line("qzmini_plunger_reset_feedrate");
+        optgroup->append_single_option_line("qzmini_prime_after_refill_enable");
+        optgroup->append_single_option_line("qzmini_prime_after_refill_ml");
+        optgroup->append_single_option_line("qzmini_prime_feedrate");
+        optgroup->append_single_option_line("qzmini_pause_strategy");
+        optgroup->append_single_option_line("qzmini_refill_show_in_preview");
+
+        optgroup = page->new_optgroup(L("QZmini custom pause G-code"), L"param_gcode", 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
+        optgroup->edit_custom_gcode = edit_custom_gcode_fn;
+        option = optgroup->get_option("qzmini_pause_custom_gcode");
+        option.opt.is_code = true;
+        option.opt.height = 5;
+        optgroup->append_single_option_line(option);
+    // =================== end Quasizero QZmini ===================
+
     const int gcode_field_height = 15; // 150
     const int notes_field_height = 25; // 250
     page = add_options_page(L("Machine G-code"), "custom-gcode_gcode"); // ORCA: icon only visible on placeholders

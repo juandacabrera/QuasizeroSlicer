@@ -9,6 +9,7 @@
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/LocalesUtils.hpp"
 #include "libslic3r/PresetBundle.hpp"
+#include "libslic3r/QuasiZero/QzVolumetricModel.hpp"
 //BBS: add convex hull logic for toolpath check
 #include "libslic3r/Geometry/ConvexHull.hpp"
 
@@ -4545,6 +4546,60 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         }
     }
 
+
+    // ===================== Quasizero QZmini biomaterial summary =====================
+    {
+        const DynamicPrintConfig &qz_cfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
+        const ConfigOptionBool   *qz_en  = qz_cfg.option<ConfigOptionBool>("qzmini_enable");
+        if (qz_en != nullptr && qz_en->value) {
+            double qz_total_mm3 = 0.0, qz_model_mm3 = 0.0;
+            for (const auto &kv : m_print_statistics.total_volumes_per_extruder) qz_total_mm3 += kv.second;
+            for (const auto &kv : m_print_statistics.model_volumes_per_extruder) qz_model_mm3 += kv.second;
+            const double qz_total_ml = qz_total_mm3 / 1000.0;
+            const double qz_model_ml = qz_model_mm3 / 1000.0;
+            const double qz_prime_ml = std::max(0.0, qz_total_ml - qz_model_ml);
+            auto qz_getf = [&qz_cfg](const char *key, double fallback) {
+                const ConfigOptionFloat *o = qz_cfg.option<ConfigOptionFloat>(key);
+                return o != nullptr ? o->value : fallback;
+            };
+            const double qz_threshold_ml = qz_getf("qzmini_refill_threshold_ml", 120.0);
+            const double qz_usable_ml    = qz_getf("qzmini_usable_syringe_capacity_ml", 120.0);
+            const double qz_nominal_ml   = qz_getf("qzmini_nominal_syringe_capacity_ml", 150.0);
+            const int    qz_refills      = Slic3r::QuasiZero::QzMaterialBudget::refills_needed(qz_total_ml, qz_threshold_ml);
+            const double qz_initial_ml   = std::min(qz_total_ml, qz_usable_ml);
+            const double qz_reserve_ml   = std::max(0.0, qz_usable_ml - qz_threshold_ml);
+
+            ImGui::Spacing();
+            ImGui::Dummy({ window_padding, window_padding });
+            ImGui::SameLine();
+            imgui.title(_u8L("QZmini Biomaterial"));
+
+            std::vector<std::pair<std::string, std::string>> qz_rows;
+            char qz_buf[64];
+            auto qz_ml = [&qz_buf](double v) { ::sprintf(qz_buf, "%.1f ml", v); return std::string(qz_buf); };
+            qz_rows.emplace_back(_u8L("Material required"),      qz_ml(qz_total_ml));
+            qz_rows.emplace_back(_u8L("Model deposition"),       qz_ml(qz_model_ml));
+            qz_rows.emplace_back(_u8L("Prime/purge"),            qz_ml(qz_prime_ml));
+            qz_rows.emplace_back(_u8L("Initial syringe fill"),   qz_ml(qz_initial_ml));
+            ::sprintf(qz_buf, "%d", qz_refills);
+            qz_rows.emplace_back(_u8L("Refills during print"),   std::string(qz_buf));
+            qz_rows.emplace_back(_u8L("Usable volume per refill cycle"), qz_ml(qz_usable_ml));
+            qz_rows.emplace_back(_u8L("Safety reserve"),         qz_ml(qz_reserve_ml));
+            qz_rows.emplace_back(_u8L("Nominal syringe capacity"), qz_ml(qz_nominal_ml));
+
+            float qz_max_len = window_padding + 2 * ImGui::GetStyle().ItemSpacing.x;
+            for (const auto &r : qz_rows)
+                qz_max_len = std::max(qz_max_len, window_padding + 2 * ImGui::GetStyle().ItemSpacing.x + ImGui::CalcTextSize(r.first.c_str()).x);
+            for (const auto &r : qz_rows) {
+                ImGui::Dummy({ window_padding, window_padding });
+                ImGui::SameLine();
+                imgui.text(r.first + ":");
+                ImGui::SameLine(qz_max_len);
+                imgui.text(r.second);
+            }
+        }
+    }
+    // =================== end Quasizero QZmini biomaterial summary ===================
 
     // total estimated printing time section
     ImGui::Spacing();

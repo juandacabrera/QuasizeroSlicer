@@ -1,4 +1,5 @@
 #include "MainFrame.hpp"
+#include "slic3r/GUI/QuasiZero/QzCalibrationDialog.hpp"
 
 #include <wx/panel.h>
 #include <wx/notebook.h>
@@ -3321,6 +3322,14 @@ void MainFrame::init_menubar_as_editor()
     //m_topbar->AddDropDownMenuItem(language_item);
     //m_topbar->AddDropDownMenuItem(config_item);
     m_topbar->AddDropDownSubMenu(helpMenu, _L("Help"));
+
+    // Quasizero QZmini calibration
+    append_menu_item(m_topbar->GetCalibMenu(), wxID_ANY, _L("QZmini Calibration"), _L("QZmini syringe-plunger mechanical calibration"),
+        [this](wxCommandEvent&) {
+            Slic3r::GUI::QzCalibrationDialog dlg((wxWindow*)this);
+            dlg.ShowModal();
+        }, "", nullptr,
+        [this]() { return true; }, this);
 
     // SoftFever calibrations
 

@@ -4469,6 +4469,181 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionString());
 
+
+    // ======================= Quasizero QZmini =======================
+    // Namespaced configuration for the QZmini syringe-plunger retrofit.
+    // Values marked provisional require physical calibration (see QZMINI_CALIBRATION.md).
+    def = this->add("qzmini_enable", coBool);
+    def->label = L("QZmini extrusion system");
+    def->category = L("QZmini");
+    def->tooltip = L("Enable the Quasizero QZmini syringe-plunger volumetric model for this printer. "
+                     "Material amounts are reported in millilitres and refill assistance becomes available.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("qzmini_barrel_inner_diameter", coFloat);
+    def->label = L("Barrel inner diameter");
+    def->category = L("QZmini");
+    def->tooltip = L("Inner diameter of the QZmini syringe barrel. Used to convert plunger travel to volume.");
+    def->sidetext = L("mm");
+    def->min = 1;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(35.0));
+
+    def = this->add("qzmini_nominal_syringe_capacity_ml", coFloat);
+    def->label = L("Nominal syringe capacity");
+    def->category = L("QZmini");
+    def->tooltip = L("Manufacturer nominal capacity of the syringe. Kept independent from the usable capacity; "
+                     "do not derive one from the other.");
+    def->sidetext = L("ml");
+    def->min = 1;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(150.0));
+
+    def = this->add("qzmini_usable_syringe_capacity_ml", coFloat);
+    def->label = L("Usable capacity per cycle");
+    def->category = L("QZmini");
+    def->tooltip = L("Verified usable volume per refill cycle. The margin between the refill threshold and this "
+                     "value is the safety reserve used to move refills to a safe toolpath boundary.");
+    def->sidetext = L("ml");
+    def->min = 1;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(120.0));
+
+    def = this->add("qzmini_usable_plunger_stroke_mm", coFloat);
+    def->label = L("Usable plunger stroke (unverified)");
+    def->category = L("QZmini");
+    def->tooltip = L("Reported usable plunger travel. Marked unverified: with a 35 mm barrel, 140 mm of stroke "
+                     "is about 134.7 ml, which contradicts the 150 ml nominal capacity. Verify physically.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(140.0));
+
+    def = this->add("qzmini_plunger_mm_per_e_unit", coFloat);
+    def->label = L("Plunger travel per E unit");
+    def->category = L("QZmini");
+    def->tooltip = L("Physical plunger travel produced by one commanded E unit. Primary mechanical calibration "
+                     "value; obtain it with the E100 test in the QZmini calibration panel. The default is a "
+                     "provisional seed from a preliminary printed line test.");
+    def->sidetext = L("mm/E");
+    def->min = 0;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(0.277));
+
+    def = this->add("qzmini_refill_enable", coBool);
+    def->label = L("Auto-pause for refill");
+    def->category = L("QZmini");
+    def->tooltip = L("Insert automatic pause sequences at safe toolpath boundaries whenever the configured "
+                     "refill threshold of biomaterial has been consumed.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("qzmini_refill_threshold_ml", coFloat);
+    def->label = L("Refill threshold");
+    def->category = L("QZmini");
+    def->tooltip = L("Consumed volume that triggers a refill event. The difference between this and the usable "
+                     "capacity is the safety reserve.");
+    def->sidetext = L("ml");
+    def->min = 1;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(120.0));
+
+    def = this->add("qzmini_park_x", coFloat);
+    def->label = L("Refill park X");
+    def->category = L("QZmini");
+    def->tooltip = L("Absolute X position where the head parks for syringe refill.");
+    def->sidetext = L("mm");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(10.0));
+
+    def = this->add("qzmini_park_y", coFloat);
+    def->label = L("Refill park Y");
+    def->category = L("QZmini");
+    def->tooltip = L("Absolute Y position where the head parks for syringe refill.");
+    def->sidetext = L("mm");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(10.0));
+
+    def = this->add("qzmini_park_z_lift", coFloat);
+    def->label = L("Refill Z lift");
+    def->category = L("QZmini");
+    def->tooltip = L("Relative Z lift applied before travelling to the park position.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(20.0));
+
+    def = this->add("qzmini_plunger_reset_enable", coBool);
+    def->label = L("Plunger reset before pause");
+    def->category = L("QZmini");
+    def->tooltip = L("Retract the plunger by the E distance consumed since the previous refill before pausing, "
+                     "so the syringe can be refilled or replaced. After refill only the logical E coordinate is "
+                     "restored; the plunger is never physically advanced back to its previous depth.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("qzmini_plunger_reset_feedrate", coFloat);
+    def->label = L("Plunger reset speed");
+    def->category = L("QZmini");
+    def->tooltip = L("E-axis feedrate used to slowly retract the plunger to its refill position.");
+    def->sidetext = L("mm/min");
+    def->min = 1;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(300.0));
+
+    def = this->add("qzmini_prime_after_refill_enable", coBool);
+    def->label = L("Prime after refill");
+    def->category = L("QZmini");
+    def->tooltip = L("After resuming, extrude a small priming volume in the park area before returning to the print.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("qzmini_prime_after_refill_ml", coFloat);
+    def->label = L("Prime volume");
+    def->category = L("QZmini");
+    def->tooltip = L("Priming volume extruded in the park area after a refill.");
+    def->sidetext = L("ml");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(1.0));
+
+    def = this->add("qzmini_prime_feedrate", coFloat);
+    def->label = L("Prime speed");
+    def->category = L("QZmini");
+    def->tooltip = L("E-axis feedrate used for the post-refill prime.");
+    def->sidetext = L("mm/min");
+    def->min = 1;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(120.0));
+
+    def = this->add("qzmini_pause_strategy", coString);
+    def->label = L("Firmware pause strategy");
+    def->category = L("QZmini");
+    def->tooltip = L("Pause command family used for refill events. Allowed values: auto (derive from G-code "
+                     "flavor), M0, M25, M600, custom (use the custom pause G-code below). M600 is not assumed "
+                     "suitable: QZmini refill is not a conventional filament change.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionString("auto"));
+
+    def = this->add("qzmini_pause_custom_gcode", coString);
+    def->label = L("Custom pause G-code");
+    def->category = L("QZmini");
+    def->tooltip = L("Used when the firmware pause strategy is set to custom (for example a Klipper PAUSE macro).");
+    def->multiline = true;
+    def->full_width = true;
+    def->height = 5;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionString());
+
+    def = this->add("qzmini_refill_show_in_preview", coBool);
+    def->label = L("Show refill events in Preview");
+    def->category = L("QZmini");
+    def->tooltip = L("Mark each refill event in the sliced toolpath preview.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(true));
+    // ===================== end Quasizero QZmini =====================
+
     def = this->add("small_area_infill_flow_compensation", coBool);
     def->label = L("Small area flow compensation (beta)");
     def->category = L("Quality");

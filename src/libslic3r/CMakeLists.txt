@@ -219,6 +219,14 @@ set(lisbslic3r_sources
     GCode/ExtrusionProcessor.hpp
     GCode/FanMover.cpp
     GCode/FanMover.hpp
+    QuasiZero/QzVolumetricModel.cpp
+    QuasiZero/QzVolumetricModel.hpp
+    QuasiZero/QzGcodeStateMachine.cpp
+    QuasiZero/QzGcodeStateMachine.hpp
+    QuasiZero/QzFirmwareAdapter.cpp
+    QuasiZero/QzFirmwareAdapter.hpp
+    QuasiZero/QzRefillPlanner.cpp
+    QuasiZero/QzRefillPlanner.hpp
     GCode/GCodeProcessor.cpp
     GCode/GCodeProcessor.hpp
     GCode.hpp
