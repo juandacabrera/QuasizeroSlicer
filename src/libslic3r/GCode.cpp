@@ -3746,6 +3746,7 @@ void GCode::process_layers(
             o.prime_feedrate         = config.qzmini_prime_feedrate.value;
             o.emit_preview_tag       = config.qzmini_refill_show_in_preview.value;
             o.travel_feedrate_mm_min = config.travel_speed.value * 60.0;
+            o.initial_e_relative     = config.use_relative_e_distances.value;
             switch (config.gcode_flavor.value) {
             case gcfKlipper:        o.family = QzFirmwareFamily::Klipper; break;
             case gcfRepRapFirmware: o.family = QzFirmwareFamily::RepRapFirmware; break;
@@ -3890,6 +3891,7 @@ void GCode::process_layers(
             o.prime_feedrate         = config.qzmini_prime_feedrate.value;
             o.emit_preview_tag       = config.qzmini_refill_show_in_preview.value;
             o.travel_feedrate_mm_min = config.travel_speed.value * 60.0;
+            o.initial_e_relative     = config.use_relative_e_distances.value;
             switch (config.gcode_flavor.value) {
             case gcfKlipper:        o.family = QzFirmwareFamily::Klipper; break;
             case gcfRepRapFirmware: o.family = QzFirmwareFamily::RepRapFirmware; break;

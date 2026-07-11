@@ -31,6 +31,9 @@ struct QzRefillOptions
     bool   emit_preview_tag = true;        // adds the reserved pause tag for Preview markers
     double travel_feedrate_mm_min = 3000.0;
     double z_feedrate_mm_min = 600.0;
+    // The machine start G-code is emitted outside the layer stream; the initial
+    // E mode must therefore be provided (OrcaSlicer: use_relative_e_distances).
+    bool   initial_e_relative = false;
     QzFirmwareFamily family = QzFirmwareFamily::Marlin;
     std::string pause_gcode;               // resolved via qz_pause_command()
 };
@@ -46,7 +49,10 @@ class QzRefillProcessor
 {
 public:
     QzRefillProcessor(const QzVolumetricParams &params, const QzRefillOptions &options)
-        : m_params(params), m_options(options) {}
+        : m_params(params), m_options(options)
+    {
+        m_sm.force_modes(true, !options.initial_e_relative, 0.0);
+    }
 
     // Transform one chunk (typically a whole layer). Newlines preserved.
     std::string process(const std::string &chunk);
