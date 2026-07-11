@@ -3,14 +3,23 @@
 # full OrcaSlicer dependency tree. Requires only g++ (C++17).
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
+
 mkdir -p build-qztests
-SRC="src/libslic3r/QuasiZero"
+src_dir="src/libslic3r/QuasiZero"
+
+sources=("$src_dir/QzVolumetricModel.cpp")
+for name in QzGcodeStateMachine QzFirmwareAdapter QzRefillPlanner; do
+    if [ -f "$src_dir/$name.cpp" ]; then
+        sources+=("$src_dir/$name.cpp")
+    fi
+done
+
+tests=(tests/qzmini/test_*.cpp)
+
 g++ -std=c++17 -O1 -Wall -Wextra -I src -I tests/qzmini \
-    "$SRC/QzVolumetricModel.cpp" \
-    $( [ -f "$SRC/QzGcodeStateMachine.cpp" ] && echo "$SRC/QzGcodeStateMachine.cpp" ) \
-    $( [ -f "$SRC/QzFirmwareAdapter.cpp" ]  && echo "$SRC/QzFirmwareAdapter.cpp" ) \
-    $( [ -f "$SRC/QzRefillPlanner.cpp" ]    && echo "$SRC/QzRefillPlanner.cpp" ) \
-    tests/qzmini/test_*.cpp \
+    "${sources[@]}" \
+    "${tests[@]}" \
     tests/qzmini/standalone/main.cpp \
     -o build-qztests/qz_tests
+
 ./build-qztests/qz_tests
