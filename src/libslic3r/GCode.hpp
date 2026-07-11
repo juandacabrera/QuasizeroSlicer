@@ -11,6 +11,7 @@
 #include "GCode/AvoidCrossingPerimeters.hpp"
 #include "GCode/CoolingBuffer.hpp"
 #include "GCode/FanMover.hpp"
+#include "QuasiZero/QzRefillPlanner.hpp"
 #include "GCode/RetractWhenCrossingPerimeters.hpp"
 #include "GCode/SpiralVase.hpp"
 #include "GCode/ToolOrdering.hpp"
@@ -644,6 +645,8 @@ private:
 
     //some post-processing on the file, with their data class
     std::unique_ptr<FanMover> m_fan_mover;
+    // Quasizero QZmini refill transformation (created lazily per export)
+    std::unique_ptr<QuasiZero::QzRefillProcessor> m_qz_refill;
 
     // BBS
     Print* m_curr_print = nullptr;
