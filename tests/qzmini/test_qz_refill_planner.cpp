@@ -255,12 +255,16 @@ QZ_TEST(sequence_tagged_as_custom_type_and_feature_restored)
         g << "G0 X" << (10+i) << " Y10 F3000\n";
         g << "G1 X" << (10+i) << " Y100 E" << e_seg << " F1200\n";
     }
+    g << "G0 X5 Y5 F3000\n"; // trailing travel: safe boundary after the threshold crossing
     QzRefillProcessor proc(p, o);
     std::string out = proc.process(g.str());
     QZ_CHECK(proc.events().size() == 1);
     size_t beg = out.find("; QZ_REFILL_BEGIN");
     size_t end = out.find("; QZ_REFILL_END");
-    std::string seq = out.substr(beg, end - beg);
-    QZ_CHECK(seq.find(";TYPE:Custom") != std::string::npos);
-    QZ_CHECK(seq.rfind(";TYPE:Internal solid infill") != std::string::npos); // restored before END
+    QZ_CHECK(beg != std::string::npos && end != std::string::npos && end > beg);
+    if (beg != std::string::npos && end != std::string::npos && end > beg) {
+        std::string seq = out.substr(beg, end - beg);
+        QZ_CHECK(seq.find(";TYPE:Custom") != std::string::npos);
+        QZ_CHECK(seq.rfind(";TYPE:Internal solid infill") != std::string::npos); // restored before END
+    }
 }
