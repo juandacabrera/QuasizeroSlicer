@@ -50,6 +50,7 @@ std::string QzRefillProcessor::make_sequence()
     g << qz_family_comment(m_options.family) << "\n";
     if (m_options.emit_preview_tag)
         g << "; PAUSE_PRINTING\n"; // reserved tag: creates the pause marker in Preview
+    g << ";TYPE:Custom\n"; // show the refill sequence as its own line type in Preview
     g << "M400 ; wait for queued moves to complete\n";
     // save-state comment block (traceability in the file)
     g << "; QZ_SAVED_X=" << fmt("%.3f", st.x) << " Y=" << fmt("%.3f", st.y)
@@ -93,6 +94,8 @@ std::string QzRefillProcessor::make_sequence()
         g << "G91 ; restore relative XYZ mode\n";
     if (st.feedrate > 0.0)
         g << "G1 F" << fmt("%.0f", st.feedrate) << " ; restore feedrate\n";
+    if (!m_last_feature_line.empty())
+        g << m_last_feature_line << "\n"; // restore the interrupted feature type
     g << "; QZ_REFILL_END\n";
 
     m_events.push_back({ index, cycle_ml, st.z });
@@ -104,6 +107,17 @@ std::string QzRefillProcessor::make_sequence()
 
 std::string QzRefillProcessor::process(const std::string &chunk)
 {
+    if (!m_config_checked) {
+        m_config_checked = true;
+        if (m_options.usable_capacity_ml <= m_options.refill_threshold_ml) {
+            m_failed = true;
+            m_error = "QZmini Refill Assist configuration error: the usable syringe capacity ("
+                    + fmt("%.1f", m_options.usable_capacity_ml) + " ml) must be greater than the refill threshold ("
+                    + fmt("%.1f", m_options.refill_threshold_ml) + " ml). The difference is the safety reserve used "
+                      "to move each refill to a safe pause point. Increase the usable capacity (Printer settings -> "
+                      "QZmini) or lower the refill threshold.";
+        }
+    }
     if (m_failed)
         return chunk;
     std::string out;
@@ -117,6 +131,16 @@ std::string QzRefillProcessor::process(const std::string &chunk)
 
         // Never re-process our own sequences (they are emitted pre-tracked).
         QzLineInfo info = m_sm.process_line(line);
+
+        // Remember the current feature/type tag so it can be restored after a
+        // refill sequence (sequence moves are tagged as Custom in the preview).
+        {
+            size_t ns = line.find_first_not_of(" \t");
+            if (ns != std::string::npos && line[ns] == ';') {
+                if (line.compare(ns, 6, ";TYPE:") == 0 || line.compare(ns, 10, "; FEATURE:") == 0)
+                    m_last_feature_line = line;
+            }
+        }
 
         // Arm when the finished cycle volume reaches the threshold.
         if (!m_armed) {

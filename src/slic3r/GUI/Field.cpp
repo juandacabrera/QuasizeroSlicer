@@ -2001,7 +2001,7 @@ void ColourPicker::draw_bmp_btn(wxColourPickerCtrl* field, wxColour color)
             dc2.SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
             wxString text    = _L("Pick") + " " + dots;
             wxSize   text_sz = dc2.GetTextExtent(text);
-            dc2.SetTextForeground(StateColor::darkModeColorFor(wxColour("#262E30")));
+            dc2.SetTextForeground(StateColor::darkModeColorFor(wxColour("#302B27")));
             dc2.DrawText(text, (btn_sz.x - text_sz.x) / 2, (btn_sz.y - text_sz.y) / 2);
         }
         dc.SelectObject(wxNullBitmap);

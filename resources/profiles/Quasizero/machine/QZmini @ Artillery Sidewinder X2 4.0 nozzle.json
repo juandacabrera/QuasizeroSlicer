@@ -116,5 +116,13 @@
  "printer_variant": "4.0",
  "machine_start_gcode": "; =====================================================================\n; QZmini cold-extrusion start G-code (Quasizero Slicer) - Marlin family\n; STATUS: PROVISIONAL - offline validated only, NOT hardware validated\n; =====================================================================\nG90 ; absolute XYZ coordinates\nM83 ; relative E (QZmini plunger drive)\nM302 S0 ; allow cold extrusion at any temperature (syringe drive, no hotend use)\nM220 S100 ; reset speed factor\nM221 S100 ; reset extrusion rate factor\n; No nozzle heating, no bed heating, no thermal waits: QZmini prints cold.\nG28 ; home all axes (preserved from original machine behaviour)\n; NOTE: automatic bed leveling (G29) intentionally omitted. Probe clearance with\n; the QZmini syringe assembly is UNVERIFIED. Re-enable only after physical check.\nG1 Z10 F600 ; safe Z lift\nG1 X10 Y10 F3000 ; smooth travel to start corner\nG92 E0 ; reset logical E\n",
  "machine_end_gcode": "; QZmini cold end G-code (Quasizero Slicer) - Marlin family - PROVISIONAL\nM400 ; finish queued moves\nG92 E0\nG91\nG1 Z5 F600 ; lift away from part\nG90\nG1 X10 Y290 F3000 ; present bed\nM106 S0 ; part-cooling fan off (electronics/controller cooling unaffected)\nM104 S0 ; ensure hotend heater is off (defensive; never heated)\nM140 S0 ; ensure bed heater is off (defensive; never heated)\nM84 ; disable steppers\n",
- "machine_pause_gcode": "M0 ; pause, wait for user (Marlin; resume validation pending on hardware)"
+ "machine_pause_gcode": "M0 ; pause, wait for user (Marlin; resume validation pending on hardware)",
+ "qzmini_enable": "1",
+ "qzmini_barrel_inner_diameter": "35",
+ "qzmini_nominal_syringe_capacity_ml": "150",
+ "qzmini_usable_syringe_capacity_ml": "134",
+ "qzmini_usable_plunger_stroke_mm": "140",
+ "qzmini_plunger_mm_per_e_unit": "0.277",
+ "qzmini_refill_threshold_ml": "120",
+ "qzmini_refill_show_in_preview": "1"
 }

@@ -914,7 +914,7 @@ public:
         SetBackgroundColour(*wxWHITE);
         auto msg  = new wxStaticText(this, wxID_ANY, _L("Set the number of AMS installed on the nozzle."));
         msg->SetFont(Label::Body_14);
-        msg->SetForegroundColour("#262E30");
+        msg->SetForegroundColour("#302B27");
         msg->Wrap(FromDIP(280));
         auto box = new StaticBox(this, wxID_ANY);
         box->SetBackgroundColor(0xF8F8F8);
@@ -926,11 +926,11 @@ public:
         auto txt4 = new wxStaticText(box, wxID_ANY, _L("AMS(4 slots)"));
         txt4->SetFont(Label::Body_14);
         txt4->SetBackgroundColour(0xF8F8F8);
-        txt4->SetForegroundColour("#262E30");
+        txt4->SetForegroundColour("#302B27");
         auto txt1 = new wxStaticText(box, wxID_ANY, _L("AMS(1 slot)"));
         txt1->SetFont(Label::Body_14);
         txt1->SetBackgroundColour(0xF8F8F8);
-        txt1->SetForegroundColour("#262E30");
+        txt1->SetForegroundColour("#302B27");
         int ams4 = 0, ams1 = 0;
         int oth4 = 0, oth1 = 0;
         GetAMSCount(index, ams4, ams1);
@@ -1031,13 +1031,13 @@ ExtruderGroup::ExtruderGroup(wxWindow * parent, int index, wxString const &title
     // Nozzle
     wxStaticText *label_diameter = new wxStaticText(this, wxID_ANY, _L("Diameter"));
     label_diameter->SetFont(Label::Body_14);
-    label_diameter->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#262E30")));
+    label_diameter->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#302B27")));
     if (index >= 0) label_diameter->SetMinSize({FromDIP(80), -1});
     auto combo_diameter = new ComboBox(this, wxID_ANY, wxString(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_READONLY);
     this->combo_diameter = combo_diameter;
     wxStaticText *label_flow = new wxStaticText(this, wxID_ANY, _L("Flow"));
     label_flow->SetFont(Label::Body_14);
-    label_flow->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#262E30")));
+    label_flow->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#302B27")));
     if (index >= 0) label_flow->SetMinSize({FromDIP(80), -1});
     auto combo_flow = new ComboBox(this, wxID_ANY, wxString(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_READONLY);
     combo_flow->GetDropDown().SetUseContentWidth(true);
@@ -1052,7 +1052,7 @@ ExtruderGroup::ExtruderGroup(wxWindow * parent, int index, wxString const &title
     // AMS
     wxStaticText *label_ams  = new wxStaticText(this, wxID_ANY, _L("AMS"));
     label_ams->SetFont(Label::Body_14);
-    label_ams->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#262E30")));
+    label_ams->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#302B27")));
     //label_ams->SetMinSize({FromDIP(70), -1});
     if (index >= 0) {
         btn_edit = new ScalableButton(this, wxID_ANY, "dot");
@@ -1081,7 +1081,7 @@ ExtruderGroup::ExtruderGroup(wxWindow * parent, int index, wxString const &title
     // AMS not installed message
     ams_not_installed_msg = new wxStaticText(this, wxID_ANY, _L("Not installed"));
     ams_not_installed_msg->SetFont(Label::Body_14);
-    ams_not_installed_msg->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#262E30")));
+    ams_not_installed_msg->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#302B27")));
 
     // AMS group
     for (size_t i = 0; i < 4; ++i) {
@@ -2228,7 +2228,7 @@ Sidebar::Sidebar(Plater *parent)
 
     wxTextCtrl* text_ctrl = p->m_search_item->GetTextCtrl();
     text_ctrl->SetHint(_L("Search plate, object and part."));
-    text_ctrl->SetForegroundColour(wxColour("#262E30"));
+    text_ctrl->SetForegroundColour(wxColour("#302B27"));
     text_ctrl->SetFont(Label::Body_13);
     text_ctrl->SetSize(wxSize(-1, FromDIP(16))); // Centers text vertically
 
@@ -5589,17 +5589,17 @@ wxColour Plater::get_next_color_for_filament()
     // refs to https://www.ebaomonthly.com/window/photo/lesson/colorList.htm
     wxColour colors[FILAMENT_SYSTEM_COLORS_NUM] = {
         // ORCA updated all color palette
-        wxColour("#00C1AE"),
+        wxColour("#C1590F"),
         wxColour("#F4E2C1"),
         wxColour("#ED1C24"),
-        wxColour("#00FF7F"),
+        wxColour("#FF7614"),
         wxColour("#F26722"),
         wxColour("#FFEB31"),
         wxColour("#7841CE"),
-        wxColour("#115877"),
+        wxColour("#774019"),
         wxColour("#ED1E79"),
-        wxColour("#2EBDEF"),
-        wxColour("#345B2F"),
+        wxColour("#EF873D"),
+        wxColour("#5B4333"),
         wxColour("#800080"),
         wxColour("#FA8173"),
         wxColour("#800000"),

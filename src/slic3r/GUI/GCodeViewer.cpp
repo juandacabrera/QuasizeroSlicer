@@ -4563,7 +4563,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
                 return o != nullptr ? o->value : fallback;
             };
             const double qz_threshold_ml = qz_getf("qzmini_refill_threshold_ml", 120.0);
-            const double qz_usable_ml    = qz_getf("qzmini_usable_syringe_capacity_ml", 120.0);
+            const double qz_usable_ml    = qz_getf("qzmini_usable_syringe_capacity_ml", 134.0);
             const double qz_nominal_ml   = qz_getf("qzmini_nominal_syringe_capacity_ml", 150.0);
             const int    qz_refills      = Slic3r::QuasiZero::QzMaterialBudget::refills_needed(qz_total_ml, qz_threshold_ml);
             const double qz_initial_ml   = std::min(qz_total_ml, qz_usable_ml);

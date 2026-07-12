@@ -112,5 +112,13 @@
  "machine_start_gcode": "; =====================================================================\n; QZmini cold-extrusion start G-code (Quasizero Slicer) - Bambu Lab family\n; STATUS: EXPERIMENTAL / SLICE-ONLY. NOT hardware validated.\n; Cold-extrusion enablement on Bambu firmware is UNVERIFIED: stock firmware\n; may reject extrusion below its minimum extrusion temperature. Do not send\n; this job to a printer until this behaviour has been physically verified.\n; No AMS load/unload, no purge line, no nozzle wipe, no calibration sequence.\n; =====================================================================\nG90 ; absolute XYZ\nM83 ; relative E (QZmini plunger drive)\nG28 ; home all axes (preserved)\nG1 Z10 F600 ; safe Z lift\nG92 E0 ; reset logical E\n",
  "machine_end_gcode": "; QZmini cold end G-code (Quasizero Slicer) - Bambu Lab family - EXPERIMENTAL / SLICE-ONLY\nM400\nG92 E0\nG91\nG1 Z5 F600\nG90\nM106 S0 ; part-cooling fan off only; chamber/aux/electronics cooling untouched\nM84\n",
  "machine_pause_gcode": "M400 U1",
- "before_layer_change_gcode": ";BEFORE_LAYER_CHANGE\nG92 E0\n;[layer_z]"
+ "before_layer_change_gcode": ";BEFORE_LAYER_CHANGE\nG92 E0\n;[layer_z]",
+ "qzmini_enable": "1",
+ "qzmini_barrel_inner_diameter": "35",
+ "qzmini_nominal_syringe_capacity_ml": "150",
+ "qzmini_usable_syringe_capacity_ml": "134",
+ "qzmini_usable_plunger_stroke_mm": "140",
+ "qzmini_plunger_mm_per_e_unit": "0.277",
+ "qzmini_refill_threshold_ml": "120",
+ "qzmini_refill_show_in_preview": "1"
 }

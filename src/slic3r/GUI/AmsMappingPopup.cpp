@@ -2017,7 +2017,7 @@ AmsIntroducePopup::AmsIntroducePopup(wxWindow* parent)
 
     m_staticText_top = new Label(this, _L("Do not Enable AMS"));
     m_staticText_top->SetFont(::Label::Head_13);
-    // m_staticText_top->SetForegroundColour(wxColour("#323A3D"));
+    // m_staticText_top->SetForegroundColour(wxColour("#3D3733"));
     m_staticText_top->Wrap(-1);
     bSizer4->Add(m_staticText_top, 0, wxALL, 5);
 
@@ -2197,7 +2197,7 @@ void AmsReplaceMaterialDialog::create()
 
     label_txt = new Label(this, _L("When the current material run out, the printer will continue to print in the following order."));
     label_txt->SetFont(Label::Body_13);
-    label_txt->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
+    label_txt->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#3C3733")));
     label_txt->SetMinSize(wxSize(FromDIP(380), -1));
     label_txt->SetMaxSize(wxSize(FromDIP(380), -1));
     label_txt->Wrap(FromDIP(380));
@@ -2637,8 +2637,8 @@ void AmsRMGroup::doRender(wxDC& dc)
         //draw tray
         dc.SetFont(::Label::Body_12);
         auto text_size = dc.GetTextExtent(tray_name);
-        dc.SetTextForeground(tray_color.GetLuminance() < 0.6 ? *wxWHITE : wxColour("#262E30"));
-        if (tray_color.Alpha() == 0) { dc.SetTextForeground(wxColour("#262E30")); }
+        dc.SetTextForeground(tray_color.GetLuminance() < 0.6 ? *wxWHITE : wxColour("#302B27"));
+        if (tray_color.Alpha() == 0) { dc.SetTextForeground(wxColour("#302B27")); }
 
         dc.DrawText(tray_name, x_center - text_size.x / 2, size.y - y_center - text_size.y / 2);
 
@@ -2668,7 +2668,7 @@ void AmsRMGroup::doRender(wxDC& dc)
     //dc.DrawBitmap(bitmap_backup_tips_1.bmp(), wxPoint((size.x - bitmap_backup_tips_1.GetBmpSize().x) / 2, (size.y - bitmap_backup_tips_1.GetBmpSize().y) / 2));
 
     //draw material
-    dc.SetTextForeground(wxColour("#323A3D"));
+    dc.SetTextForeground(wxColour("#3D3733"));
     dc.SetFont(Label::Head_15);
     auto text_size = dc.GetTextExtent(m_material_name);
     dc.DrawText(m_material_name, (size.x - text_size.x) / 2,(size.y - text_size.y) / 2 - FromDIP(12));

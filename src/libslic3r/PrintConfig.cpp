@@ -4508,7 +4508,9 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("ml");
     def->min = 1;
     def->mode = comSimple;
-    def->set_default_value(new ConfigOptionFloat(120.0));
+    // 134 ml: conservative default below the ~134.7 ml geometric estimate of the
+    // 35 mm x 140 mm barrel, leaving a 14 ml reserve above the 120 ml threshold.
+    def->set_default_value(new ConfigOptionFloat(134.0));
 
     def = this->add("qzmini_usable_plunger_stroke_mm", coFloat);
     def->label = L("Usable plunger stroke (unverified)");

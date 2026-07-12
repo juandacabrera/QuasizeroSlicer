@@ -325,27 +325,27 @@ wxBitmap* BitmapCache::load_svg(const std::string &bitmap_name, unsigned target_
     // map of color replaces
     std::map<std::string, std::string> replaces;
     replaces["\"#0x8A6244\""] = "\"#8A6244\"";
-    replaces["\"#00FF00\""] = "\"#52c7b8\"";
+    replaces["\"#FF7614\""] = "\"#C7885B\"";
     if (dark_mode) {
-        replaces["\"#262E30\""] = "\"#EFEFF0\"";
-        replaces["\"#323A3D\""] = "\"#B3B3B5\"";
+        replaces["\"#302B27\""] = "\"#EFEFF0\"";
+        replaces["\"#3D3733\""] = "\"#B3B3B5\"";
         replaces["\"#808080\""] = "\"#818183\"";
         //replaces["\"#ACACAC\""] = "\"#54545A\"";
         replaces["\"#CECECE\""] = "\"#54545B\"";
         replaces["\"#6B6B6B\""] = "\"#818182\"";
         replaces["\"#909090\""] = "\"#FFFFFF\"";
-        replaces["\"#00FF00\""] = "\"#FF0000\"";
-        replaces["\"#8A6244\""] = "\"#00675b\"";
+        replaces["\"#FF7614\""] = "\"#FF0000\"";
+        replaces["\"#8A6244\""] = "\"#673008\"";
         replaces["\"#F1F1F1\""] = "\"#36363B\"";
         replaces["#DBDBDB"] = "#4A4A51"; // ORCA border color
         replaces["#F0F0F1"] = "#333337"; // ORCA disabled background color
-        replaces["#262E30"] = "#EFEFF0"; // ORCA
+        replaces["#302B27"] = "#EFEFF0"; // ORCA
     } else {
         replaces["#949494"] = "#7C8282"; // ORCA replace icon line color for light theme
     }
 
     if (strstr(bitmap_name.c_str(), "toggle_on") != NULL && dark_mode) // ORCA only replace color of toggle button
-        replaces["#8A6244"] = "#00675b";
+        replaces["#8A6244"] = "#673008";
 
     if (!new_color.empty())
         replaces["\"#8A6244\""] = "\"" + new_color + "\"";

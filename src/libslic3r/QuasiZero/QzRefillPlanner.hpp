@@ -72,6 +72,8 @@ private:
     bool        m_armed  = false;
     bool        m_failed = false;
     std::string m_error;
+    std::string m_last_feature_line;   // last ";TYPE:"/"; FEATURE:" line seen
+    bool        m_config_checked = false;
 
     std::string make_sequence();
     void        check_capacity_exceeded();

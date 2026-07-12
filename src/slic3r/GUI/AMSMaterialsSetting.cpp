@@ -1535,11 +1535,11 @@ ColorPickerPopup::ColorPickerPopup(wxWindow* parent)
     m_def_colors.push_back(wxColour("#FFFFFF"));
     m_def_colors.push_back(wxColour("#fff144"));
     m_def_colors.push_back(wxColour("#DCF478"));
-    m_def_colors.push_back(wxColour("#0ACC38"));
-    m_def_colors.push_back(wxColour("#057748"));
-    m_def_colors.push_back(wxColour("#0d6284"));
-    m_def_colors.push_back(wxColour("#0EE2A0"));
-    m_def_colors.push_back(wxColour("#76D9F4"));
+    m_def_colors.push_back(wxColour("#CC641A"));
+    m_def_colors.push_back(wxColour("#773A0E"));
+    m_def_colors.push_back(wxColour("#844417"));
+    m_def_colors.push_back(wxColour("#E2701F"));
+    m_def_colors.push_back(wxColour("#F4B080"));
     m_def_colors.push_back(wxColour("#46a8f9"));
     m_def_colors.push_back(wxColour("#2850E0"));
     m_def_colors.push_back(wxColour("#443089"));

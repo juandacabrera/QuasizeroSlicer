@@ -2894,7 +2894,7 @@ void ObjectTablePanel::load_data()
     m_object_grid->SetColLabelValue(ObjectGridTable::col_speed_perimeter, _L("Outer wall speed"));
     m_object_grid->SetColLabelValue(ObjectGridTable::col_speed_perimeter_reset, "");
     m_object_grid->SetLabelFont(Label::Head_13);
-    m_object_grid->SetLabelTextColour(StateColor::darkModeColorFor(wxColour("#303A3C")));
+    m_object_grid->SetLabelTextColour(StateColor::darkModeColorFor(wxColour("#3C3631")));
     m_object_grid->SetLabelBackgroundColour( wxColour("#FFFFFF"));
 #else
     m_object_grid->HideColLabels();

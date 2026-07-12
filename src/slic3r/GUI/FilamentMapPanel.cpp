@@ -14,7 +14,7 @@ static const wxColour BorderNormalColor   = wxColour("#CECECE");
 static const wxColour BorderSelectedColor = wxColour("#8A6244");
 static const wxColour BorderDisableColor  = wxColour("#EEEEEE");
 
-static const wxColour TextNormalBlackColor = wxColour("#262E30");
+static const wxColour TextNormalBlackColor = wxColour("#302B27");
 static const wxColour TextNormalGreyColor = wxColour("#6B6B6B");
 static const wxColour TextDisableColor = wxColour("#CECECE");
 

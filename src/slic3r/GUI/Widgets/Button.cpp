@@ -173,10 +173,10 @@ void Button::SetVertical(bool vertical)
 
 //                           Background                                             Foreground                       Border on focus
 // Button Colors             0-Disabled 1-Pressed  2-Hover    3-Normal   4-Enabled  5-Disabled 6-Normal   7-Hover    8-Dark     9-Light
-wxString btn_regular[10]  = {"#DFDFDF", "#DFDFDF", "#D4D4D4", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#262E30", "#262E30", "#8A6244", "#8A6244"};
+wxString btn_regular[10]  = {"#DFDFDF", "#DFDFDF", "#D4D4D4", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#302B27", "#302B27", "#8A6244", "#8A6244"};
 wxString btn_confirm[10]  = {"#DFDFDF", "#8A6244", "#A5825F", "#8A6244", "#8A6244", "#6B6A6A", "#FEFEFE", "#FEFEFE", "#b99372", "#D9B48C"};
-wxString btn_alert[10]    = {"#DFDFDF", "#DFDFDF", "#E14747", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#262E30", "#FFFFFD", "#8A6244", "#8A6244"};
-wxString btn_disabled[10] = {"#DFDFDF", "#DFDFDF", "#DFDFDF", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#6B6A6A", "#262E30", "#DFDFDF", "#DFDFDF"};
+wxString btn_alert[10]    = {"#DFDFDF", "#DFDFDF", "#E14747", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#302B27", "#FFFFFD", "#8A6244", "#8A6244"};
+wxString btn_disabled[10] = {"#DFDFDF", "#DFDFDF", "#DFDFDF", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#6B6A6A", "#302B27", "#DFDFDF", "#DFDFDF"};
 
 void Button::SetStyle(const ButtonStyle style, const ButtonType type)
 {

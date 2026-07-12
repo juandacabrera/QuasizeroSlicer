@@ -4775,7 +4775,7 @@ void PrintOption::enable(bool en)
         m_printoption_item->enable(en);
 
         if (en) {
-            m_printoption_title->SetForegroundColour(StateColor::darkModeColorFor("#262E30"));
+            m_printoption_title->SetForegroundColour(StateColor::darkModeColorFor("#302B27"));
         } else {
             m_printoption_title->SetForegroundColour(StateColor::darkModeColorFor(wxColour(144, 144, 144)));
         }
@@ -5002,7 +5002,7 @@ void PrintOptionItem::doRender(wxDC& dc)
         }
         else
         {
-            const wxColour& clr = m_enable ? StateColor::darkModeColorFor("#262E30") : StateColor::darkModeColorFor(wxColour(144, 144, 144));
+            const wxColour& clr = m_enable ? StateColor::darkModeColorFor("#302B27") : StateColor::darkModeColorFor(wxColour(144, 144, 144));
             dc.SetPen(wxPen(clr));
             dc.SetTextForeground(clr);
 

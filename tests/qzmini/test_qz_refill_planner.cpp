@@ -234,3 +234,33 @@ QZ_TEST(volume_conservation_through_transform)
     // consumed volume tracked by the processor matches the synthetic input within tolerance
     QZ_CHECK_NEAR(proc.consumed_ml(), target_ml, 0.5);
 }
+
+QZ_TEST(config_error_when_no_reserve)
+{
+    auto p = test_params(); auto o = test_options();
+    o.usable_capacity_ml = o.refill_threshold_ml; // zero reserve: config error, clear message
+    QzRefillProcessor proc(p, o);
+    proc.process("G90\nM83\nG1 X10 E1 F1200\n");
+    QZ_CHECK(proc.failed());
+    QZ_CHECK(proc.error().find("safety reserve") != std::string::npos);
+}
+
+QZ_TEST(sequence_tagged_as_custom_type_and_feature_restored)
+{
+    auto p = test_params(); auto o = test_options();
+    std::ostringstream g;
+    g << "G90\nM83\nG28\nG92 E0\n; CHANGE_LAYER\n;TYPE:Internal solid infill\n";
+    const double e_seg = p.e_from_ml(130.0) / 10;
+    for (int i = 0; i < 10; ++i) {
+        g << "G0 X" << (10+i) << " Y10 F3000\n";
+        g << "G1 X" << (10+i) << " Y100 E" << e_seg << " F1200\n";
+    }
+    QzRefillProcessor proc(p, o);
+    std::string out = proc.process(g.str());
+    QZ_CHECK(proc.events().size() == 1);
+    size_t beg = out.find("; QZ_REFILL_BEGIN");
+    size_t end = out.find("; QZ_REFILL_END");
+    std::string seq = out.substr(beg, end - beg);
+    QZ_CHECK(seq.find(";TYPE:Custom") != std::string::npos);
+    QZ_CHECK(seq.rfind(";TYPE:Internal solid infill") != std::string::npos); // restored before END
+}
