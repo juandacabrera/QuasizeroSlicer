@@ -38,7 +38,7 @@ class SyncAmsInfoDialog : public DPIDialog
     wxString          m_current_project_name;
     PrintDialogStatus m_print_status{PrintStatusInit};
     wxColour          m_colour_def_color{wxColour(255, 255, 255)};
-    wxColour          m_colour_bold_color{wxColour(38, 46, 48)};
+    wxColour          m_colour_bold_color{wxColour(48, 43, 39)};
 
     std::shared_ptr<int>                 m_token = std::make_shared<int>(0);
     std::map<std::string, PrintOption *> m_checkbox_list;

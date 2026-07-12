@@ -114,5 +114,8 @@
   "QZmini @ Bambu Lab A1 mini 2.0 nozzle",
   "QZmini @ Bambu Lab P1S 4.0 nozzle",
   "QZmini @ Bambu Lab P1S 2.0 nozzle"
+ ],
+ "default_filament_colour": [
+  "#C9A47E"
  ]
 }

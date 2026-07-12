@@ -317,7 +317,7 @@ void Tab::create_preset_tab()
     auto search_sizer = new wxBoxSizer(wxHORIZONTAL);
     m_search_input = new TextInput(m_search_item, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 | wxBORDER_NONE);
     m_search_input->SetBackgroundColour(wxColour(238, 238, 238));
-    m_search_input->SetForegroundColour(wxColour(43, 52, 54));
+    m_search_input->SetForegroundColour(wxColour(54, 48, 44));
     m_search_input->SetFont(wxGetApp().bold_font());
     m_search_input->SetIcon(*BitmapCache().load_svg("search", FromDIP(16), FromDIP(16)));
     m_search_input->GetTextCtrl()->SetHint(_L("Search in preset") + dots);

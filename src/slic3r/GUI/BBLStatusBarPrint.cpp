@@ -45,10 +45,10 @@ BBLStatusBarPrint::BBLStatusBarPrint(wxWindow *parent, int id)
         std::pair<wxColour, int>(*wxWHITE, StateColor::Normal));
 
     StateColor btn_bd_white(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
+        std::pair<wxColour, int>(wxColour(48, 43, 39), StateColor::Enabled));
 
 
-    StateColor btn_txt_white(std::pair<wxColour, int>(wxColour("#FFFFFE"), StateColor::Disabled), std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Normal));
+    StateColor btn_txt_white(std::pair<wxColour, int>(wxColour("#FFFFFE"), StateColor::Disabled), std::pair<wxColour, int>(wxColour(48, 43, 39), StateColor::Normal));
 
     m_cancelbutton = new Button(m_self, _L("Cancel"));
     m_cancelbutton->SetMinSize(wxSize(m_self->FromDIP(80), m_self->FromDIP(32)));

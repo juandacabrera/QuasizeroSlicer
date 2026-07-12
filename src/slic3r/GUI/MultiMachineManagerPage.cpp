@@ -110,7 +110,7 @@ void MultiMachineItem::DrawTextWithEllipsis(wxDC& dc, const wxString& text, int 
     wxFont font = dc.GetFont();
 
     wxSize textSize = dc.GetTextExtent(text);
-    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour(50, 58, 61)));
+    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour(61, 55, 51)));
     int textWidth = textSize.GetWidth();
 
     if (textWidth > maxWidth) {
@@ -178,7 +178,7 @@ void MultiMachineItem::doRender(wxDC& dc)
             DrawTextWithEllipsis(dc, get_state_device(), FromDIP(DEVICE_LEFT_PRO_INFO), left);
         }
         else if (state_device == 1) {
-            dc.SetTextForeground(wxColour(0,174,66));
+            dc.SetTextForeground(wxColour(174, 81, 14));
             DrawTextWithEllipsis(dc, get_state_device(), FromDIP(DEVICE_LEFT_PRO_INFO), left);
         }
         else if (state_device == 2)
@@ -188,7 +188,7 @@ void MultiMachineItem::doRender(wxDC& dc)
         }
         else if (state_device > 2 && state_device < 7) {
             dc.SetFont(Label::Body_12);
-            dc.SetTextForeground(wxColour(0, 150, 136));
+            dc.SetTextForeground(wxColour(150, 70, 12));
             if (obj_->get_curr_stage() == _L("Printing") && obj_->subtask_) {
                 //wxString layer_info = wxString::Format(_L("Layer: %d/%d"), obj_->curr_layer, obj_->total_layers);
                 wxString progress_info = wxString::Format("%d", obj_->subtask_->task_progress);
@@ -201,8 +201,8 @@ void MultiMachineItem::doRender(wxDC& dc)
                 dc.SetBrush(wxBrush(wxColour(233,233,233)));
                 dc.DrawRoundedRectangle(left, FromDIP(30), FromDIP(DEVICE_LEFT_PRO_INFO), FromDIP(10), 2);
 
-                dc.SetPen(wxPen(wxColour(0, 150, 136)));
-                dc.SetBrush(wxBrush(wxColour(0, 150, 136)));
+                dc.SetPen(wxPen(wxColour(150, 70, 12)));
+                dc.SetBrush(wxBrush(wxColour(150, 70, 12)));
                 dc.DrawRoundedRectangle(left, FromDIP(30), FromDIP(DEVICE_LEFT_PRO_INFO) * (static_cast<float>(obj_->subtask_->task_progress) / 100.0f), FromDIP(10), 2);
             }
             else {
@@ -218,7 +218,7 @@ void MultiMachineItem::doRender(wxDC& dc)
         left += FromDIP(DEVICE_LEFT_PRO_INFO);
 
         //button
-        dc.SetPen(wxPen(wxColour(38, 46, 48)));
+        dc.SetPen(wxPen(wxColour(48, 43, 39)));
         dc.SetBrush(wxBrush(wxColour(*wxWHITE)));
         dc.DrawRoundedRectangle(left, (size.y - FromDIP(38)) / 2, FromDIP(90), FromDIP(38), 6);
         dc.SetFont(Label::Body_14);
@@ -228,7 +228,7 @@ void MultiMachineItem::doRender(wxDC& dc)
     }
 
     if (m_hover) {
-        dc.SetPen(wxPen(wxColour(0, 150, 136)));
+        dc.SetPen(wxPen(wxColour(150, 70, 12)));
         dc.SetBrush(*wxTRANSPARENT_BRUSH);
         dc.DrawRoundedRectangle(0, 0, size.x, size.y, 3);
     }
@@ -381,7 +381,7 @@ MultiMachineManagerPage::MultiMachineManagerPage(wxWindow* parent)
     m_tip_text->SetMinSize(wxSize(FromDIP(DEVICE_ITEM_MAX_WIDTH), -1));
     m_tip_text->SetMaxSize(wxSize(FromDIP(DEVICE_ITEM_MAX_WIDTH), -1));
     m_tip_text->SetLabel(_L("Please select the devices you would like to manage here (up to 6 devices)"));
-    m_tip_text->SetForegroundColour(wxColour(50, 58, 61));
+    m_tip_text->SetForegroundColour(wxColour(61, 55, 51));
     m_tip_text->SetFont(::Label::Head_20);
     m_tip_text->Wrap(-1);
 

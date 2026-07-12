@@ -12,21 +12,21 @@
 
 /*/// COLORS ///*/
 :root { 
-	--main-color			: #009688;
-	--main-color-hover		: #26A69A;
-	--main-color-fixed		: #009688;
+	--main-color			: #96460C;
+	--main-color-hover		: #A66130;
+	--main-color-fixed		: #96460C;
 	--bg-color				: #FFFFFF;
 	--bg-color-secondary	: #F4F4F4;
 	--bg-color-alt			: #F0F0F0;
-	--fg-color-text			: #262E30;
+	--fg-color-text			: #302B27;
 	--fg-color-label		: #363636;
 	--fg-color-disabled		: #ACACAC;
-	--focus-bg-item			: #BFE1DE;
+	--focus-bg-item			: #E1CFC2;
 	--focus-bg-box			: #E5F0EE;
 	--border-color			: #DBDBDB;
 	--icon-color			: #7C8282;
 	--button-fg-light		: #FEFEFE;
-	--button-fg-text		: #262E30;
+	--button-fg-text		: #302B27;
 	--button-fg-disabled	: #6B6B6B;
 	--button-bg-normal		: #DFDFDF;
 	--button-bg-hover		: #D4D4D4;
@@ -36,17 +36,17 @@
   
 @media (prefers-color-scheme: dark) { 
 :root {
-	--main-color			: #00675B;
-	--main-color-hover		: #008172;
-	--main-color-fixed		: #009688;
+	--main-color			: #673008;
+	--main-color-hover		: #813C0A;
+	--main-color-fixed		: #96460C;
 	--bg-color				: #2D2D31;
 	--bg-color-secondary	: #36363B;
 	--bg-color-alt			: #242428;
 	--fg-color-text			: #EFEFF0;
 	--fg-color-label		: #B2B3B5;
 	--fg-color-disabled		: #65656A;
-	--focus-bg-item			: #223C3C;
-	--focus-bg-box			: #283232;
+	--focus-bg-item			: #3C2E24;
+	--focus-bg-box			: #322D29;
 	--border-color			: #4A4A51;
 	--icon-color			: #949494;
 	--button-fg-light		: #FEFEFE;

@@ -36,9 +36,9 @@ MultiTaskItem::MultiTaskItem(wxWindow* parent, MachineObject* obj, int type)
 
 
     auto m_btn_bg_enable = StateColor(
-        std::pair<wxColour, int>(wxColour(0, 137, 123), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(38, 166, 154), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(0, 150, 136), StateColor::Normal)
+        std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(166, 97, 48), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Normal)
     );
 
     m_button_resume = new Button(this, _L("Resume"));
@@ -53,8 +53,8 @@ MultiTaskItem::MultiTaskItem(wxWindow* parent, MachineObject* obj, int type)
     StateColor clean_bg(std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Disabled), std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),
         std::pair<wxColour, int>(wxColour(238, 238, 238), StateColor::Hovered), std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Enabled),
         std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Normal));
-    StateColor clean_bd(std::pair<wxColour, int>(wxColour(144, 144, 144), StateColor::Disabled), std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
-    StateColor clean_text(std::pair<wxColour, int>(wxColour(144, 144, 144), StateColor::Disabled), std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
+    StateColor clean_bd(std::pair<wxColour, int>(wxColour(144, 144, 144), StateColor::Disabled), std::pair<wxColour, int>(wxColour(48, 43, 39), StateColor::Enabled));
+    StateColor clean_text(std::pair<wxColour, int>(wxColour(144, 144, 144), StateColor::Disabled), std::pair<wxColour, int>(wxColour(48, 43, 39), StateColor::Enabled));
 
     m_button_cancel = new Button(this, _L("Cancel"));
     m_button_cancel->SetBackgroundColor(clean_bg);
@@ -378,7 +378,7 @@ void MultiTaskItem::doRender(wxDC& dc)
                     DrawTextWithEllipsis(dc, get_state_device(), FromDIP(DEVICE_LEFT_PRO_INFO), left);
                 }
                 else if (state_device == 1) {
-                    dc.SetTextForeground(wxColour(0, 150, 136));
+                    dc.SetTextForeground(wxColour(150, 70, 12));
                     DrawTextWithEllipsis(dc, get_state_device(), FromDIP(DEVICE_LEFT_PRO_INFO), left);
                 }
                 else if (state_device == 2)
@@ -388,7 +388,7 @@ void MultiTaskItem::doRender(wxDC& dc)
                 }
                 else if (state_device > 2 && state_device < 7) {
                     dc.SetFont(Label::Body_12);
-                    dc.SetTextForeground(wxColour(0, 150, 136));
+                    dc.SetTextForeground(wxColour(150, 70, 12));
                     if (obj_->get_curr_stage() == _L("Printing") && obj_->subtask_) {
                         //wxString layer_info = wxString::Format(_L("Layer: %d/%d"), obj_->curr_layer, obj_->total_layers);
                         wxString progress_info = wxString::Format("%d", obj_->subtask_->task_progress);
@@ -400,8 +400,8 @@ void MultiTaskItem::doRender(wxDC& dc)
                         dc.SetBrush(wxBrush(wxColour(233, 233, 233)));
                         dc.DrawRoundedRectangle(left, FromDIP(30), FromDIP(TASK_LEFT_PRO_INFO), FromDIP(10), 2);
 
-                        dc.SetPen(wxPen(wxColour(0, 150, 136)));
-                        dc.SetBrush(wxBrush(wxColour(0, 150, 136)));
+                        dc.SetPen(wxPen(wxColour(150, 70, 12)));
+                        dc.SetBrush(wxBrush(wxColour(150, 70, 12)));
                         dc.DrawRoundedRectangle(left, FromDIP(30), FromDIP(TASK_LEFT_PRO_INFO) * (static_cast<float>(obj_->subtask_->task_progress) / 100.0f), FromDIP(10), 2);
                     }
                     else {
@@ -424,8 +424,8 @@ void MultiTaskItem::doRender(wxDC& dc)
             dc.SetBrush(wxBrush(wxColour(233, 233, 233)));
             dc.DrawRoundedRectangle(left, FromDIP(30), FromDIP(TASK_LEFT_PRO_INFO), FromDIP(10), 2);
 
-            dc.SetPen(wxPen(wxColour(0, 150, 136)));
-            dc.SetBrush(wxBrush(wxColour(0, 150, 136)));
+            dc.SetPen(wxPen(wxColour(150, 70, 12)));
+            dc.SetBrush(wxBrush(wxColour(150, 70, 12)));
             dc.DrawRoundedRectangle(left, FromDIP(30), FromDIP(TASK_LEFT_PRO_INFO) * (static_cast<float>(m_sending_percent) / 100.0f), FromDIP(10), 2);
         }
         /*else {
@@ -451,7 +451,7 @@ void MultiTaskItem::doRender(wxDC& dc)
     left += FromDIP(TASK_LEFT_SEND_TIME);
 
     if (m_hover) {
-        dc.SetPen(wxPen(wxColour(0, 150, 136)));
+        dc.SetPen(wxPen(wxColour(150, 70, 12)));
         dc.SetBrush(*wxTRANSPARENT_BRUSH);
         dc.DrawRoundedRectangle(0, 0, size.x, size.y, 3);
     }
@@ -463,7 +463,7 @@ void MultiTaskItem::DrawTextWithEllipsis(wxDC& dc, const wxString& text, int max
 
     wxSize textSize = dc.GetTextExtent(text);
 
-    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour(50, 58, 61)));
+    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour(61, 55, 51)));
 
     int textWidth = textSize.GetWidth();
 
@@ -669,7 +669,7 @@ LocalTaskManagerPage::LocalTaskManagerPage(wxWindow* parent)
     m_tip_text->SetMinSize(wxSize(FromDIP(CLOUD_TASK_ITEM_MAX_WIDTH), -1));
     m_tip_text->SetMaxSize(wxSize(FromDIP(CLOUD_TASK_ITEM_MAX_WIDTH), -1));
     m_tip_text->SetLabel(_L("There are no tasks to be sent!"));
-    m_tip_text->SetForegroundColour(wxColour(50, 58, 61));
+    m_tip_text->SetForegroundColour(wxColour(61, 55, 51));
     m_tip_text->SetFont(::Label::Head_24);
     m_tip_text->Wrap(-1);
 
@@ -1041,7 +1041,7 @@ CloudTaskManagerPage::CloudTaskManagerPage(wxWindow* parent)
     m_tip_text->SetMinSize(wxSize(FromDIP(CLOUD_TASK_ITEM_MAX_WIDTH), -1));
     m_tip_text->SetMaxSize(wxSize(FromDIP(CLOUD_TASK_ITEM_MAX_WIDTH), -1));
     m_tip_text->SetLabel(_L("No historical tasks!"));
-    m_tip_text->SetForegroundColour(wxColour(50, 58, 61));
+    m_tip_text->SetForegroundColour(wxColour(61, 55, 51));
     m_tip_text->SetFont(::Label::Head_24);
     m_tip_text->Wrap(-1);
 
@@ -1049,7 +1049,7 @@ CloudTaskManagerPage::CloudTaskManagerPage(wxWindow* parent)
     m_loading_text->SetMinSize(wxSize(FromDIP(CLOUD_TASK_ITEM_MAX_WIDTH), -1));
     m_loading_text->SetMaxSize(wxSize(FromDIP(CLOUD_TASK_ITEM_MAX_WIDTH), -1));
     m_loading_text->SetLabel(_L("Loading..."));
-    m_loading_text->SetForegroundColour(wxColour(50, 58, 61));
+    m_loading_text->SetForegroundColour(wxColour(61, 55, 51));
     m_loading_text->SetFont(::Label::Head_24);
     m_loading_text->Wrap(-1);
     m_loading_text->Show(false);

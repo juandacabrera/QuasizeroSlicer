@@ -604,7 +604,7 @@ SearchDialog::SearchDialog(OptionsSearcher *searcher, Preset::Type type, wxWindo
 #ifdef __WXGTK__
     search_line = new TextInput(m_client_panel, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
     search_line->SetBackgroundColour(wxColour(238, 238, 238));
-    search_line->SetForegroundColour(wxColour(43, 52, 54));
+    search_line->SetForegroundColour(wxColour(54, 48, 44));
     search_line->SetFont(GUI::wxGetApp().bold_font());
 #endif
 
@@ -855,7 +855,7 @@ SearchObjectDialog::SearchObjectDialog(GUI::ObjectList* object_list, wxWindow* p
 #ifdef __WXGTK__
     search_line = new TextInput(m_client_panel, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
     search_line->SetBackgroundColour(wxColour(238, 238, 238));
-    search_line->SetForegroundColour(wxColour(43, 52, 54));
+    search_line->SetForegroundColour(wxColour(54, 48, 44));
     search_line->SetFont(GUI::wxGetApp().bold_font());
 #endif
 

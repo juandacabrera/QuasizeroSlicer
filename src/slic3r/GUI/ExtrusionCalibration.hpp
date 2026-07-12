@@ -18,8 +18,8 @@
 #include "wx/hyperlink.h"
 
 #define EXTRUSION_CALIBRATION_DEF_COLOUR    wxColour(255, 255, 255)
-#define EXTRUSION_CALIBRATION_GREY900       wxColour(38, 46, 48)
-#define EXTRUSION_CALIBRATION_GREY800       wxColour(50, 58, 61)
+#define EXTRUSION_CALIBRATION_GREY900       wxColour(48, 43, 39)
+#define EXTRUSION_CALIBRATION_GREY800       wxColour(61, 55, 51)
 #define EXTRUSION_CALIBRATION_GREY700       wxColour(107, 107, 107)
 #define EXTRUSION_CALIBRATION_GREY300       wxColour(238, 238, 238)
 #define EXTRUSION_CALIBRATION_GREY200       wxColour(248, 248, 248)

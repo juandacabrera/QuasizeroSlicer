@@ -23,7 +23,7 @@ using namespace Slic3r::GUI;
 int objcolor_scale(const int val) { return val * Slic3r::GUI::wxGetApp().em_unit() / 10; }
 int OBJCOLOR_ITEM_WIDTH() { return objcolor_scale(30); }
 static const wxColour g_text_color = wxColour(107, 107, 107, 255);
-static const wxColour g_undefined_color_in_obj   = wxColour(0, 255, 0, 255);
+static const wxColour g_undefined_color_in_obj   = wxColour(255, 118, 20, 255);
 const int HEADER_BORDER  = 5;
 const int CONTENT_BORDER = 3;
 const int PANEL_WIDTH = 400;

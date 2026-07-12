@@ -2711,7 +2711,7 @@ ObjectTablePanel::ObjectTablePanel( wxWindow* parent, wxWindowID id, const wxPoi
     //m_bg_colour = wxColour(0xfa, 0xfa, 0xfa);
     m_float_validator.SetRange(0, 100);
     m_bg_colour = wxColour("#FFFFFF");
-    //m_hover_colour = wxColour(61, 70, 72);
+    //m_hover_colour = wxColour(72, 66, 62);
     SetBackgroundColour(m_bg_colour);
 
     SetSize(wxSize(-1, FromDIP(450)));

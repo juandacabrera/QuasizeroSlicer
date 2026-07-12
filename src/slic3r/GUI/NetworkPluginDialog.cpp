@@ -99,9 +99,9 @@ void NetworkPluginDownloadDialog::create_missing_plugin_ui()
     btn_sizer->Add(0, 0, 1, wxEXPAND, 0);
 
     StateColor btn_bg_green(
-        std::pair<wxColour, int>(wxColour(0, 137, 123), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(38, 166, 154), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(0, 150, 136), StateColor::Normal));
+        std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(166, 97, 48), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Normal));
 
     StateColor btn_bg_white(
         std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),
@@ -119,7 +119,7 @@ void NetworkPluginDownloadDialog::create_missing_plugin_ui()
 
     auto* btn_skip = new Button(this, _L("Skip for Now"));
     btn_skip->SetBackgroundColor(btn_bg_white);
-    btn_skip->SetBorderColor(wxColour(38, 46, 48));
+    btn_skip->SetBorderColor(wxColour(48, 43, 39));
     btn_skip->SetFont(::Label::Body_12);
     btn_skip->SetMinSize(wxSize(FromDIP(100), FromDIP(24)));
     btn_skip->Bind(wxEVT_BUTTON, &NetworkPluginDownloadDialog::on_skip, this);
@@ -159,9 +159,9 @@ void NetworkPluginDownloadDialog::create_update_available_ui(const std::string& 
     btn_sizer->Add(0, 0, 1, wxEXPAND, 0);
 
     StateColor btn_bg_green(
-        std::pair<wxColour, int>(wxColour(0, 137, 123), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(38, 166, 154), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(0, 150, 136), StateColor::Normal));
+        std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(166, 97, 48), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Normal));
 
     StateColor btn_bg_white(
         std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),
@@ -179,7 +179,7 @@ void NetworkPluginDownloadDialog::create_update_available_ui(const std::string& 
 
     auto* btn_remind = new Button(this, _L("Remind Later"));
     btn_remind->SetBackgroundColor(btn_bg_white);
-    btn_remind->SetBorderColor(wxColour(38, 46, 48));
+    btn_remind->SetBorderColor(wxColour(48, 43, 39));
     btn_remind->SetFont(::Label::Body_12);
     btn_remind->SetMinSize(wxSize(FromDIP(100), FromDIP(24)));
     btn_remind->Bind(wxEVT_BUTTON, &NetworkPluginDownloadDialog::on_remind_later, this);
@@ -187,7 +187,7 @@ void NetworkPluginDownloadDialog::create_update_available_ui(const std::string& 
 
     auto* btn_skip = new Button(this, _L("Skip Version"));
     btn_skip->SetBackgroundColor(btn_bg_white);
-    btn_skip->SetBorderColor(wxColour(38, 46, 48));
+    btn_skip->SetBorderColor(wxColour(48, 43, 39));
     btn_skip->SetFont(::Label::Body_12);
     btn_skip->SetMinSize(wxSize(FromDIP(100), FromDIP(24)));
     btn_skip->Bind(wxEVT_BUTTON, &NetworkPluginDownloadDialog::on_skip_version, this);
@@ -195,7 +195,7 @@ void NetworkPluginDownloadDialog::create_update_available_ui(const std::string& 
 
     auto* btn_dont_ask = new Button(this, _L("Don't Ask Again"));
     btn_dont_ask->SetBackgroundColor(btn_bg_white);
-    btn_dont_ask->SetBorderColor(wxColour(38, 46, 48));
+    btn_dont_ask->SetBorderColor(wxColour(48, 43, 39));
     btn_dont_ask->SetFont(::Label::Body_12);
     btn_dont_ask->SetMinSize(wxSize(FromDIP(110), FromDIP(24)));
     btn_dont_ask->Bind(wxEVT_BUTTON, &NetworkPluginDownloadDialog::on_dont_ask, this);
@@ -325,9 +325,9 @@ NetworkPluginRestartDialog::NetworkPluginRestartDialog(wxWindow* parent)
     btn_sizer->Add(0, 0, 1, wxEXPAND, 0);
 
     StateColor btn_bg_green(
-        std::pair<wxColour, int>(wxColour(0, 137, 123), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(38, 166, 154), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(0, 150, 136), StateColor::Normal));
+        std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(166, 97, 48), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Normal));
 
     StateColor btn_bg_white(
         std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),
@@ -348,7 +348,7 @@ NetworkPluginRestartDialog::NetworkPluginRestartDialog(wxWindow* parent)
 
     auto* btn_later = new Button(this, _L("Restart Later"));
     btn_later->SetBackgroundColor(btn_bg_white);
-    btn_later->SetBorderColor(wxColour(38, 46, 48));
+    btn_later->SetBorderColor(wxColour(48, 43, 39));
     btn_later->SetFont(::Label::Body_12);
     btn_later->SetMinSize(wxSize(FromDIP(100), FromDIP(24)));
     btn_later->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {

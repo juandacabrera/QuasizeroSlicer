@@ -23,8 +23,8 @@ namespace GUI {
 #define SEND_LEFT_TAKS_STATUS 180
 
 #define  DESIGN_SELECTOR_NOMORE_COLOR wxColour(248, 248, 248)
-#define  DESIGN_GRAY900_COLOR wxColour(38, 46, 48)
-#define  DESIGN_GRAY800_COLOR wxColour(50, 58, 61)
+#define  DESIGN_GRAY900_COLOR wxColour(48, 43, 39)
+#define  DESIGN_GRAY800_COLOR wxColour(61, 55, 51)
 #define  DESIGN_GRAY600_COLOR wxColour(144, 144, 144)
 #define  DESIGN_GRAY400_COLOR wxColour(166, 169, 170)
 #define  DESIGN_RESOUTION_PREFERENCES wxSize(FromDIP(540), -1)
