@@ -29,6 +29,11 @@ acceleration/jerk limits are inherited unchanged; the QZ process preset uses con
 - Bed 256×256 mm, limits from upstream BBL profile (incl. bed exclusion area).
 - Same restrictions and policy as the A1 mini.
 
+## Nozzle variants
+
+Every QZmini printer ships with 4.0 mm (primary) and 2.0 mm nozzle variants, matching the
+physical QZmini nozzles. Default processes: 3 mm layers @ 4.0 nozzle, 1.5 mm layers @ 2.0 nozzle.
+
 ## Other firmware families
 
 Klipper, RepRapFirmware and Prusa/Buddy refill adapters exist as documented, UNVERIFIED

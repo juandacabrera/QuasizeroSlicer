@@ -280,28 +280,29 @@ static void delete_buffers(unsigned int& id)
     }
 }
 
+// Quasizero: warm, harmonious earth-tone palette aligned with the light/brown brand direction
 static const std::array<Color, size_t(EGCodeExtrusionRole::COUNT)> DEFAULT_EXTRUSION_ROLES_COLORS = { {
-    { 230, 179, 179 }, // None
-    { 255, 230,  77 }, // Perimeter
-    { 255, 125,  56 }, // ExternalPerimeter
-    {  31,  31, 255 }, // OverhangPerimeter
-    { 176,  48,  41 }, // InternalInfill
-    { 150,  84, 204 }, // SolidInfill
-    { 240,  64,  64 }, // TopSolidInfill
-    { 255, 140, 105 }, // Ironing
-    {  77, 128, 186 }, // BridgeInfill
-    { 255, 255, 255 }, // GapFill
-    {   0, 135, 110 }, // Skirt
-    {   0, 255,   0 }, // SupportMaterial
-    {   0, 128,   0 }, // SupportMaterialInterface
-    { 179, 227, 171 }, // WipeTower
-    {  94, 209, 148 },  // Custom
+    { 214, 205, 196 }, // None                     warm gray
+    { 217, 180, 140 }, // Perimeter                sand
+    { 138,  98,  68 }, // ExternalPerimeter        Quasizero brown
+    { 122,  78, 116 }, // OverhangPerimeter        muted plum (kept distinct as a warning tone)
+    { 197, 141, 101 }, // InternalInfill           clay
+    { 165, 130,  95 }, // SolidInfill              umber
+    { 112,  75,  50 }, // TopSolidInfill           dark coffee
+    { 232, 201, 169 }, // Ironing                  pale sand
+    { 130, 144, 158 }, // BridgeInfill             cool slate (contrast)
+    { 240, 234, 226 }, // GapFill                  warm white
+    { 185, 147, 114 }, // Skirt                    light brown
+    { 156, 163, 122 }, // SupportMaterial          sage
+    { 121, 128,  90 }, // SupportMaterialInterface dark sage
+    { 222, 210, 188 }, // WipeTower                parchment
+    { 205, 176, 144 },  // Custom                  latte
     // ORCA
-    { 102,  92, 199 }, // BottomSurface
-    {  77, 128, 186 }, // InternalBridgeInfill
-    {   0,  59, 110 }, // Brim
-    {   0,  64,   0 }, // SupportTransition
-    { 128, 128, 128 }, // Mixed
+    { 143, 111,  86 }, // BottomSurface            walnut
+    { 150, 160, 170 }, // InternalBridgeInfill     light slate
+    { 172, 134,  98 }, // Brim                     caramel
+    { 100, 105,  75 }, // SupportTransition        olive
+    { 150, 140, 130 }, // Mixed                    taupe
 } };
 
 static const std::array<Color, size_t(EOptionType::COUNT)> DEFAULT_OPTIONS_COLORS{ {

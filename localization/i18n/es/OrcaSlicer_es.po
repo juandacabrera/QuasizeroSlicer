@@ -23950,6 +23950,10 @@ msgstr ""
 "Quasizero Slicer está basado en OrcaSlicer. OrcaSlicer está basado en "
 "PrusaSlicer y BambuStudio"
 
+#. Quasizero QZmini
+msgid "Biomaterial"
+msgstr "Biomaterial"
+
 #~ msgid ""
 #~ "It is recommended to assemble objects first,\n"
 #~ "because the objects is restriced to bed \n"

@@ -1,0 +1,120 @@
+{
+ "gcode_flavor": "marlin",
+ "printable_area": [
+  "0x0",
+  "300x0",
+  "300x300",
+  "0x300"
+ ],
+ "printable_height": "400",
+ "bed_exclude_area": [
+  "0x0"
+ ],
+ "machine_max_acceleration_extruding": [
+  "1250",
+  "1250"
+ ],
+ "machine_max_acceleration_retracting": [
+  "1250",
+  "1250"
+ ],
+ "machine_max_acceleration_travel": [
+  "1000",
+  "1000"
+ ],
+ "machine_max_acceleration_x": [
+  "1000",
+  "960"
+ ],
+ "machine_max_acceleration_y": [
+  "1000",
+  "960"
+ ],
+ "machine_max_acceleration_z": [
+  "1000",
+  "1000"
+ ],
+ "machine_max_speed_e": [
+  "120",
+  "120"
+ ],
+ "machine_max_speed_x": [
+  "200",
+  "100"
+ ],
+ "machine_max_speed_y": [
+  "200",
+  "100"
+ ],
+ "machine_max_speed_z": [
+  "12",
+  "12"
+ ],
+ "machine_max_jerk_e": [
+  "1.5",
+  "1.5"
+ ],
+ "machine_max_jerk_x": [
+  "8",
+  "8"
+ ],
+ "machine_max_jerk_y": [
+  "8",
+  "8"
+ ],
+ "machine_max_jerk_z": [
+  "0.4",
+  "0.4"
+ ],
+ "machine_max_junction_deviation": [
+  "0.032",
+  "0"
+ ],
+ "auxiliary_fan": "0",
+ "before_layer_change_gcode": ";BEFORE_LAYER_CHANGE\nG92 E0\n;[layer_z]\n\n",
+ "layer_change_gcode": ";AFTER_LAYER_CHANGE\n;[layer_z]",
+ "scan_first_layer": "0",
+ "silent_mode": "0",
+ "from": "system",
+ "type": "machine",
+ "instantiation": "true",
+ "nozzle_diameter": [
+  "2.0"
+ ],
+ "min_layer_height": [
+  "0.3"
+ ],
+ "max_layer_height": [
+  "1.6"
+ ],
+ "retraction_length": [
+  "0"
+ ],
+ "retract_length_toolchange": [
+  "0"
+ ],
+ "retraction_speed": [
+  "10"
+ ],
+ "deretraction_speed": [
+  "0"
+ ],
+ "z_hop": [
+  "0"
+ ],
+ "single_extruder_multi_material": "0",
+ "change_filament_gcode": "",
+ "default_filament_profile": [
+  "QZ Sawdust Biomaterial - Cold Extrusion"
+ ],
+ "default_print_profile": "QZmini 1.5 mm - Smooth Biomaterial",
+ "printer_settings_id": "Quasizero",
+ "nozzle_type": "undefine",
+ "setting_id": "QZM001B",
+ "name": "QZmini @ Artillery Sidewinder X2 2.0 nozzle",
+ "printer_model": "QZmini @ Artillery Sidewinder X2",
+ "printer_variant": "2.0",
+ "machine_start_gcode": "; =====================================================================\n; QZmini cold-extrusion start G-code (Quasizero Slicer) - Marlin family\n; STATUS: PROVISIONAL - offline validated only, NOT hardware validated\n; =====================================================================\nG90 ; absolute XYZ coordinates\nM83 ; relative E (QZmini plunger drive)\nM302 S0 ; allow cold extrusion at any temperature (syringe drive, no hotend use)\nM220 S100 ; reset speed factor\nM221 S100 ; reset extrusion rate factor\n; No nozzle heating, no bed heating, no thermal waits: QZmini prints cold.\nG28 ; home all axes (preserved from original machine behaviour)\n; NOTE: automatic bed leveling (G29) intentionally omitted. Probe clearance with\n; the QZmini syringe assembly is UNVERIFIED. Re-enable only after physical check.\nG1 Z10 F600 ; safe Z lift\nG1 X10 Y10 F3000 ; smooth travel to start corner\nG92 E0 ; reset logical E\n",
+ "machine_end_gcode": "; QZmini cold end G-code (Quasizero Slicer) - Marlin family - PROVISIONAL\nM400 ; finish queued moves\nG92 E0\nG91\nG1 Z5 F600 ; lift away from part\nG90\nG1 X10 Y290 F3000 ; present bed\nM106 S0 ; part-cooling fan off (electronics/controller cooling unaffected)\nM104 S0 ; ensure hotend heater is off (defensive; never heated)\nM140 S0 ; ensure bed heater is off (defensive; never heated)\nM84 ; disable steppers\n",
+ "machine_pause_gcode": "M0 ; pause, wait for user (Marlin; resume validation pending on hardware)"
+}

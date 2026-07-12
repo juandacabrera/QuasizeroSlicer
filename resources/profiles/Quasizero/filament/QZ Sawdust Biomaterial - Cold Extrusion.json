@@ -42,34 +42,34 @@
   "50"
  ],
  "cool_plate_temp": [
-  "0"
+  "1"
  ],
  "cool_plate_temp_initial_layer": [
-  "0"
+  "1"
  ],
  "eng_plate_temp": [
-  "0"
+  "1"
  ],
  "eng_plate_temp_initial_layer": [
-  "0"
+  "1"
  ],
  "hot_plate_temp": [
-  "0"
+  "1"
  ],
  "hot_plate_temp_initial_layer": [
-  "0"
+  "1"
  ],
  "textured_plate_temp": [
-  "0"
+  "1"
  ],
  "textured_plate_temp_initial_layer": [
-  "0"
+  "1"
  ],
  "supertack_plate_temp": [
-  "0"
+  "1"
  ],
  "supertack_plate_temp_initial_layer": [
-  "0"
+  "1"
  ],
  "fan_min_speed": [
   "0"
@@ -108,8 +108,11 @@
   "; QZ biomaterial end\n"
  ],
  "compatible_printers": [
-  "QZmini @ Artillery Sidewinder X2 3.0 nozzle",
-  "QZmini @ Bambu Lab A1 mini 3.0 nozzle",
-  "QZmini @ Bambu Lab P1S 3.0 nozzle"
+  "QZmini @ Artillery Sidewinder X2 4.0 nozzle",
+  "QZmini @ Artillery Sidewinder X2 2.0 nozzle",
+  "QZmini @ Bambu Lab A1 mini 4.0 nozzle",
+  "QZmini @ Bambu Lab A1 mini 2.0 nozzle",
+  "QZmini @ Bambu Lab P1S 4.0 nozzle",
+  "QZmini @ Bambu Lab P1S 2.0 nozzle"
  ]
 }

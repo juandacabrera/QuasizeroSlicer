@@ -20355,3 +20355,7 @@ msgid ""
 "Quasizero Slicer is based on OrcaSlicer. OrcaSlicer is based on PrusaSlicer "
 "and BambuStudio"
 msgstr ""
+
+#. Quasizero QZmini
+msgid "Biomaterial"
+msgstr ""

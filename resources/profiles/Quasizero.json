@@ -21,6 +21,10 @@
   {
    "name": "QZmini 3 mm - Smooth Biomaterial",
    "sub_path": "process/QZmini 3 mm - Smooth Biomaterial.json"
+  },
+  {
+   "name": "QZmini 1.5 mm - Smooth Biomaterial",
+   "sub_path": "process/QZmini 1.5 mm - Smooth Biomaterial.json"
   }
  ],
  "filament_list": [
@@ -31,16 +35,28 @@
  ],
  "machine_list": [
   {
-   "name": "QZmini @ Artillery Sidewinder X2 3.0 nozzle",
-   "sub_path": "machine/QZmini @ Artillery Sidewinder X2 3.0 nozzle.json"
+   "name": "QZmini @ Artillery Sidewinder X2 4.0 nozzle",
+   "sub_path": "machine/QZmini @ Artillery Sidewinder X2 4.0 nozzle.json"
   },
   {
-   "name": "QZmini @ Bambu Lab A1 mini 3.0 nozzle",
-   "sub_path": "machine/QZmini @ Bambu Lab A1 mini 3.0 nozzle.json"
+   "name": "QZmini @ Artillery Sidewinder X2 2.0 nozzle",
+   "sub_path": "machine/QZmini @ Artillery Sidewinder X2 2.0 nozzle.json"
   },
   {
-   "name": "QZmini @ Bambu Lab P1S 3.0 nozzle",
-   "sub_path": "machine/QZmini @ Bambu Lab P1S 3.0 nozzle.json"
+   "name": "QZmini @ Bambu Lab A1 mini 4.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab A1 mini 4.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab A1 mini 2.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab A1 mini 2.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab P1S 4.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab P1S 4.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab P1S 2.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab P1S 2.0 nozzle.json"
   }
  ]
 }

@@ -34,7 +34,7 @@ Development branch: `quasizero-slicer-mvp`.
 ## Quick start
 
 1. Build or download the Windows x64 build (`BUILD_WINDOWS.md`).
-2. Select printer `QZmini @ Artillery Sidewinder X2 3.0 nozzle`; the QZ biomaterial and process
+2. Select printer `QZmini @ Artillery Sidewinder X2 4.0 nozzle`; the QZ biomaterial and process
    presets load automatically.
 3. Calibrate: *Calibration → QZmini Calibration* (E100 test), apply, save the printer preset.
 4. Import an STL/3MF, slice, read the ml summary in Preview.

@@ -11,7 +11,7 @@ profile-validator compatibility.
 | Parameter | Value | Note |
 |---|---|---|
 | Nozzle temperature (all) | 0 °C | cold extrusion; no thermal waits |
-| Bed temperature (all plates) | 0 °C | |
+| Bed temperature (all plates) | 1 °C | 0 °C marks a plate as incompatible in OrcaSlicer; 1 °C keeps cold-extrusion behaviour (ambient always exceeds the target, no heating occurs) |
 | Part-cooling fan | 0 % | electronics/controller cooling untouched |
 | Filament diameter | 18.43 mm | **provisional** equivalent virtual diameter from the line-test seed; recalibrate (QZMINI_CALIBRATION.md) |
 | Density | 1.20 g/cm³ | provisional; used only for weight display |
@@ -25,7 +25,7 @@ profile-validator compatibility.
 
 | Parameter | Value | Note |
 |---|---|---|
-| Nozzle diameter (machine) | 3.0 mm | see note below |
+| Nozzle diameter (machine) | 4.0 mm (primary) / 2.0 mm variants | matches the physical QZmini nozzles reported by Quasizero |
 | Layer height | 3.0 mm | initial layer 3.0 mm |
 | Line width (all) | 4.0 mm | |
 | Speeds | 20 mm/s (first layer 15) | travel 60 mm/s |
@@ -36,10 +36,11 @@ profile-validator compatibility.
 | Prime tower / supports / brim | off | skirt 1 loop as prime line |
 | Retraction | 0 (machine level) | |
 
-**Nozzle diameter discrepancy:** the project context lists the QZmini physical nozzle as 4.0 mm
-while the specified process preset targets 3.0 mm. Both values are kept editable; the machine
-variant ships as “3.0 nozzle” per the specification, and this is flagged as requiring
-verification. Do not treat either value as validated.
+**Nozzle variants:** the physical QZmini nozzles are 4.0 mm and 2.0 mm, so each printer ships
+with a “4.0 nozzle” (primary) and a “2.0 nozzle” variant. The 3 mm process pairs with the 4.0
+nozzle (OrcaSlicer requires layer height ≤ nozzle diameter and line width > layer height); the
+“QZmini 1.5 mm - Smooth Biomaterial” process pairs with the 2.0 nozzle. Values remain editable
+and provisional until printed calibration.
 
 ## Printer keys (namespaced, printer scope)
 

@@ -2,7 +2,7 @@
  "type": "machine_model",
  "name": "QZmini @ Bambu Lab P1S",
  "model_id": "QZmini-BBL-P1S",
- "nozzle_diameter": "3.0",
+ "nozzle_diameter": "4.0;2.0",
  "machine_tech": "FFF",
  "family": "Quasizero",
  "bed_model": "qz_bbl_p1s_bed.stl",

@@ -306,7 +306,7 @@ void Tab::create_preset_tab()
     //search input
     m_search_item = new StaticBox(m_top_panel);
     StateColor box_colour(std::pair<wxColour, int>(*wxWHITE, StateColor::Normal));
-    StateColor box_border_colour(std::pair<wxColour, int>(wxColour("#009688"), StateColor::Normal)); // ORCA match border color with other input/combo boxes
+    StateColor box_border_colour(std::pair<wxColour, int>(wxColour("#8A6244"), StateColor::Normal)); // ORCA match border color with other input/combo boxes
 
     m_search_item->SetBackgroundColor(box_colour);
     m_search_item->SetBorderColor(box_border_colour);
@@ -4580,7 +4580,7 @@ void TabPrinter::build_fff()
 
     // ===================== Quasizero QZmini =====================
     page = add_options_page(L("QZmini"), "printer");
-        optgroup = page->new_optgroup(L("QZmini extrusion system"), L"param_machine_settings");
+        optgroup = page->new_optgroup(L("QZmini extrusion system"), L"param_settings");
         optgroup->append_single_option_line("qzmini_enable");
         optgroup->append_single_option_line("qzmini_barrel_inner_diameter");
         optgroup->append_single_option_line("qzmini_nominal_syringe_capacity_ml");
@@ -4588,7 +4588,7 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line("qzmini_usable_plunger_stroke_mm");
         optgroup->append_single_option_line("qzmini_plunger_mm_per_e_unit");
 
-        optgroup = page->new_optgroup(L("QZmini Refill Assist"), L"param_machine_settings");
+        optgroup = page->new_optgroup(L("QZmini Refill Assist"), L"param_retraction_material_change");
         optgroup->append_single_option_line("qzmini_refill_enable");
         optgroup->append_single_option_line("qzmini_refill_threshold_ml");
         optgroup->append_single_option_line("qzmini_park_x");
