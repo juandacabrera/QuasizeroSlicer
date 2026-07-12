@@ -153,5 +153,7 @@
  "qzmini_usable_plunger_stroke_mm": "140",
  "qzmini_plunger_mm_per_e_unit": "0.277",
  "qzmini_refill_threshold_ml": "120",
- "qzmini_refill_show_in_preview": "1"
+ "qzmini_refill_show_in_preview": "1",
+ "qzmini_prime_after_refill_enable": "1",
+ "qzmini_prime_after_refill_ml": "1"
 }

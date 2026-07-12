@@ -636,6 +636,14 @@ VendorType PresetBundle::get_current_vendor_type()
     {
         if(vendor_name.compare("BBL") == 0)
             t = VendorType::Marlin_BBL;
+
+        // Quasizero: QZmini retrofits of Bambu Lab printers talk to the machine
+        // through the same officially supported network plugin as the stock BBL
+        // profiles (LAN access code / user-enabled modes). EXPERIMENTAL: device
+        // model matching and cold-extrusion behaviour are not hardware validated.
+        if (vendor_name.compare("Quasizero") == 0 &&
+            printer_model->value.find("Bambu Lab") != std::string::npos)
+            t = VendorType::Marlin_BBL;
         
         if(vendor_name.compare("Qidi") == 0)
             t = VendorType::Klipper_Qidi;
@@ -2654,7 +2662,7 @@ void PresetBundle::update_selections(AppConfig &config)
     if (!f_colors.empty()) {
         boost::algorithm::split(filament_colors, f_colors, boost::algorithm::is_any_of(","));
     }
-    filament_colors.resize(filament_presets.size(), "#26A69A");
+    filament_colors.resize(filament_presets.size(), "#C9A47E");
     project_config.option<ConfigOptionStrings>("filament_colour")->values = filament_colors;
 
     std::vector<std::string> multi_filament_colors;
@@ -2798,7 +2806,7 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
     if (!f_colors.empty()) {
         boost::algorithm::split(filament_colors, f_colors, boost::algorithm::is_any_of(","));
     }
-    filament_colors.resize(filament_presets.size(), "#26A69A");
+    filament_colors.resize(filament_presets.size(), "#C9A47E");
     project_config.option<ConfigOptionStrings>("filament_colour")->values = filament_colors;
 
     std::vector<std::string> multi_filament_colors;

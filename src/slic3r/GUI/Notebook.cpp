@@ -23,9 +23,9 @@ ButtonsListCtrl::ButtonsListCtrl(wxWindow *parent, wxBoxSizer* side_tools) :
 
     wxColour default_btn_bg;
 #ifdef __APPLE__
-    default_btn_bg = wxColour("#F6F2EB"); // Quasizero light
+    default_btn_bg = wxColour("#F1EAE0"); // Quasizero arena
 #else
-    default_btn_bg = wxColour("#F6F2EB"); // Quasizero light
+    default_btn_bg = wxColour("#F1EAE0"); // Quasizero arena
 #endif
 
    
@@ -127,7 +127,7 @@ void ButtonsListCtrl::SetSelection(int sel)
     if (m_selection >= 0) {
         StateColor bg_color = StateColor(
         std::pair{wxColour(231, 223, 210), (int) StateColor::Hovered},
-        std::pair{wxColour(70, 64, 60), (int) StateColor::Normal});
+        std::pair{wxColour(241, 234, 224), (int) StateColor::Normal});
         m_pageButtons[m_selection]->SetBackgroundColor(bg_color);
         StateColor text_color = StateColor(
         std::pair{wxColour(60, 50, 42), (int) StateColor::Normal}
@@ -138,8 +138,8 @@ void ButtonsListCtrl::SetSelection(int sel)
     m_selection = sel;
 
     StateColor bg_color = StateColor(
-        std::pair{wxColour(150, 70, 12), (int) StateColor::Hovered},
-        std::pair{wxColour(150, 70, 12), (int) StateColor::Normal});
+        std::pair{wxColour(138, 98, 68), (int) StateColor::Hovered},
+        std::pair{wxColour(138, 98, 68), (int) StateColor::Normal});
     m_pageButtons[m_selection]->SetBackgroundColor(bg_color);
 
     StateColor text_color = StateColor(
@@ -162,7 +162,7 @@ bool ButtonsListCtrl::InsertPage(size_t n, const wxString &text, bool bSelect /*
 
     StateColor bg_color = StateColor(
         std::pair{wxColour(231, 223, 210), (int) StateColor::Hovered},
-        std::pair{wxColour(70, 64, 60), (int) StateColor::Normal});
+        std::pair{wxColour(241, 234, 224), (int) StateColor::Normal});
 
     btn->SetBackgroundColor(bg_color);
     StateColor text_color = StateColor(
