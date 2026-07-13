@@ -1,7 +1,7 @@
 {
  "type": "machine_model",
  "name": "QZmini @ Bambu Lab P1S",
- "model_id": "QZmini-BBL-P1S",
+ "model_id": "C12",
  "nozzle_diameter": "4.0;2.0",
  "machine_tech": "FFF",
  "family": "Quasizero",
