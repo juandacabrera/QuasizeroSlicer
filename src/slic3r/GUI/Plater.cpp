@@ -917,7 +917,7 @@ public:
         msg->SetForegroundColour("#302B27");
         msg->Wrap(FromDIP(280));
         auto box = new StaticBox(this, wxID_ANY);
-        box->SetBackgroundColor(0xF8F8F8);
+        box->SetBackgroundColor(0xF7F3EC);
         box->SetBorderWidth(0);
         auto img4 = new ScalableButton(box, wxID_ANY, "ams_4_tray", {}, wxDefaultSize, wxDefaultPosition, wxBU_EXACTFIT | wxNO_BORDER, false, 44);
         //img4->SetBackgroundColour(*wxWHITE);
@@ -925,11 +925,11 @@ public:
         //img1->SetBackgroundColour(*wxWHITE);
         auto txt4 = new wxStaticText(box, wxID_ANY, _L("AMS(4 slots)"));
         txt4->SetFont(Label::Body_14);
-        txt4->SetBackgroundColour(0xF8F8F8);
+        txt4->SetBackgroundColour(0xF7F3EC);
         txt4->SetForegroundColour("#302B27");
         auto txt1 = new wxStaticText(box, wxID_ANY, _L("AMS(1 slot)"));
         txt1->SetFont(Label::Body_14);
-        txt1->SetBackgroundColour(0xF8F8F8);
+        txt1->SetBackgroundColour(0xF7F3EC);
         txt1->SetForegroundColour("#302B27");
         int ams4 = 0, ams1 = 0;
         int oth4 = 0, oth1 = 0;
@@ -1643,7 +1643,7 @@ Sidebar::Sidebar(Plater *parent)
     auto* scrolled_sizer = m_scrolled_sizer = new wxBoxSizer(wxVERTICAL);
     p->scrolled->SetSizer(scrolled_sizer);
 
-    wxColour title_bg = wxColour(248, 248, 248);
+    wxColour title_bg = wxColour(247, 243, 236);
     wxColour inactive_text = wxColour(86, 86, 86);
     wxColour active_text = wxColour(0, 0, 0);
     wxColour static_line_col = wxColour(166, 169, 170);
@@ -10821,7 +10821,7 @@ void Plater::priv::set_project_name(const wxString& project_name)
     if (!m_project_name.IsEmpty())
         wxGetApp().mainframe->update_title_colour_after_set_title();
 #else
-    wxGetApp().mainframe->SetTitle(m_project_name + " - OrcaSlicer");
+    wxGetApp().mainframe->SetTitle(m_project_name + " - Quasizero Slicer");
     wxGetApp().mainframe->topbar()->SetTitle(m_project_name);
 #endif
 }
@@ -10841,7 +10841,7 @@ void Plater::priv::update_title_dirty_status()
     wxGetApp().mainframe->SetTitle(title);
     wxGetApp().mainframe->update_title_colour_after_set_title();
 #else
-    wxGetApp().mainframe->SetTitle(title + " - OrcaSlicer");
+    wxGetApp().mainframe->SetTitle(title + " - Quasizero Slicer");
     wxGetApp().mainframe->topbar()->SetTitle(title);
 #endif    
 }
