@@ -1407,7 +1407,7 @@ void MainFrame::show_device(bool bBBLPrinter) {
         // Calibration is always the last page, so don't use InsertPage here. Otherwise, if multi_machine page is not enabled,
         // the calibration tab won't be properly added as well, due to the TabPosition::tpCalibration no longer matches the real tab position.
         m_tabpanel->AddPage(m_calibration, _L("Calibration"), std::string("tab_calibration_active"),
-                               std::string("tab_calibration_active"), false);
+                               std::string("tab_calibration_inactive"), false);
 
 #ifdef _MSW_DARK_MODE
         wxGetApp().UpdateDarkUIWin(this);

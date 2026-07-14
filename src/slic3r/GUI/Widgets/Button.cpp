@@ -294,8 +294,14 @@ void Button::render(wxDC& dc)
     wxSize textSize = this->textSize.GetSize();
 
     ScalableBitmap icon;
-    if (m_selected || ((states & (int)StateColor::State::Hovered) != 0))
+    // Quasizero: keep the icon colour stable on hover. Only the selected tab uses
+    // the active (light) icon; a hovered-but-unselected button keeps its inactive
+    // (dark) icon so the icon matches the still-dark label. Buttons without an
+    // explicit inactive icon fall back to the active one on hover (unchanged).
+    if (m_selected)
         icon = active_icon;
+    else if ((states & (int)StateColor::State::Hovered) != 0)
+        icon = inactive_icon.bmp().IsOk() ? inactive_icon : active_icon;
     else
         icon = inactive_icon;
     wxSize padding = this->paddingSize;
