@@ -24,7 +24,7 @@ static const wxColour QZ_BROWN_HOVER(154, 109, 74);
 static const wxColour QZ_TEXT(60, 50, 42);
 
 QzSyringePanel::QzSyringePanel(wxWindow *parent)
-    : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE)
+    : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE | wxFULL_REPAINT_ON_RESIZE)
 {
     SetBackgroundColour(*wxWHITE);
     m_outline = ScalableBitmap(this, "qz_syringe", 190);
@@ -33,9 +33,14 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
 
     auto *root = new wxBoxSizer(wxHORIZONTAL);
 
-    m_draw_area = new wxWindow(this, wxID_ANY, wxDefaultPosition, wxSize(FromDIP(64), FromDIP(180)));
+    m_draw_area = new wxWindow(this, wxID_ANY, wxDefaultPosition, wxSize(FromDIP(64), FromDIP(180)),
+                               wxFULL_REPAINT_ON_RESIZE);
     m_draw_area->SetBackgroundStyle(wxBG_STYLE_PAINT);
     m_draw_area->SetBackgroundColour(*wxWHITE);
+    m_draw_area->SetMinSize(wxSize(FromDIP(56), FromDIP(160)));
+    m_draw_area->SetMaxSize(wxSize(FromDIP(80), FromDIP(220)));
+    m_draw_area->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent &) {}); // avoid flicker; paint clears
+    m_draw_area->Bind(wxEVT_SIZE, [this](wxSizeEvent &e) { m_draw_area->Refresh(); e.Skip(); });
     m_draw_area->Bind(wxEVT_PAINT, [this](wxPaintEvent &) {
         wxAutoBufferedPaintDC dc(m_draw_area);
         dc.SetBackground(*wxWHITE_BRUSH);
@@ -83,8 +88,10 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
     down->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { start_jog(+1); });
     m_btn_play->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { stop_jog(); });
 
-    root->Add(col, 1, wxALL, FromDIP(8));
+    root->Add(col, 0, wxALL, FromDIP(8));
+    root->AddStretchSpacer(1);
     SetSizer(root);
+    SetMinSize(wxSize(FromDIP(260), FromDIP(200)));
 }
 
 void QzSyringePanel::paint_syringe(wxDC &dc, const wxSize &sz)

@@ -50,7 +50,7 @@ CenteredTitle::CenteredTitle(wxWindow* parent)
         dc.SetBackground(wxBrush(wxColour(236, 234, 230)));
         dc.Clear();
 
-        dc.SetTextForeground(*wxWHITE);
+        dc.SetTextForeground(wxColour(60, 50, 42)); // Quasizero dark title
 
         wxFontMetrics fm = dc.GetFontMetrics();
         int textHeight = fm.ascent + fm.descent;
@@ -171,14 +171,13 @@ void BBLTopbarArt::DrawButton(wxDC& dc, wxWindow* wnd, const wxAuiToolBarItem& i
         }
         else if ((item.GetState() & wxAUI_BUTTON_STATE_HOVER) || item.IsSticky())
         {
-            dc.SetPen(wxPen(StateColor::darkModeColorFor("#8A6244"))); // ORCA
-            dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#8A6244"))); // ORCA
-
-            // draw an even lighter background for checked item hovers (since
-            // the hover background is the same color as the check background)
-            if (item.GetState() & wxAUI_BUTTON_STATE_CHECKED)
-                dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#8A6244"))); // ORCA
-
+            // Quasizero: slight darkening on hover (light arena tint), dark text kept.
+            dc.SetPen(wxPen(wxColour(231, 223, 210)));
+            dc.SetBrush(wxBrush(wxColour(231, 223, 210)));
+            if (item.GetState() & wxAUI_BUTTON_STATE_CHECKED) {
+                dc.SetPen(wxPen(StateColor::darkModeColorFor("#8A6244")));
+                dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#8A6244")));
+            }
             dc.DrawRectangle(rect);
         }
         else if (item.GetState() & wxAUI_BUTTON_STATE_CHECKED)
@@ -194,15 +193,14 @@ void BBLTopbarArt::DrawButton(wxDC& dc, wxWindow* wnd, const wxAuiToolBarItem& i
     if (bmp.IsOk())
         dc.DrawBitmap(bmp, bmpX, bmpY, true);
 
-    // set the item's text color based on if it is disabled
-#ifdef __WINDOWS__
-    dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT));
-#else
-    dc.SetTextForeground(*wxWHITE);
-#endif
+    // Quasizero: dark text on the light bar; white only when a filled (pressed/
+    // checked) background is drawn behind the item.
+    const bool qz_selected = (item.GetState() & wxAUI_BUTTON_STATE_PRESSED) ||
+                             (item.GetState() & wxAUI_BUTTON_STATE_CHECKED);
+    dc.SetTextForeground(qz_selected ? *wxWHITE : wxColour(60, 50, 42));
     if (item.GetState() & wxAUI_BUTTON_STATE_DISABLED)
     {
-        dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+        dc.SetTextForeground(wxColour(170, 162, 152));
     }
 
     if ((m_flags & wxAUI_TB_TEXT) && !item.GetLabel().empty())

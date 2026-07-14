@@ -32,9 +32,23 @@ jobs:
             echo "standalone tests not present yet"; exit 1
           fi
 
+  # Fast-fail gate: compile the whole app on Linux (GCC, faster toolchain, and
+  # the Linux dependency tree is cached). Catches the same C++ errors as the
+  # Windows build (undeclared members, wrong types, missing includes) in a
+  # fraction of the time, so the slow Windows build only runs once the code
+  # actually compiles.
+  linux_compile_gate:
+    name: Linux compile gate (fast fail)
+    needs: qz_core_tests
+    uses: ./.github/workflows/build_check_cache.yml
+    with:
+      os: ubuntu-24.04
+      arch: ""
+    secrets: inherit
+
   build_windows_x64:
     name: Build Windows x64 (portable + installer)
-    needs: qz_core_tests
+    needs: linux_compile_gate
     uses: ./.github/workflows/build_check_cache.yml
     with:
       os: windows-latest
