@@ -8,6 +8,9 @@
 
 #include "BitmapCache.hpp"
 #include "GUI_App.hpp"
+#include "Plater.hpp"
+#include "PartPlate.hpp"
+#include "libslic3r/Print.hpp"
 #include "MainFrame.hpp"
 
 #include "MsgDialog.hpp"
@@ -1613,6 +1616,7 @@ wxBoxSizer *StatusBasePanel::create_machine_control_page(wxWindow *parent)
     auto temp_axis_ctrl_sizer = create_temp_axis_group(parent);
     auto m_ams_ctrl_sizer = create_ams_group(parent);
     auto m_filament_load_sizer = create_filament_group(parent);
+    auto m_qz_syringe_sizer = create_qz_syringe_group(parent);
 
     bSizer_control->Add(0, 0, 0, wxTOP, FromDIP(8));
     bSizer_control->Add(temp_axis_ctrl_sizer,   0, wxALIGN_CENTER|wxLEFT|wxRIGHT, FromDIP(8));
@@ -1620,6 +1624,8 @@ wxBoxSizer *StatusBasePanel::create_machine_control_page(wxWindow *parent)
     bSizer_control->Add(m_ams_ctrl_sizer,       0, wxALIGN_CENTER|wxLEFT|wxRIGHT, FromDIP(8));
     bSizer_control->Add(0, 0, 0, wxTOP, FromDIP(6));
     bSizer_control->Add(m_filament_load_sizer,  0, wxALIGN_CENTER|wxLEFT|wxRIGHT, FromDIP(8));
+    bSizer_control->Add(0, 0, 0, wxTOP, FromDIP(6));
+    bSizer_control->Add(m_qz_syringe_sizer,     0, wxALIGN_CENTER|wxLEFT|wxRIGHT, FromDIP(8));
     bSizer_control->Add(0, 0, 0, wxTOP, FromDIP(4));
 
     bSizer_right->Add(bSizer_control, 1, wxEXPAND | wxALL, 0);
@@ -2731,6 +2737,31 @@ bool StatusPanel::is_task_changed(MachineObject* obj)
     return false;
 }
 
+wxBoxSizer* StatusBasePanel::create_qz_syringe_group(wxWindow* parent)
+{
+    // Quasizero: QZmini biomaterial syringe monitor + manual cold-extrude.
+    // Shown only when the active printer preset is a QZmini printer.
+    auto sizer = new wxBoxSizer(wxVERTICAL);
+    auto box = new StaticBox(parent);
+    box->SetMinSize(wxSize(FromDIP(586), -1));
+    box->SetBackgroundColor(StateColor(std::pair{wxColour(0xF7F3EC), (int)StateColor::Normal}));
+    box->SetBorderColor(StateColor(std::pair{wxColour(0xE7DFD2), (int)StateColor::Normal}));
+    box->SetCornerRadius(5);
+    box->SetBackgroundColour(wxColour(0xF7, 0xF3, 0xEC));
+
+    m_qz_syringe = new QzSyringePanel(box);
+    m_qz_syringe->on_manual_extrude = [this](double delta_e, int feedrate) {
+        if (m_obj) m_obj->command_axis_control("E", 1.0, delta_e, feedrate); // M83 + G0 E (cold)
+    };
+
+    auto inner = new wxBoxSizer(wxVERTICAL);
+    inner->Add(m_qz_syringe, 1, wxEXPAND | wxALL, FromDIP(6));
+    box->SetSizer(inner);
+    sizer->Add(box, 0, wxEXPAND, 0);
+    box->Hide(); // revealed in update() for QZmini printers
+    return sizer;
+}
+
 void StatusPanel::update(MachineObject *obj)
 {
     if (!obj || !obj->is_info_ready())
@@ -2742,6 +2773,51 @@ void StatusPanel::update(MachineObject *obj)
     //m_project_task_panel->Freeze();
     update_subtask(obj);
     //m_project_task_panel->Thaw();
+
+    // ===================== Quasizero QZmini syringe monitor =====================
+    if (m_qz_syringe) {
+        auto &pcfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
+        const ConfigOptionBool *qz_en = pcfg.option<ConfigOptionBool>("qzmini_enable");
+        StaticBox *qz_box = dynamic_cast<StaticBox*>(m_qz_syringe->GetParent());
+        const bool qz_on = (qz_en != nullptr && qz_en->value);
+        if (qz_box) qz_box->Show(qz_on);
+        if (qz_on) {
+            auto getf = [&pcfg](const char *k, double d){ auto *o = pcfg.option<ConfigOptionFloat>(k); return o ? o->value : d; };
+            const double nominal_ml   = getf("qzmini_nominal_syringe_capacity_ml", 150.0);
+            const double threshold_ml = getf("qzmini_refill_threshold_ml", 120.0);
+            m_qz_syringe->set_nominal_capacity_ml(nominal_ml);
+
+            // Material colour from the first project filament colour.
+            wxColour mat(0xC9, 0xA4, 0x7E);
+            auto *fcol = wxGetApp().preset_bundle->project_config.option<ConfigOptionStrings>("filament_colour");
+            if (fcol && !fcol->values.empty() && !fcol->values.front().empty())
+                mat = wxColour(wxString::FromUTF8(fcol->values.front()));
+            m_qz_syringe->set_material_colour(mat);
+
+            // Remaining fraction. Approximation (documented): OrcaSlicer does not
+            // receive live QZmini plunger depth over LAN, so the level is derived
+            // from print progress against the sliced material volume. The syringe
+            // drains from nominal toward the refill threshold, then a refill
+            // resume refills it back to nominal.
+            double frac = 1.0;
+            double total_mm3 = 0.0;
+            try {
+                const PrintStatistics &ps = wxGetApp().plater()->get_partplate_list().get_current_fff_print().print_statistics();
+                for (auto &kv : ps.total_volumes_per_extruder) total_mm3 += kv.second;
+            } catch (...) {}
+            const double total_ml = total_mm3 / 1000.0;
+            const int progress = (obj->subtask_) ? obj->subtask_->task_progress : 0;
+            if (total_ml > 0.0 && threshold_ml > 0.0) {
+                const double consumed = total_ml * (double)progress / 100.0;
+                const double cycle = consumed - std::floor(consumed / threshold_ml) * threshold_ml;
+                frac = (nominal_ml - cycle) / nominal_ml;
+            } else {
+                frac = 1.0 - (double)progress / 100.0; // linear fallback
+            }
+            m_qz_syringe->set_remaining_fraction(frac);
+        }
+    }
+    // =================== end Quasizero QZmini syringe monitor ===================
 
 #if !BBL_RELEASE_TO_PUBLIC
     auto delay1 = std::chrono::duration_cast<std::chrono::milliseconds>(obj->last_utc_time - std::chrono::system_clock::now()).count();
