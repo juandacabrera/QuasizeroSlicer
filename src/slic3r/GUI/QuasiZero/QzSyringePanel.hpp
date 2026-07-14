@@ -9,10 +9,9 @@
 #include "slic3r/GUI/wxExtensions.hpp"
 
 class wxStaticText;
+class Button; // global Widgets/Button.hpp
 
 namespace Slic3r { namespace GUI {
-
-class Button;
 
 class QzSyringePanel : public wxPanel
 {
@@ -44,7 +43,7 @@ private:
     wxWindow    *m_draw_area  = nullptr;
     wxStaticText *m_pct_label = nullptr;
     wxStaticText *m_ml_label  = nullptr;
-    Button      *m_btn_play   = nullptr;
+    ::Button    *m_btn_play   = nullptr;
 
     void start_jog(int dir);
     void stop_jog();

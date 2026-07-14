@@ -65,7 +65,7 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
     col->Add(mk_text(_L("Manual plunger (cold)"), ::Label::Body_12, wxColour(120, 108, 96)), 0, wxBOTTOM, FromDIP(4));
 
     auto mk_btn = [this](const wxString &label) {
-        auto *b = new Button(this, label);
+        auto *b = new ::Button(this, label);
         b->SetMinSize(wxSize(FromDIP(40), FromDIP(30)));
         b->SetCornerRadius(4);
         StateColor bg(std::pair{QZ_BROWN_HOVER, (int)StateColor::Hovered},
