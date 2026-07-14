@@ -6,8 +6,6 @@
 #include "slic3r/GUI/Widgets/Label.hpp"
 
 #include <wx/dcbuffer.h>
-#include <wx/dcgraph.h>
-#include <wx/graphics.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <algorithm>
@@ -38,32 +36,39 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
         wxAutoBufferedPaintDC dc(draw_area);
         dc.SetBackground(*wxWHITE_BRUSH);
         dc.Clear();
-        std::unique_ptr<wxGraphicsContext> gc(wxGraphicsContext::Create(dc));
-        if (!gc) return;
         wxSize sz = draw_area->GetClientSize();
-        double scale = std::min(sz.x / VB_W, sz.y / VB_H);
-        double ox = (sz.x - VB_W * scale) / 2.0;
-        double oy = (sz.y - VB_H * scale) / 2.0;
-        auto X = [&](double x){ return ox + x * scale; };
-        auto Y = [&](double y){ return oy + y * scale; };
+        if (sz.x <= 0 || sz.y <= 0) return;
+        const double scale = std::min(sz.x / VB_W, sz.y / VB_H);
+        const double ox = (sz.x - VB_W * scale) / 2.0;
+        const double oy = (sz.y - VB_H * scale) / 2.0;
 
         // Material fill: drains top-down. Filled band from level to bottom.
-        double level_y = FILL_Y1 - std::clamp(m_fraction, 0.0, 1.0) * (FILL_Y1 - FILL_Y0);
-        double x = X(FILL_X0), w = (FILL_X1 - FILL_X0) * scale;
-        double ytop = Y(level_y), h = Y(FILL_Y1) - ytop;
-        if (h > 0) {
-            gc->SetBrush(wxBrush(m_material_colour));
-            gc->SetPen(*wxTRANSPARENT_PEN);
-            double r = std::min(w, h) * 0.18;
-            gc->DrawRoundedRectangle(x, ytop, w, h, r);
+        const double frac = (m_fraction < 0.0) ? 0.0 : (m_fraction > 1.0 ? 1.0 : m_fraction);
+        const double level_y = FILL_Y1 - frac * (FILL_Y1 - FILL_Y0);
+        const int x    = (int)std::lround(ox + FILL_X0 * scale);
+        const int w    = (int)std::lround((FILL_X1 - FILL_X0) * scale);
+        const int ytop = (int)std::lround(oy + level_y * scale);
+        const int h    = (int)std::lround(oy + FILL_Y1 * scale) - ytop;
+        if (h > 0 && w > 0) {
+            dc.SetBrush(wxBrush(m_material_colour));
+            dc.SetPen(*wxTRANSPARENT_PEN);
+            const double r = std::min(w, h) * 0.18;
+            dc.DrawRoundedRectangle(x, ytop, w, h, r);
         }
-        // Outline SVG on top (transparent interior lets the fill show through).
+        // Outline on top (transparent interior lets the fill show through).
         const wxBitmap &bmp = m_outline.bmp();
         if (bmp.IsOk()) {
-            double bs = std::min(sz.x / (double)bmp.GetWidth(), sz.y / (double)bmp.GetHeight());
-            double bx = (sz.x - bmp.GetWidth() * bs) / 2.0;
-            double by = (sz.y - bmp.GetHeight() * bs) / 2.0;
-            gc->DrawBitmap(bmp, bx, by, bmp.GetWidth() * bs, bmp.GetHeight() * bs);
+            const double bs = std::min(sz.x / (double)bmp.GetWidth(), sz.y / (double)bmp.GetHeight());
+            const int bw = std::max(1, (int)std::lround(bmp.GetWidth() * bs));
+            const int bh = std::max(1, (int)std::lround(bmp.GetHeight() * bs));
+            wxImage img = bmp.ConvertToImage();
+            if (img.IsOk()) {
+                img = img.Scale(bw, bh, wxIMAGE_QUALITY_HIGH);
+                wxBitmap scaled(img);
+                const int bx = (int)std::lround((sz.x - bw) / 2.0);
+                const int by = (int)std::lround((sz.y - bh) / 2.0);
+                dc.DrawBitmap(scaled, bx, by, true);
+            }
         }
     });
     root->Add(draw_area, 0, wxALL, FromDIP(4));

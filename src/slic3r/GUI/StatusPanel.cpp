@@ -2750,9 +2750,8 @@ wxBoxSizer* StatusBasePanel::create_qz_syringe_group(wxWindow* parent)
     box->SetBackgroundColour(wxColour(0xF7, 0xF3, 0xEC));
 
     m_qz_syringe = new QzSyringePanel(box);
-    m_qz_syringe->on_manual_extrude = [this](double delta_e, int feedrate) {
-        if (m_obj) m_obj->command_axis_control("E", 1.0, delta_e, feedrate); // M83 + G0 E (cold)
-    };
+    // Manual cold-extrude is wired in StatusPanel::update() (m_obj lives on the
+    // derived StatusPanel, not on this StatusBasePanel method).
 
     auto inner = new wxBoxSizer(wxVERTICAL);
     inner->Add(m_qz_syringe, 1, wxEXPAND | wxALL, FromDIP(6));
@@ -2782,6 +2781,11 @@ void StatusPanel::update(MachineObject *obj)
         const bool qz_on = (qz_en != nullptr && qz_en->value);
         if (qz_box) qz_box->Show(qz_on);
         if (qz_on) {
+            if (!m_qz_syringe->on_manual_extrude) {
+                m_qz_syringe->on_manual_extrude = [this](double delta_e, int feedrate) {
+                    if (m_obj) m_obj->command_axis_control("E", 1.0, delta_e, feedrate); // M83 + G0 E (cold)
+                };
+            }
             auto getf = [&pcfg](const char *k, double d){ auto *o = pcfg.option<ConfigOptionFloat>(k); return o ? o->value : d; };
             const double nominal_ml   = getf("qzmini_nominal_syringe_capacity_ml", 150.0);
             const double threshold_ml = getf("qzmini_refill_threshold_ml", 120.0);
