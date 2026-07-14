@@ -2803,7 +2803,7 @@ void StatusPanel::update(MachineObject *obj)
             double total_mm3 = 0.0;
             try {
                 const PrintStatistics &ps = wxGetApp().plater()->get_partplate_list().get_current_fff_print().print_statistics();
-                for (auto &kv : ps.total_volumes_per_extruder) total_mm3 += kv.second;
+                total_mm3 = ps.total_extruded_volume; // mm3 of deposited material
             } catch (...) {}
             const double total_ml = total_mm3 / 1000.0;
             const int progress = (obj->subtask_) ? obj->subtask_->task_progress : 0;

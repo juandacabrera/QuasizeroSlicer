@@ -7,9 +7,11 @@
 
 #include <wx/dcbuffer.h>
 #include <wx/dcgraph.h>
+#include <wx/graphics.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <algorithm>
+#include <cmath>
 
 namespace Slic3r { namespace GUI {
 
