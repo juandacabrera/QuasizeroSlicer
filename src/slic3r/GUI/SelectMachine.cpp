@@ -1359,6 +1359,15 @@ void SelectMachineDialog::auto_supply_with_ext(std::vector<DevAmsTray> slots) {
 bool SelectMachineDialog::is_nozzle_type_match(DevExtderSystem data, wxString& error_message) const {
     if (data.GetTotalExtderCount() <= 1 || !wxGetApp().preset_bundle)
         return false;
+    // Quasizero: a QZmini retrofit replaces the printer's hot-end with a syringe
+    // plunger; the physical nozzle (and its flow) live on the QZmini unit, so the
+    // diameter/flow reported by the host firmware is meaningless here. Skip the
+    // host-vs-slicer nozzle checks for QZmini printers. EXPERIMENTAL.
+    {
+        auto _qz = wxGetApp().preset_bundle->printers.get_edited_preset().config.option<ConfigOptionBool>("qzmini_enable");
+        if (_qz != nullptr && _qz->value)
+            return true;
+    }
 
     const auto& project_config = wxGetApp().preset_bundle->project_config;
     //check nozzle used
@@ -1794,6 +1803,15 @@ static bool _is_nozzle_data_valid(MachineObject* obj_, const DevExtderSystem &ex
 static bool _is_same_nozzle_diameters(MachineObject* obj, float &tag_nozzle_diameter, int& mismatch_nozzle_id)
 {
     if (obj == nullptr) return false;
+    // Quasizero: a QZmini retrofit replaces the printer's hot-end with a syringe
+    // plunger; the physical nozzle (and its flow) live on the QZmini unit, so the
+    // diameter/flow reported by the host firmware is meaningless here. Skip the
+    // host-vs-slicer nozzle checks for QZmini printers. EXPERIMENTAL.
+    {
+        auto _qz = wxGetApp().preset_bundle->printers.get_edited_preset().config.option<ConfigOptionBool>("qzmini_enable");
+        if (_qz != nullptr && _qz->value)
+            return true;
+    }
 
     PresetBundle* preset_bundle = wxGetApp().preset_bundle;
     auto opt_nozzle_diameters = preset_bundle->printers.get_edited_preset().config.option<ConfigOptionFloats>("nozzle_diameter");
