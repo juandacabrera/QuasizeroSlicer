@@ -2782,8 +2782,10 @@ void StatusPanel::update(MachineObject *obj)
         if (qz_box) qz_box->Show(qz_on);
         if (qz_on) {
             if (!m_qz_syringe->on_manual_extrude) {
-                m_qz_syringe->on_manual_extrude = [this](double delta_e, int feedrate) {
-                    if (m_obj) m_obj->command_axis_control("E", 1.0, delta_e, feedrate); // M83 + G0 E (cold)
+                m_qz_syringe->on_manual_extrude = [](double delta_e, int feedrate) {
+                    auto *dm = wxGetApp().getDeviceManager();
+                    MachineObject *cur = dm ? dm->get_selected_machine() : nullptr;
+                    if (cur) cur->command_axis_control("E", 1.0, delta_e, feedrate); // M83 + G0 E (cold)
                 };
             }
             auto getf = [&pcfg](const char *k, double d){ auto *o = pcfg.option<ConfigOptionFloat>(k); return o ? o->value : d; };
