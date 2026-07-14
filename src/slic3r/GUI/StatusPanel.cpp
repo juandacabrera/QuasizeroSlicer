@@ -2741,17 +2741,15 @@ wxBoxSizer* StatusBasePanel::create_qz_syringe_group(wxWindow* parent)
 {
     // Quasizero: QZmini biomaterial syringe monitor + manual cold-extrude.
     // Shown only when the active printer preset is a QZmini printer.
+    // Plain white container to match the rest of the interface (no gray box,
+    // no border, no gradient). Manual cold-extrude is wired in
+    // StatusPanel::update() (m_obj lives on the derived StatusPanel).
     auto sizer = new wxBoxSizer(wxVERTICAL);
-    auto box = new StaticBox(parent);
+    auto box = new wxPanel(parent);
     box->SetMinSize(wxSize(FromDIP(586), -1));
-    box->SetBackgroundColor(StateColor(std::pair{wxColour(0xF7F3EC), (int)StateColor::Normal}));
-    box->SetBorderColor(StateColor(std::pair{wxColour(0xE7DFD2), (int)StateColor::Normal}));
-    box->SetCornerRadius(5);
-    box->SetBackgroundColour(wxColour(0xF7, 0xF3, 0xEC));
+    box->SetBackgroundColour(*wxWHITE);
 
     m_qz_syringe = new QzSyringePanel(box);
-    // Manual cold-extrude is wired in StatusPanel::update() (m_obj lives on the
-    // derived StatusPanel, not on this StatusBasePanel method).
 
     auto inner = new wxBoxSizer(wxVERTICAL);
     inner->Add(m_qz_syringe, 1, wxEXPAND | wxALL, FromDIP(6));
@@ -2777,7 +2775,7 @@ void StatusPanel::update(MachineObject *obj)
     if (m_qz_syringe) {
         auto &pcfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
         const ConfigOptionBool *qz_en = pcfg.option<ConfigOptionBool>("qzmini_enable");
-        StaticBox *qz_box = dynamic_cast<StaticBox*>(m_qz_syringe->GetParent());
+        wxWindow *qz_box = m_qz_syringe->GetParent();
         const bool qz_on = (qz_en != nullptr && qz_en->value);
         if (qz_box) qz_box->Show(qz_on);
         if (qz_on) {
