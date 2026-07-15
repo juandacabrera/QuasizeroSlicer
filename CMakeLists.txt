@@ -956,8 +956,8 @@ set (CPACK_PACKAGE_INSTALL_REGISTRY_KEY "QuasizeroSlicer")
 set (CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set (CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 # set (CPACK_NSIS_MODIFY_PATH "ON")
-set(CPACK_PACKAGE_EXECUTABLES "quasizero-slicer;Quasizero Slicer")
-set(CPACK_CREATE_DESKTOP_LINKS "quasizero-slicer")
+set(CPACK_PACKAGE_EXECUTABLES "orca-slicer;Quasizero Slicer")
+set(CPACK_CREATE_DESKTOP_LINKS "orca-slicer")
 set (CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.txt) # must also include in install command
 
 set(CPACK_WIX_UPGRADE_GUID "7c2e6b41-93ff-4a21-8d0e-5b1a2f9c4d63") # Quasizero-specific GUID; must not collide with OrcaSlicer
