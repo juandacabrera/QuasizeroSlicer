@@ -48,7 +48,7 @@ and provisional until printed calibration.
 `qzmini_usable_syringe_capacity_ml` (120), `qzmini_usable_plunger_stroke_mm` (140, unverified),
 `qzmini_plunger_mm_per_e_unit` (0.277, provisional seed), `qzmini_refill_enable`,
 `qzmini_refill_threshold_ml` (120), `qzmini_park_x/y` (10/10), `qzmini_park_z_lift` (20),
-`qzmini_plunger_reset_enable` (on), `qzmini_plunger_reset_feedrate` (300 mm/min),
+`qzmini_plunger_reset_enable` (on), `qzmini_plunger_reset_feedrate` (1800 mm/min, capped to machine E limit),
 `qzmini_prime_after_refill_enable` (off), `qzmini_prime_after_refill_ml` (1),
 `qzmini_prime_feedrate` (120 mm/min), `qzmini_pause_strategy` (auto),
 `qzmini_pause_custom_gcode`, `qzmini_refill_show_in_preview` (on).

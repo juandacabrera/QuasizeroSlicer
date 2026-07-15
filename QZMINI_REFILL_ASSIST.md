@@ -38,6 +38,17 @@ G1 F<saved>                   <- restore feedrate
 ; QZ_REFILL_END
 ```
 
+### Plunger reset speed (important)
+
+The plunger retract that returns the syringe to its 100% position runs **cold and
+before the pause**, so it must be fast and firm — like the manual plunger jog — not
+at printing speed. A slow reset (e.g. 300 mm/min) makes a large-volume retract take
+a very long time and look stuck. The default is **1800 mm/min** (30 mm/s), capped to
+each machine's maximum E speed; editable as *Plunger reset speed* in the QZmini
+Refill Assist panel. Strategy: do the Z lift, park and fast cold retract first, then
+issue the firmware pause — so the mechanical repositioning is already done before the
+firmware's pause protocol (which may briefly preheat) takes over.
+
 **The plunger is never physically advanced back to its pre-refill depth** — the consumed
 material has been replaced by new material; only the logical coordinate is restored.
 

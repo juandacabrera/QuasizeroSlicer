@@ -4588,11 +4588,14 @@ void PrintConfigDef::init_fff_params()
     def = this->add("qzmini_plunger_reset_feedrate", coFloat);
     def->label = L("Plunger reset speed");
     def->category = L("QZmini");
-    def->tooltip = L("E-axis feedrate used to slowly retract the plunger to its refill position.");
+    def->tooltip = L("E-axis feedrate used to retract the plunger back to its refill (100%) position "
+                     "during a refill. This runs cold, before the pause, so it should be fast and firm "
+                     "(like the manual plunger jog) rather than at printing speed; otherwise a large "
+                     "retract takes a very long time. Keep it within the machine's maximum E speed.");
     def->sidetext = L("mm/min");
     def->min = 1;
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionFloat(300.0));
+    def->set_default_value(new ConfigOptionFloat(1800.0));
 
     def = this->add("qzmini_prime_after_refill_enable", coBool);
     def->label = L("Prime after refill");

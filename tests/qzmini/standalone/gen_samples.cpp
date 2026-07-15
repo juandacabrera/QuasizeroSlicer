@@ -72,6 +72,7 @@ int main()
     o.refill_threshold_ml = 120.0;
     o.usable_capacity_ml  = 134.7;
     o.park_x = 10; o.park_y = 10; o.park_z_lift = 20;
+    o.plunger_reset_feedrate = 1800; // firm cold retract, not printing speed
     o.prime_after_refill = true; o.prime_ml = 1.0;
     o.family = QzFirmwareFamily::Marlin;
     o.pause_gcode = qz_pause_command(o.family, "auto", "M0 ; pause, wait for user", "");

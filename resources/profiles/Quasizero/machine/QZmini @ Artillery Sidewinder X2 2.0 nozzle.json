@@ -127,5 +127,7 @@
  "qzmini_refill_show_in_preview": "1",
  "qzmini_prime_after_refill_enable": "1",
  "qzmini_prime_after_refill_ml": "1",
- "qzmini_refill_enable": "1"
+ "qzmini_refill_enable": "1",
+ "qzmini_plunger_reset_feedrate": "1800",
+ "qzmini_prime_feedrate": "600"
 }
