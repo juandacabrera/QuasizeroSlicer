@@ -52,6 +52,8 @@ std::string QzRefillProcessor::make_sequence()
         g << "; PAUSE_PRINTING\n"; // reserved tag: creates the pause marker in Preview
     g << ";TYPE:Custom\n"; // show the refill sequence as its own line type in Preview
     g << "M400 ; wait for queued moves to complete\n";
+    g << "M104 S0 ; QZ: keep hot-end target at 0 (cold extrusion)\n";
+    g << "M302 S0 ; QZ: allow cold extrusion (Marlin; ignored by firmware without it)\n";
     // save-state comment block (traceability in the file)
     g << "; QZ_SAVED_X=" << fmt("%.3f", st.x) << " Y=" << fmt("%.3f", st.y)
       << " Z=" << fmt("%.3f", st.z) << " E=" << fmt("%.5f", st.logical_e)
@@ -74,6 +76,8 @@ std::string QzRefillProcessor::make_sequence()
     g << m_options.pause_gcode << "\n";
     g << "; QZ: user refills or replaces the syringe, then resumes.\n";
     g << "; QZ: the plunger is NOT advanced back to its previous depth; new material replaced the old.\n";
+    g << "M104 S0 ; QZ: cancel any pause-time preheat, keep target 0\n";
+    g << "M302 S0 ; QZ: allow cold extrusion on resume (avoid waiting to cool)\n";
     // 5) optional prime in the park area (relative E still active)
     if (m_options.prime_after_refill && prime_e > 0.0)
         g << "G1 E" << fmt("%.5f", prime_e) << " F" << fmt("%.0f", m_options.prime_feedrate)

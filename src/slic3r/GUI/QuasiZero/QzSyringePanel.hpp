@@ -36,13 +36,15 @@ private:
     // Continuous jog (start with an arrow, stop with the play/stop button).
     wxTimer  m_timer;
     int      m_dir = 0;            // -1 up/retract, +1 down/extrude, 0 idle
-    double   m_step_e     = 5.0;   // firm step per tick (E units)
+    double   m_step_e     = 4.0;   // firm step per tick (E units)
     int      m_feedrate   = 600;   // mm/min, firm (near native jog feel)
-    int      m_tick_ms    = 350;
+    int      m_tick_ms    = 900;   // wider spacing -> shallow queue -> responsive stop
 
     wxWindow    *m_draw_area  = nullptr;
     wxStaticText *m_pct_label = nullptr;
     wxStaticText *m_ml_label  = nullptr;
+    ::Button    *m_btn_up     = nullptr;
+    ::Button    *m_btn_down   = nullptr;
     ::Button    *m_btn_play   = nullptr;
 
     void start_jog(int dir);

@@ -20,7 +20,6 @@ static const double FILL_X0 = 31.0, FILL_X1 = 127.4;
 static const double FILL_Y0 = 239.1, FILL_Y1 = 491.6;
 
 static const wxColour QZ_BROWN(138, 98, 68);
-static const wxColour QZ_BROWN_HOVER(154, 109, 74);
 static const wxColour QZ_TEXT(60, 50, 42);
 
 QzSyringePanel::QzSyringePanel(wxWindow *parent)
@@ -64,28 +63,36 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
     col->Add(m_ml_label, 0, wxBOTTOM, FromDIP(10));
     col->Add(mk_text(_L("Manual plunger (cold)"), ::Label::Body_12, wxColour(120, 108, 96)), 0, wxBOTTOM, FromDIP(4));
 
-    auto mk_btn = [this](const wxString &label) {
-        auto *b = new ::Button(this, label);
-        b->SetMinSize(wxSize(FromDIP(40), FromDIP(30)));
+    // Native Device-panel button style (like the extruder / Load-Unload / Lamp
+    // buttons): light-gray fill, a coloured border appears on hover, the fill
+    // darkens on press, and a disabled button is greyed out.
+    static const wxColour BTN_NORMAL(238, 238, 238);
+    static const wxColour BTN_PRESS(172, 172, 172);
+    static const wxColour BTN_HOVER(138, 98, 68); // Quasizero brown border on hover
+    auto make_jog = [&](const wxString &icon) {
+        auto *b = new ::Button(this, "", icon, 0, 22);
+        b->SetBorderWidth(2);
+        b->SetMinSize(wxSize(FromDIP(40), FromDIP(38)));
         b->SetCornerRadius(4);
-        StateColor bg(std::pair{QZ_BROWN_HOVER, (int)StateColor::Hovered},
-                      std::pair{QZ_BROWN, (int)StateColor::Pressed},
-                      std::pair{QZ_BROWN, (int)StateColor::Normal});
-        b->SetBackgroundColor(bg);
-        b->SetTextColor(StateColor(std::pair{wxColour(255, 255, 255), (int)StateColor::Normal}));
+        b->SetBackgroundColor(StateColor(std::pair{BTN_PRESS, (int)StateColor::Pressed},
+                                         std::pair{BTN_NORMAL, (int)StateColor::Normal}));
+        b->SetBorderColor(StateColor(std::pair{BTN_HOVER, (int)StateColor::Hovered},
+                                     std::pair{BTN_NORMAL, (int)StateColor::Normal}));
         return b;
     };
+    m_btn_up   = make_jog("monitor_extruder_up");   // retract plunger
+    m_btn_down = make_jog("monitor_extruder_down"); // extrude
+    m_btn_play = make_jog("media_stop");            // stop
+    m_btn_play->Enable(false); // idle: greyed out, like a disabled Unload
+
     auto *row = new wxBoxSizer(wxHORIZONTAL);
-    auto *up   = mk_btn(wxString::FromUTF8("\xE2\x96\xB2")); // up triangle: retract
-    auto *down = mk_btn(wxString::FromUTF8("\xE2\x96\xBC")); // down triangle: extrude
-    m_btn_play = mk_btn(wxString::FromUTF8("\xE2\x96\xB6")); // idle: play triangle
-    row->Add(up, 0, wxRIGHT, FromDIP(6));
-    row->Add(down, 0, wxRIGHT, FromDIP(6));
+    row->Add(m_btn_up, 0, wxRIGHT, FromDIP(6));
+    row->Add(m_btn_down, 0, wxRIGHT, FromDIP(6));
     row->Add(m_btn_play, 0);
     col->Add(row, 0);
 
-    up  ->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { start_jog(-1); });
-    down->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { start_jog(+1); });
+    m_btn_up  ->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { start_jog(-1); });
+    m_btn_down->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { start_jog(+1); });
     m_btn_play->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { stop_jog(); });
 
     root->Add(col, 0, wxALL, FromDIP(8));
@@ -125,19 +132,38 @@ void QzSyringePanel::paint_syringe(wxDC &dc, const wxSize &sz)
     }
 }
 
+static void qz_set_active(::Button *b, bool active)
+{
+    if (!b) return;
+    static const wxColour N(238, 238, 238), P(172, 172, 172), H(138, 98, 68);
+    if (active) {
+        // held look: brown border stays on, fill slightly darkened
+        b->SetBorderColor(StateColor(std::pair{H, (int)StateColor::Normal}));
+        b->SetBackgroundColor(StateColor(std::pair{wxColour(0xEA, 0xDF, 0xD4), (int)StateColor::Normal}));
+    } else {
+        b->SetBorderColor(StateColor(std::pair{H, (int)StateColor::Hovered}, std::pair{N, (int)StateColor::Normal}));
+        b->SetBackgroundColor(StateColor(std::pair{P, (int)StateColor::Pressed}, std::pair{N, (int)StateColor::Normal}));
+    }
+    b->Refresh();
+}
+
 void QzSyringePanel::start_jog(int dir)
 {
     m_dir = dir;
-    if (on_manual_extrude) on_manual_extrude(dir * m_step_e, m_feedrate); // immediate firm step
+    qz_set_active(m_btn_up,   dir < 0);
+    qz_set_active(m_btn_down, dir > 0);
+    if (m_btn_play) { m_btn_play->Enable(true); m_btn_play->Refresh(); }
+    if (on_manual_extrude) on_manual_extrude(dir * m_step_e, m_feedrate); // immediate step
     if (!m_timer.IsRunning()) m_timer.Start(m_tick_ms);
-    if (m_btn_play) m_btn_play->SetLabel(wxString::FromUTF8("\xE2\x96\xA0")); // stop square
 }
 
 void QzSyringePanel::stop_jog()
 {
     m_dir = 0;
     if (m_timer.IsRunning()) m_timer.Stop();
-    if (m_btn_play) m_btn_play->SetLabel(wxString::FromUTF8("\xE2\x96\xB6")); // play triangle
+    qz_set_active(m_btn_up, false);
+    qz_set_active(m_btn_down, false);
+    if (m_btn_play) { m_btn_play->Enable(false); m_btn_play->Refresh(); }
 }
 
 void QzSyringePanel::on_tick(wxTimerEvent &)
