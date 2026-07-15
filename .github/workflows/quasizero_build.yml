@@ -61,7 +61,7 @@ jobs:
 
   build_windows_x64:
     name: Build Windows x64 (portable + installer)
-    needs: linux_compile_gate
+    needs: qz_core_tests   # run in PARALLEL with the Linux gate (fast fail signal), not after it
     uses: ./.github/workflows/build_check_cache.yml
     with:
       os: windows-latest
