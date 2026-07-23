@@ -152,9 +152,9 @@ CaliPageButton::CaliPageButton(wxWindow* parent, CaliPageActionType type, wxStri
     Button(parent, text)
 {
     StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(166, 97, 48), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Normal));
+        std::pair<wxColour, int>(wxColour(45, 44, 42), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(85, 82, 78), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(58, 56, 53), StateColor::Normal));
 
     StateColor btn_bg_white(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
         std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),
@@ -162,7 +162,7 @@ CaliPageButton::CaliPageButton(wxWindow* parent, CaliPageActionType type, wxStri
         std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Normal));
 
     StateColor btn_bd_green(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Enabled));
+        std::pair<wxColour, int>(wxColour(58, 56, 53), StateColor::Enabled));
 
     StateColor btn_bd_white(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
         std::pair<wxColour, int>(wxColour(48, 43, 39), StateColor::Enabled));

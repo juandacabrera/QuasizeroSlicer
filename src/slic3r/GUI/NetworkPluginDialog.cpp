@@ -99,9 +99,9 @@ void NetworkPluginDownloadDialog::create_missing_plugin_ui()
     btn_sizer->Add(0, 0, 1, wxEXPAND, 0);
 
     StateColor btn_bg_green(
-        std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(166, 97, 48), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Normal));
+        std::pair<wxColour, int>(wxColour(45, 44, 42), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(85, 82, 78), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(58, 56, 53), StateColor::Normal));
 
     StateColor btn_bg_white(
         std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),
@@ -159,9 +159,9 @@ void NetworkPluginDownloadDialog::create_update_available_ui(const std::string& 
     btn_sizer->Add(0, 0, 1, wxEXPAND, 0);
 
     StateColor btn_bg_green(
-        std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(166, 97, 48), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Normal));
+        std::pair<wxColour, int>(wxColour(45, 44, 42), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(85, 82, 78), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(58, 56, 53), StateColor::Normal));
 
     StateColor btn_bg_white(
         std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),
@@ -325,9 +325,9 @@ NetworkPluginRestartDialog::NetworkPluginRestartDialog(wxWindow* parent)
     btn_sizer->Add(0, 0, 1, wxEXPAND, 0);
 
     StateColor btn_bg_green(
-        std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(166, 97, 48), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Normal));
+        std::pair<wxColour, int>(wxColour(45, 44, 42), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(85, 82, 78), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(58, 56, 53), StateColor::Normal));
 
     StateColor btn_bg_white(
         std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),

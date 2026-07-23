@@ -16,6 +16,7 @@
 #include "GUI_App.hpp"
 #include "MainFrame.hpp"
 #include "Plater.hpp"
+#include "Tab.hpp"
 #include "Camera.hpp"
 #include "I18N.hpp"
 #include "GUI_Utils.hpp"
@@ -1053,7 +1054,8 @@ void GCodeViewer::init(ConfigOptionMode mode, PresetBundle* preset_bundle)
 }
 
 void GCodeViewer::on_change_color_mode(bool is_dark) {
-    m_is_dark = is_dark;
+    (void)is_dark;
+    m_is_dark = false; // Quasizero is a light-themed product; viewport panels stay light
     m_sequential_view.marker.on_change_color_mode(m_is_dark);
     m_sequential_view.gcode_window.on_change_color_mode(m_is_dark);
 }
@@ -1584,6 +1586,7 @@ void GCodeViewer::render(int canvas_width, int canvas_height, int right_margin)
 
     float legend_height = 0.0f;
     render_legend(legend_height, canvas_width, canvas_height, right_margin);
+    render_qz_quickbar(canvas_width, canvas_height);
 
     if (m_user_mode != wxGetApp().get_mode()) {
         update_by_mode(wxGetApp().get_mode());
@@ -3123,8 +3126,8 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f * m_scale); // Quasizero floating card rounding
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0,0.0));
     ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.24f,0.20f,0.17f,0.18f)); // Quasizero soft separator
-    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.59f, 0.27f, 0.05f, 1.00f));
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.59f, 0.27f, 0.05f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.62f, 0.61f, 0.60f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.62f, 0.61f, 0.60f, 1.00f));
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ImVec4(0.42f, 0.42f, 0.42f, 1.00f));
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ImVec4(0.93f, 0.93f, 0.93f, 1.00f));
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, ImVec4(0.93f, 0.93f, 0.93f, 1.00f));
@@ -3251,7 +3254,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.0 * m_scale, 0.0));
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(1.00f, 0.68f, 0.26f, 0.0f));
             ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(1.00f, 0.68f, 0.26f, 0.0f));
-            ImGui::PushStyleColor(ImGuiCol_BorderActive, ImVec4(0.59f, 0.27f, 0.05f, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_BorderActive, ImVec4(0.62f, 0.61f, 0.60f, 1.00f));
             float max_height = 0.f;
             for (auto column_offset : columns_offsets) {
                 if (ImGui::CalcTextSize(column_offset.first.c_str()).y > max_height)
@@ -4747,19 +4750,131 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     ImGui::PopStyleVar(2);
 }
 
+
+void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
+{
+    // Quasizero floating quick-settings card (Tesla-style bottom bar): the four
+    // parameters biomaterial users touch constantly, editable without opening
+    // the sidebar, plus print time / material / refills at a glance.
+    const DynamicPrintConfig &pcfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
+    const ConfigOptionBool *qz_en = pcfg.option<ConfigOptionBool>("qzmini_enable");
+    if (qz_en == nullptr || !qz_en->value)
+        return;
+
+    ImGuiWrapper &imgui = *wxGetApp().imgui();
+    DynamicPrintConfig &print_cfg = wxGetApp().preset_bundle->prints.get_edited_preset().config;
+    DynamicPrintConfig &fil_cfg   = wxGetApp().preset_bundle->filaments.get_edited_preset().config;
+
+    auto getf = [](const DynamicPrintConfig &c, const char *k, double d) {
+        const ConfigOption *o = c.option(k);
+        return o ? o->getFloat() : d;
+    };
+    static double s_layer = 0, s_width = 0, s_speed = 0, s_flow = 0;
+    static bool   s_dirty = false;
+    const double cur_layer = getf(print_cfg, "layer_height", 3.0);
+    const double cur_width = getf(print_cfg, "line_width", 4.0);
+    const double cur_speed = getf(print_cfg, "outer_wall_speed", 20.0);
+    double cur_flow = 1.0;
+    if (auto *fr = fil_cfg.option<ConfigOptionFloats>("filament_flow_ratio"); fr && !fr->values.empty())
+        cur_flow = fr->values.front();
+    if (!s_dirty) { s_layer = cur_layer; s_width = cur_width; s_speed = cur_speed; s_flow = cur_flow; }
+
+    imgui.set_next_window_pos((float)canvas_width * 0.5f, (float)canvas_height - 64.0f * m_scale, ImGuiCond_Always, 0.5f, 1.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 14.0f * m_scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(18.0f, 12.0f) * m_scale);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 0.94f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.955f, 0.953f, 0.949f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.92f, 0.918f, 0.914f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.90f, 0.898f, 0.894f, 1.0f));
+    imgui.begin(std::string("QZQuickBar"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoScrollbar);
+
+    const ImVec4 label_col(0.55f, 0.55f, 0.54f, 1.0f);
+    const float col_w = 110.0f * m_scale;
+    auto column = [&](const char *label, const char *id, double *val, const char *unit, double step, double vmin, double vmax) {
+        ImGui::BeginGroup();
+        ImGui::TextColored(label_col, "%s", label);
+        ImGui::SetNextItemWidth(col_w - 34.0f * m_scale);
+        float f = (float)*val;
+        if (ImGui::InputFloat(id, &f, 0.0f, 0.0f, "%.2f")) {
+            *val = std::min(vmax, std::max(vmin, (double)f));
+            s_dirty = true;
+        }
+        ImGui::SameLine(0.0f, 4.0f * m_scale);
+        ImGui::TextColored(label_col, "%s", unit);
+        ImGui::EndGroup();
+    };
+    column(_u8L("LAYER HEIGHT").c_str(), "##qzlh", &s_layer, "mm", 0.1, 0.3, 10.0);
+    ImGui::SameLine(0.0f, 22.0f * m_scale);
+    column(_u8L("LINE WIDTH").c_str(), "##qzlw", &s_width, "mm", 0.1, 0.4, 12.0);
+    ImGui::SameLine(0.0f, 22.0f * m_scale);
+    column(_u8L("SPEED").c_str(), "##qzsp", &s_speed, "mm/s", 1.0, 1.0, 300.0);
+    ImGui::SameLine(0.0f, 22.0f * m_scale);
+    column(_u8L("FLOW").c_str(), "##qzfl", &s_flow, "x", 0.01, 0.1, 4.0);
+
+    // right block: time / material / refills
+    ImGui::SameLine(0.0f, 28.0f * m_scale);
+    ImGui::BeginGroup();
+    float total_time = 0.0f;
+    for (const auto &mode : m_print_statistics.modes) total_time = std::max(total_time, mode.time);
+    double total_mm3 = 0.0;
+    for (const auto &kv : m_print_statistics.total_volumes_per_extruder) total_mm3 += kv.second;
+    const double total_ml = total_mm3 / 1000.0;
+    const double thr = getf(pcfg, "qzmini_refill_threshold_ml", 120.0);
+    const int refills = Slic3r::QuasiZero::QzMaterialBudget::refills_needed(total_ml, thr);
+    ImGui::TextColored(label_col, "%s", _u8L("EST. TIME").c_str());
+    imgui.text(short_time(get_time_dhms(total_time)));
+    ImGui::EndGroup();
+    ImGui::SameLine(0.0f, 22.0f * m_scale);
+    ImGui::BeginGroup();
+    ImGui::TextColored(label_col, "%s", _u8L("MATERIAL").c_str());
+    char qb[48]; ::sprintf(qb, "%.1f ml", total_ml); imgui.text(qb);
+    ImGui::EndGroup();
+    ImGui::SameLine(0.0f, 22.0f * m_scale);
+    ImGui::BeginGroup();
+    ImGui::TextColored(label_col, "%s", _u8L("REFILLS").c_str());
+    ::sprintf(qb, "%d", refills); imgui.text(qb);
+    ImGui::EndGroup();
+
+    if (s_dirty) {
+        ImGui::SameLine(0.0f, 24.0f * m_scale);
+        ImGui::BeginGroup();
+        if (imgui.button(_u8L("Apply"))) {
+            DynamicPrintConfig np;
+            np.set_key_value("layer_height", new ConfigOptionFloat(s_layer));
+            np.set_key_value("line_width", new ConfigOptionFloatOrPercent(s_width, false));
+            np.set_key_value("outer_wall_speed", new ConfigOptionFloat(s_speed));
+            if (Tab *pt = wxGetApp().get_tab(Preset::TYPE_PRINT)) pt->load_config(np);
+            DynamicPrintConfig nf;
+            nf.set_key_value("filament_flow_ratio", new ConfigOptionFloats{ s_flow });
+            if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) ft->load_config(nf);
+            s_dirty = false;
+        }
+        ImGui::TextColored(label_col, "%s", _u8L("re-slice to apply").c_str());
+        ImGui::EndGroup();
+    }
+
+    imgui.end();
+    ImGui::PopStyleColor(5);
+    ImGui::PopStyleVar(2);
+}
+
 void GCodeViewer::push_combo_style()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f * m_scale); // ORCA scale rounding
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f * m_scale); // ORCA scale frame size
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0,8.0));
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
-    ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
-    ImGui::PushStyleColor(ImGuiCol_BorderActive, ImVec4(0.59f, 0.27f, 0.05f, 1.00f));
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.59f, 0.27f, 0.05f, 0.00f));
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.59f, 0.27f, 0.05f, 1.00f));
+    // Quasizero: white popup card, charcoal text, neutral hover
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.937f, 0.933f, 0.925f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.906f, 0.902f, 0.894f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.937f, 0.933f, 0.925f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.906f, 0.902f, 0.894f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(1.0f, 1.0f, 1.0f, 0.98f));
+    ImGui::PushStyleColor(ImGuiCol_BorderActive, ImVec4(0.75f, 0.74f, 0.73f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.918f, 0.914f, 0.906f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.882f, 0.878f, 0.870f, 1.00f));
 }
 void GCodeViewer::pop_combo_style()
 {

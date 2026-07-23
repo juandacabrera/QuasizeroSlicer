@@ -13,7 +13,7 @@ static const wxColour TextNormalColor = wxColour("#302B27");
 static const wxColour TextSelectColor = wxColour("#302B27"); // ORCA use same color on selected to improve readability
 
 static const wxColour BorderNormalColor   = wxColour("#CECECE");
-static const wxColour BorderSelectColor = wxColour("#8A6244");
+static const wxColour BorderSelectColor = wxColour("#3A3835");
 
 CapsuleButton::CapsuleButton(wxWindow *parent, wxWindowID id, const wxString &label, bool selected) : wxPanel(parent, id)
 {

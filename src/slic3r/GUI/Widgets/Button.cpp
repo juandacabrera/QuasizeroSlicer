@@ -173,9 +173,9 @@ void Button::SetVertical(bool vertical)
 
 //                           Background                                             Foreground                       Border on focus
 // Button Colors             0-Disabled 1-Pressed  2-Hover    3-Normal   4-Enabled  5-Disabled 6-Normal   7-Hover    8-Dark     9-Light
-wxString btn_regular[10]  = {"#DFDFDF", "#DFDFDF", "#D4D4D4", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#302B27", "#302B27", "#8A6244", "#8A6244"};
-wxString btn_confirm[10]  = {"#DFDFDF", "#8A6244", "#A5825F", "#8A6244", "#8A6244", "#6B6A6A", "#FEFEFE", "#FEFEFE", "#b99372", "#D9B48C"};
-wxString btn_alert[10]    = {"#DFDFDF", "#DFDFDF", "#E14747", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#302B27", "#FFFFFD", "#8A6244", "#8A6244"};
+wxString btn_regular[10]  = {"#DFDFDF", "#DFDFDF", "#D4D4D4", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#302B27", "#302B27", "#3A3835", "#3A3835"};
+wxString btn_confirm[10]  = {"#DFDFDF", "#3A3835", "#55524E", "#3A3835", "#3A3835", "#6B6A6A", "#FEFEFE", "#FEFEFE", "#8a8885", "#CFCDCA"};
+wxString btn_alert[10]    = {"#DFDFDF", "#DFDFDF", "#E14747", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#302B27", "#FFFFFD", "#3A3835", "#3A3835"};
 wxString btn_disabled[10] = {"#DFDFDF", "#DFDFDF", "#DFDFDF", "#DFDFDF", "#DFDFDF", "#6B6A6A", "#6B6A6A", "#302B27", "#DFDFDF", "#DFDFDF"};
 
 void Button::SetStyle(const ButtonStyle style, const ButtonType type)
@@ -298,9 +298,9 @@ void Button::render(wxDC& dc)
     // the active (light) icon; a hovered-but-unselected button keeps its inactive
     // (dark) icon so the icon matches the still-dark label. Buttons without an
     // explicit inactive icon fall back to the active one on hover (unchanged).
-    if (m_selected)
-        icon = active_icon;
-    else if ((states & (int)StateColor::State::Hovered) != 0)
+    // Quasizero: light-pill selection keeps dark icons everywhere; the white
+    // 'active' icon is only used when no dark variant exists.
+    if ((states & (int)StateColor::State::Hovered) != 0 || m_selected)
         icon = inactive_icon.bmp().IsOk() ? inactive_icon : active_icon;
     else
         icon = inactive_icon;

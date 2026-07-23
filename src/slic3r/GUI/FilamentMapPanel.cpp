@@ -11,7 +11,7 @@ static const wxColour BgSelectColor  = wxColour("#E5F0EE"); // ORCA
 static const wxColour BgDisableColor = wxColour("#CECECE");
 
 static const wxColour BorderNormalColor   = wxColour("#CECECE");
-static const wxColour BorderSelectedColor = wxColour("#8A6244");
+static const wxColour BorderSelectedColor = wxColour("#3A3835");
 static const wxColour BorderDisableColor  = wxColour("#EEEEEE");
 
 static const wxColour TextNormalBlackColor = wxColour("#302B27");

@@ -14,7 +14,7 @@
 #include <wx/dynarray.h>
 
 
-#define AMS_CONTROL_BRAND_COLOUR wxColour(150, 70, 12)
+#define AMS_CONTROL_BRAND_COLOUR wxColour(58, 56, 53)
 #define AMS_CONTROL_GRAY700 wxColour(107, 107, 107)
 #define AMS_CONTROL_GRAY800 wxColour(61, 55, 51)
 #define AMS_CONTROL_GRAY500 wxColour(172, 172, 172)

@@ -12,9 +12,9 @@
 
 /*/// COLORS ///*/
 :root { 
-	--main-color			: #96460C;
+	--main-color			: #3A3835;
 	--main-color-hover		: #A66130;
-	--main-color-fixed		: #96460C;
+	--main-color-fixed		: #3A3835;
 	--bg-color				: #FFFFFF;
 	--bg-color-secondary	: #F4F4F4;
 	--bg-color-alt			: #F0F0F0;
@@ -36,9 +36,9 @@
   
 @media (prefers-color-scheme: dark) { 
 :root {
-	--main-color			: #673008;
+	--main-color			: #262523;
 	--main-color-hover		: #813C0A;
-	--main-color-fixed		: #96460C;
+	--main-color-fixed		: #3A3835;
 	--bg-color				: #2D2D31;
 	--bg-color-secondary	: #36363B;
 	--bg-color-alt			: #242428;

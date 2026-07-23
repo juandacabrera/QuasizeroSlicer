@@ -73,7 +73,7 @@ body
 {
 	font-size:28px;
 	line-height: 28px;
-	color: #96460C;
+	color: #3A3835;
 	padding: 0px 10mm;
 }
 
@@ -114,7 +114,7 @@ body
 /*---HyperLink---*/
 .HyperLink
 {
-	color: #96460C;
+	color: #3A3835;
 	text-decoration: underline;
     font-weight: 700;
 	cursor: pointer;
@@ -157,8 +157,8 @@ input[type="checkbox"]::before {
 }
 
 input[type="checkbox"]:checked {
-	border-color:#96460C;
-	background-color:#96460C;
+	border-color:#3A3835;
+	background-color:#3A3835;
 }
 
 input[type="checkbox"]:checked::before {

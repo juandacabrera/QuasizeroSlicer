@@ -2348,9 +2348,9 @@ void MainFrame::update_side_button_style()
     m_slice_btn->SetExtraSize(wxSize(FromDIP(38), FromDIP(10)));
     m_slice_btn->SetBottomColour(wxColour(0x3B4446));*/
     StateColor m_btn_bg_enable = StateColor(
-        std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(45, 44, 42), StateColor::Pressed),
         std::pair<wxColour, int>(wxColour(221, 128, 62), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(150, 70, 12), StateColor::Normal)
+        std::pair<wxColour, int>(wxColour(58, 56, 53), StateColor::Normal)
     );
 
     // m_publish_btn->SetMinSize(wxSize(FromDIP(125), FromDIP(24)));

@@ -19,8 +19,8 @@ static const double VB_W = 158.0, VB_H = 586.7;
 static const double FILL_X0 = 31.0, FILL_X1 = 127.4;
 static const double FILL_Y0 = 239.1, FILL_Y1 = 491.6;
 
-static const wxColour QZ_BROWN(138, 98, 68);
-static const wxColour QZ_TEXT(60, 50, 42);
+static const wxColour QZ_BROWN(58, 56, 53);
+static const wxColour QZ_TEXT(31, 31, 31);
 
 QzSyringePanel::QzSyringePanel(wxWindow *parent)
     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE | wxFULL_REPAINT_ON_RESIZE)
@@ -59,16 +59,16 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
     col->Add(mk_text(_L("QZmini syringe"), ::Label::Head_14, QZ_BROWN), 0, wxBOTTOM, FromDIP(4));
     m_pct_label = mk_text("100 %", ::Label::Head_20, QZ_TEXT);
     col->Add(m_pct_label, 0, wxBOTTOM, FromDIP(2));
-    m_ml_label = mk_text("150.0 ml", ::Label::Body_12, wxColour(120, 108, 96));
+    m_ml_label = mk_text("150.0 ml", ::Label::Body_12, wxColour(120, 119, 117));
     col->Add(m_ml_label, 0, wxBOTTOM, FromDIP(10));
-    col->Add(mk_text(_L("Manual plunger (cold)"), ::Label::Body_12, wxColour(120, 108, 96)), 0, wxBOTTOM, FromDIP(4));
+    col->Add(mk_text(_L("Manual plunger (cold)"), ::Label::Body_12, wxColour(120, 119, 117)), 0, wxBOTTOM, FromDIP(4));
 
     // Native Device-panel button style (like the extruder / Load-Unload / Lamp
     // buttons): light-gray fill, a coloured border appears on hover, the fill
     // darkens on press, and a disabled button is greyed out.
     static const wxColour BTN_NORMAL(238, 238, 238);
     static const wxColour BTN_PRESS(172, 172, 172);
-    static const wxColour BTN_HOVER(138, 98, 68); // Quasizero brown border on hover
+    static const wxColour BTN_HOVER(58, 56, 53); // Quasizero brown border on hover
     auto make_jog = [&](const wxString &icon) {
         auto *b = new ::Button(this, "", icon, 0, 22);
         b->SetBorderWidth(2);
@@ -135,7 +135,7 @@ void QzSyringePanel::paint_syringe(wxDC &dc, const wxSize &sz)
 static void qz_set_active(::Button *b, bool active)
 {
     if (!b) return;
-    static const wxColour N(238, 238, 238), P(172, 172, 172), H(138, 98, 68);
+    static const wxColour N(238, 238, 238), P(172, 172, 172), H(58, 56, 53);
     if (active) {
         // held look: brown border stays on, fill slightly darkened
         b->SetBorderColor(StateColor(std::pair{H, (int)StateColor::Normal}));

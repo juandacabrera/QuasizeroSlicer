@@ -29,7 +29,7 @@ static const ImU32 BACKGROUND_COLOR_DARK  = IM_COL32(65, 65, 71, 255);
 static const ImU32 BACKGROUND_COLOR_LIGHT = IM_COL32(255, 255, 255, 255);
 static const ImU32 GROOVE_COLOR_DARK      = IM_COL32(45, 45, 49, 255);
 static const ImU32 GROOVE_COLOR_LIGHT     = IM_COL32(206, 206, 206, 255);
-static const ImU32 BRAND_COLOR            = IM_COL32(150, 70, 12, 255);
+static const ImU32 BRAND_COLOR            = IM_COL32(58, 56, 53, 255); // Quasizero neutral
 
 static int m_tick_value = -1;
 static ImVec4 m_tick_rect;
@@ -704,7 +704,7 @@ void IMSlider::draw_ticks(const ImRect& slideable_region) {
     ImVec2 icon_size     = ImVec2(14.0f, 14.0f) * m_scale;
 
     const ImU32 tick_clr = IM_COL32(144, 144, 144, 255);
-    const ImU32 tick_hover_box_clr = m_is_dark ? IM_COL32(65, 65, 71, 255) : IM_COL32(219, 253, 231, 255);
+    const ImU32 tick_hover_box_clr = m_is_dark ? IM_COL32(65, 65, 71, 255) : IM_COL32(238, 238, 237, 255);
 
     auto get_tick_pos = [this, slideable_region](int tick)
     {
@@ -1596,7 +1596,8 @@ void IMSlider::render_edit_menu(const TickCode& tick)
 }
 
 void IMSlider::on_change_color_mode(bool is_dark) {
-    m_is_dark = is_dark;
+    (void)is_dark;
+    m_is_dark = false; // Quasizero light theme
 }
 
 void IMSlider::set_scale(float scale)

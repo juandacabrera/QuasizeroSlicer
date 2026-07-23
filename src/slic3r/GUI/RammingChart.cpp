@@ -53,7 +53,7 @@ void Chart::draw() {
     }
     
     // draw draggable buttons
-    dc.SetBrush(StateColor::darkModeColorFor(wxColour("#8A6244"))); // orca color for draggable circles
+    dc.SetBrush(StateColor::darkModeColorFor(wxColour("#3A3835"))); // orca color for draggable circles
     dc.SetPen(wxPen(StateColor::darkModeColorFor(wxColour("#363636")), 1));
     for (auto& button : m_buttons)
         //dc.DrawRectangle(math_to_screen(button.get_pos())-wxPoint(side/2.,side/2.), wxSize(side,side));

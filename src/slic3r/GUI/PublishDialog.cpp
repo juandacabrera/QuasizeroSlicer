@@ -83,15 +83,15 @@ PublishDialog::PublishDialog(Plater *plater)
 
     m_btn_cancel = new Button(this, _L("Cancel"));
     m_progress_sizer->Add(m_btn_cancel, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
-    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(137, 63, 11), StateColor::Pressed),
-                            std::pair<wxColour, int>(wxColour(166, 97, 48), StateColor::Hovered),
+    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(45, 44, 42), StateColor::Pressed),
+                            std::pair<wxColour, int>(wxColour(85, 82, 78), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Normal));
     StateColor text_color(std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Pressed),
                           std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Hovered),
                           std::pair<wxColour, int>(TEXT_LIGHT_GRAY, StateColor::Normal));
     m_btn_cancel->SetFont(Label::Body_12);
     m_btn_cancel->SetBackgroundColor(btn_bg_green);
-    m_btn_cancel->SetBorderColor(wxColour(150, 70, 12));
+    m_btn_cancel->SetBorderColor(wxColour(58, 56, 53));
     m_btn_cancel->SetTextColor(text_color);
     m_btn_cancel->SetSize(wxSize(FromDIP(60), FromDIP(20)));
     m_btn_cancel->SetMinSize(wxSize(FromDIP(60), FromDIP(20)));
