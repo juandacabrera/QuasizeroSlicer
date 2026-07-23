@@ -879,7 +879,7 @@ void GCodeViewer::SequentialView::GCodeWindow::render(float top, float bottom, f
     //BBS: GUI refactor: move to right
     imgui.set_next_window_pos(right, top + 6 * m_scale, ImGuiCond_Always, 1.0f, 0.0f); // ORCA add a small gap between legend and code viewer
     ImGui::SetNextWindowSize(ImVec2(required_width, wnd_height), ImGuiCond_Always);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f * m_scale); // ORCA add window rounding to modernize / match style
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f * m_scale); // Quasizero floating card rounding
     ImGui::SetNextWindowBgAlpha(0.8f);
     imgui.begin(std::string("G-code"), ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
 
@@ -2509,7 +2509,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
     }
     ImGuiWrapper& imgui = *wxGetApp().imgui();
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f * m_scale); // ORCA add window rounding to modernize / match style
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f * m_scale); // Quasizero floating card rounding
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0, 10.0 * m_scale));
     ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(1.0f, 1.0f, 1.0f, 0.6f));
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.68f, 0.31f, 0.05f, 1.00f));
@@ -2980,7 +2980,7 @@ void GCodeViewer::render_legend_color_arr_recommen(float window_padding)
         float spacing           = 18.0f * m_scale;
 
         ImGui::Dummy({window_padding, window_padding});
-        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(1.0f,1.0f,1.0f,0.6f));
+        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.24f,0.20f,0.17f,0.18f)); // Quasizero soft separator
         imgui.bold_text(_u8L("Filament Grouping"));
         ImGui::SameLine();
         std::string tip_str = _u8L("Why this grouping");
@@ -3120,9 +3120,9 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
 
     //BBS: GUI refactor: move to the right
     imgui.set_next_window_pos(float(canvas_width - right_margin * m_scale), 4.0f * m_scale, ImGuiCond_Always, 1.0f, 0.0f); // ORCA add a small gap to top to create seperation with main toolbar
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f * m_scale); // ORCA add window rounding to modernize / match style
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f * m_scale); // Quasizero floating card rounding
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0,0.0));
-    ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(1.0f,1.0f,1.0f,0.6f));
+    ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.24f,0.20f,0.17f,0.18f)); // Quasizero soft separator
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.59f, 0.27f, 0.05f, 1.00f));
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.59f, 0.27f, 0.05f, 1.00f));
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ImVec4(0.42f, 0.42f, 0.42f, 1.00f));
@@ -3130,7 +3130,10 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, ImVec4(0.93f, 0.93f, 0.93f, 1.00f));
     //ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.f, 1.f, 1.f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_Border, {1, 0, 0, 0});
-    ImGui::SetNextWindowBgAlpha(0.8f);
+    // Quasizero: light frosted floating card (Tesla-like), dark text
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.235f, 0.196f, 0.165f, 1.0f));
+    ImGui::SetNextWindowBgAlpha(0.92f);
     const float max_height = 0.75f * static_cast<float>(cnv_size.get_height());
     const float child_height = 0.3333f * max_height;
     ImGui::SetNextWindowSizeConstraints({ 0.0f, 0.0f }, { -1.0f, max_height });
@@ -4740,7 +4743,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
 
     legend_height = ImGui::GetCurrentWindow()->Size.y;
     imgui.end();
-    ImGui::PopStyleColor(7);
+    ImGui::PopStyleColor(9); // Quasizero: +WindowBg +Text
     ImGui::PopStyleVar(2);
 }
 

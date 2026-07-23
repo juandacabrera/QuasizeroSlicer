@@ -182,7 +182,7 @@ const float Bed3D::Axes::DefaultTipRadius = 2.5f * Bed3D::Axes::DefaultStemRadiu
 const float Bed3D::Axes::DefaultTipLength = 5.0f;
 
 // ORCA make bed colors accessable for 2D bed
-ColorRGBA Bed3D::DEFAULT_MODEL_COLOR             = { 0.3255f, 0.337f, 0.337f, 1.0f };
+ColorRGBA Bed3D::DEFAULT_MODEL_COLOR             = { 0.938f, 0.930f, 0.915f, 1.0f }; // Quasizero light bed
 ColorRGBA Bed3D::DEFAULT_MODEL_COLOR_DARK        = { 0.255f, 0.255f, 0.283f, 1.0f };
 ColorRGBA Bed3D::DEFAULT_SOLID_GRID_COLOR        = { 0.9f, 0.9f, 0.9f, 1.0f };
 ColorRGBA Bed3D::DEFAULT_TRANSPARENT_GRID_COLOR  = { 0.9f, 0.9f, 0.9f, 0.6f };
