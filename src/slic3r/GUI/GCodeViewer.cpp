@@ -334,12 +334,12 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
     if (viewer != nullptr) {
         ImGuiWrapper& imgui = *wxGetApp().imgui();
         // const Size cnv_size = wxGetApp().plater()->get_current_canvas3D()->get_canvas_size();
-        imgui.set_next_window_pos(0.5f * static_cast<float>(canvas_width), static_cast<float>(canvas_height), ImGuiCond_Always, 0.5f, 1.0f);
+        imgui.set_next_window_pos(8.0f * m_scale, 8.0f * m_scale, ImGuiCond_Always, 0.0f, 0.0f); // Quasizero: top-left, clear of the model and quick bar
         ImGui::PushStyleColor(ImGuiCol_Button, ImGuiWrapper::COL_BUTTON_BACKGROUND);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_BUTTON_ACTIVE);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_BUTTON_HOVERED);
         ImGui::PushStyleColor(ImGuiCol_Border   , ImVec4(.0f,.0f,.0f,.0f));
-        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(1.f,1.f,1.f,.6f));
+        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.22f,0.20f,0.17f,0.15f)); // Quasizero soft
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f * m_scale);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding , ImVec2(10.f, 10.f) * m_scale);
         ImGui::SetNextWindowBgAlpha(0.8f);
@@ -573,7 +573,7 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
                 const float table_view_h = std::max(1.0f, final_h - plot_height - 2.f * style.WindowPadding.y);
 
                 //const ImVec2 wnd_size = ImGui::GetWindowSize();
-                imgui.set_next_window_pos(ImGui::GetWindowPos().x - 5.f * m_scale /*+ wnd_size.x*/, static_cast<float>(canvas_height), ImGuiCond_Always, 1.0f, 1.0f);
+                imgui.set_next_window_pos(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y + ImGui::GetWindowHeight() + 4.f * m_scale, ImGuiCond_Always, 0.0f, 0.0f); // Quasizero: below the folded panel (top-left)
                 ImGui::SetNextWindowSize(ImVec2(cached_table_wnd_width, final_h), ImGuiCond_Always);
                 //ImGui::SetNextWindowSizeConstraints({ 0.0f, 0.0f }, { -1.0f, wnd_size.y });
                 imgui.begin(std::string("ToolPositionTableWnd"), ImGuiWindowFlags_NoTitleBar |
@@ -695,9 +695,9 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
         ImGuiWrapper& imgui = *wxGetApp().imgui();
         //const Size cnv_size = wxGetApp().plater()->get_current_canvas3D()->get_canvas_size();
         //imgui.set_next_window_pos(0.5f * static_cast<float>(cnv_size.get_width()), static_cast<float>(cnv_size.get_height()), ImGuiCond_Always, 0.5f, 1.0f);
-        imgui.set_next_window_pos(0.5f * static_cast<float>(canvas_width), static_cast<float>(canvas_height), ImGuiCond_Always, 0.5f, 1.0f);
+        imgui.set_next_window_pos(8.0f * m_scale, 8.0f * m_scale, ImGuiCond_Always, 0.0f, 0.0f); // Quasizero: top-left, clear of the model and quick bar
         ImGui::PushStyleColor(ImGuiCol_Border   , ImVec4(.0f,.0f,.0f,.0f));
-        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(1.f,1.f,1.f,.6f));
+        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.22f,0.20f,0.17f,0.15f)); // Quasizero soft
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f * m_scale);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding , ImVec2(10.f, 10.f) * m_scale);
         ImGui::SetNextWindowBgAlpha(0.8f);
@@ -2514,7 +2514,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f * m_scale); // Quasizero floating card rounding
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0, 10.0 * m_scale));
-    ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(1.0f, 1.0f, 1.0f, 0.6f));
+    ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.22f, 0.20f, 0.17f, 0.15f)); // Quasizero soft
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.68f, 0.31f, 0.05f, 1.00f));
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.68f, 0.31f, 0.05f, 1.00f));
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ImVec4(0.42f, 0.42f, 0.42f, 1.00f));
@@ -4753,9 +4753,10 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
 
 void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
 {
-    // Quasizero floating quick-settings card (Tesla-style bottom bar): the four
-    // parameters biomaterial users touch constantly, editable without opening
-    // the sidebar, plus print time / material / refills at a glance.
+    // Quasizero floating quick-settings (Tesla-style): two borderless white
+    // capsules — left = LAYER HEIGHT | LINE WIDTH | SPEED | FLOW (big values),
+    // right = est. time + material needed with a drawn syringe filled in the
+    // material colour.
     const DynamicPrintConfig &pcfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
     const ConfigOptionBool *qz_en = pcfg.option<ConfigOptionBool>("qzmini_enable");
     if (qz_en == nullptr || !qz_en->value)
@@ -4764,101 +4765,131 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     ImGuiWrapper &imgui = *wxGetApp().imgui();
     DynamicPrintConfig &print_cfg = wxGetApp().preset_bundle->prints.get_edited_preset().config;
     DynamicPrintConfig &fil_cfg   = wxGetApp().preset_bundle->filaments.get_edited_preset().config;
-
     auto getf = [](const DynamicPrintConfig &c, const char *k, double d) {
-        const ConfigOption *o = c.option(k);
-        return o ? o->getFloat() : d;
-    };
-    static double s_layer = 0, s_width = 0, s_speed = 0, s_flow = 0;
-    static bool   s_dirty = false;
+        const ConfigOption *o = c.option(k); return o ? o->getFloat() : d; };
+
+    static double s_layer=0,s_width=0,s_speed=0,s_flow=0; static bool s_dirty=false;
     const double cur_layer = getf(print_cfg, "layer_height", 3.0);
     const double cur_width = getf(print_cfg, "line_width", 4.0);
     const double cur_speed = getf(print_cfg, "outer_wall_speed", 20.0);
     double cur_flow = 1.0;
-    if (auto *fr = fil_cfg.option<ConfigOptionFloats>("filament_flow_ratio"); fr && !fr->values.empty())
-        cur_flow = fr->values.front();
-    if (!s_dirty) { s_layer = cur_layer; s_width = cur_width; s_speed = cur_speed; s_flow = cur_flow; }
+    if (auto *fr = fil_cfg.option<ConfigOptionFloats>("filament_flow_ratio"); fr && !fr->values.empty()) cur_flow = fr->values.front();
+    if (!s_dirty) { s_layer=cur_layer; s_width=cur_width; s_speed=cur_speed; s_flow=cur_flow; }
 
-    imgui.set_next_window_pos((float)canvas_width * 0.5f, (float)canvas_height - 64.0f * m_scale, ImGuiCond_Always, 0.5f, 1.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 14.0f * m_scale);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(18.0f, 12.0f) * m_scale);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 0.94f));
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.955f, 0.953f, 0.949f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.92f, 0.918f, 0.914f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.90f, 0.898f, 0.894f, 1.0f));
-    imgui.begin(std::string("QZQuickBar"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
-                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoScrollbar);
-
-    const ImVec4 label_col(0.55f, 0.55f, 0.54f, 1.0f);
-    const float col_w = 110.0f * m_scale;
-    auto column = [&](const char *label, const char *id, double *val, const char *unit, double step, double vmin, double vmax) {
-        ImGui::BeginGroup();
-        ImGui::TextColored(label_col, "%s", label);
-        ImGui::SetNextItemWidth(col_w - 34.0f * m_scale);
-        float f = (float)*val;
-        if (ImGui::InputFloat(id, &f, 0.0f, 0.0f, "%.2f")) {
-            *val = std::min(vmax, std::max(vmin, (double)f));
-            s_dirty = true;
-        }
-        ImGui::SameLine(0.0f, 4.0f * m_scale);
-        ImGui::TextColored(label_col, "%s", unit);
-        ImGui::EndGroup();
-    };
-    column(_u8L("LAYER HEIGHT").c_str(), "##qzlh", &s_layer, "mm", 0.1, 0.3, 10.0);
-    ImGui::SameLine(0.0f, 22.0f * m_scale);
-    column(_u8L("LINE WIDTH").c_str(), "##qzlw", &s_width, "mm", 0.1, 0.4, 12.0);
-    ImGui::SameLine(0.0f, 22.0f * m_scale);
-    column(_u8L("SPEED").c_str(), "##qzsp", &s_speed, "mm/s", 1.0, 1.0, 300.0);
-    ImGui::SameLine(0.0f, 22.0f * m_scale);
-    column(_u8L("FLOW").c_str(), "##qzfl", &s_flow, "x", 0.01, 0.1, 4.0);
-
-    // right block: time / material / refills
-    ImGui::SameLine(0.0f, 28.0f * m_scale);
-    ImGui::BeginGroup();
+    // material amounts
+    double total_mm3=0.0, model_mm3=0.0;
+    for (const auto &kv : m_print_statistics.total_volumes_per_extruder) total_mm3 += kv.second;
+    for (const auto &kv : m_print_statistics.model_volumes_per_extruder) model_mm3 += kv.second;
+    const double total_ml = total_mm3/1000.0;
+    const double nominal  = getf(pcfg, "qzmini_nominal_syringe_capacity_ml", 150.0);
+    const double thr      = getf(pcfg, "qzmini_refill_threshold_ml", 120.0);
+    const int refills = Slic3r::QuasiZero::QzMaterialBudget::refills_needed(total_ml, thr);
     float total_time = 0.0f;
     for (const auto &mode : m_print_statistics.modes) total_time = std::max(total_time, mode.time);
-    double total_mm3 = 0.0;
-    for (const auto &kv : m_print_statistics.total_volumes_per_extruder) total_mm3 += kv.second;
-    const double total_ml = total_mm3 / 1000.0;
-    const double thr = getf(pcfg, "qzmini_refill_threshold_ml", 120.0);
-    const int refills = Slic3r::QuasiZero::QzMaterialBudget::refills_needed(total_ml, thr);
-    ImGui::TextColored(label_col, "%s", _u8L("EST. TIME").c_str());
-    imgui.text(short_time(get_time_dhms(total_time)));
-    ImGui::EndGroup();
-    ImGui::SameLine(0.0f, 22.0f * m_scale);
-    ImGui::BeginGroup();
-    ImGui::TextColored(label_col, "%s", _u8L("MATERIAL").c_str());
-    char qb[48]; ::sprintf(qb, "%.1f ml", total_ml); imgui.text(qb);
-    ImGui::EndGroup();
-    ImGui::SameLine(0.0f, 22.0f * m_scale);
-    ImGui::BeginGroup();
-    ImGui::TextColored(label_col, "%s", _u8L("REFILLS").c_str());
-    ::sprintf(qb, "%d", refills); imgui.text(qb);
-    ImGui::EndGroup();
 
-    if (s_dirty) {
-        ImGui::SameLine(0.0f, 24.0f * m_scale);
+    // material colour
+    ImVec4 mat_col(0.788f, 0.643f, 0.494f, 1.0f);
+    if (auto *fc = wxGetApp().preset_bundle->project_config.option<ConfigOptionStrings>("filament_colour"); fc && !fc->values.empty() && !fc->values.front().empty()) {
+        wxColour c(wxString::FromUTF8(fc->values.front()));
+        if (c.IsOk()) mat_col = ImVec4(c.Red()/255.f, c.Green()/255.f, c.Blue()/255.f, 1.0f);
+    }
+
+    const ImVec4 label_col(0.55f,0.55f,0.54f,1.0f);
+    const ImVec4 value_col(0.10f,0.10f,0.10f,1.0f);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f,1.0f,1.0f,0.96f));
+    ImGui::PushStyleColor(ImGuiCol_Text, value_col);
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(1.0f,1.0f,1.0f,0.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.955f,0.953f,0.949f,1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.93f,0.928f,0.924f,1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0,0,0,0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 18.0f * m_scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(22.0f,16.0f) * m_scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+    const float bottom_y = (float)canvas_height - 70.0f * m_scale;
+
+    // ---------- Capsule 1: the four parameters ----------
+    imgui.set_next_window_pos((float)canvas_width*0.5f - 130.0f*m_scale, bottom_y, ImGuiCond_Always, 1.0f, 1.0f);
+    imgui.begin(std::string("QZParams"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+    auto field = [&](const char *label,const char *id,double *val,const char *unit,double vmin,double vmax){
         ImGui::BeginGroup();
+        ImGui::TextColored(label_col,"%s",label);
+        imgui.push_bold_font();
+        ImGui::SetNextItemWidth(70.0f*m_scale);
+        float f=(float)*val;
+        if (ImGui::InputFloat(id,&f,0.0f,0.0f,"%.2f")) { *val=std::min(vmax,std::max(vmin,(double)f)); s_dirty=true; }
+        imgui.pop_bold_font();
+        ImGui::SameLine(0,4.0f*m_scale); ImGui::TextColored(label_col,"%s",unit);
+        ImGui::EndGroup();
+    };
+    field(_u8L("LAYER HEIGHT").c_str(),"##qzlh",&s_layer,"mm",0.3,10.0);
+    ImGui::SameLine(0,26.0f*m_scale); ImGui::TextColored(label_col,"|"); ImGui::SameLine(0,26.0f*m_scale);
+    field(_u8L("LINE WIDTH").c_str(),"##qzlw",&s_width,"mm",0.4,12.0);
+    ImGui::SameLine(0,26.0f*m_scale); ImGui::TextColored(label_col,"|"); ImGui::SameLine(0,26.0f*m_scale);
+    field(_u8L("SPEED").c_str(),"##qzsp",&s_speed,"mm/s",1.0,300.0);
+    ImGui::SameLine(0,26.0f*m_scale); ImGui::TextColored(label_col,"|"); ImGui::SameLine(0,26.0f*m_scale);
+    field(_u8L("FLOW").c_str(),"##qzfl",&s_flow,"x",0.1,4.0);
+    if (s_dirty) {
+        ImGui::SameLine(0,22.0f*m_scale);
         if (imgui.button(_u8L("Apply"))) {
             DynamicPrintConfig np;
             np.set_key_value("layer_height", new ConfigOptionFloat(s_layer));
-            np.set_key_value("line_width", new ConfigOptionFloatOrPercent(s_width, false));
+            np.set_key_value("line_width", new ConfigOptionFloatOrPercent(s_width,false));
             np.set_key_value("outer_wall_speed", new ConfigOptionFloat(s_speed));
             if (Tab *pt = wxGetApp().get_tab(Preset::TYPE_PRINT)) pt->load_config(np);
-            DynamicPrintConfig nf;
-            nf.set_key_value("filament_flow_ratio", new ConfigOptionFloats{ s_flow });
+            DynamicPrintConfig nf; nf.set_key_value("filament_flow_ratio", new ConfigOptionFloats{ s_flow });
             if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) ft->load_config(nf);
-            s_dirty = false;
+            s_dirty=false;
         }
-        ImGui::TextColored(label_col, "%s", _u8L("re-slice to apply").c_str());
-        ImGui::EndGroup();
     }
-
     imgui.end();
-    ImGui::PopStyleColor(5);
-    ImGui::PopStyleVar(2);
+
+    // ---------- Capsule 2: est time + material + syringe ----------
+    imgui.set_next_window_pos((float)canvas_width*0.5f + 150.0f*m_scale, bottom_y, ImGuiCond_Always, 0.0f, 1.0f);
+    imgui.begin(std::string("QZMaterial"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+    ImGui::BeginGroup();
+    ImGui::TextColored(label_col,"%s", _u8L("EST. PRINT TIME").c_str());
+    imgui.push_bold_font();
+    imgui.text(short_time(get_time_dhms(total_time)));
+    imgui.pop_bold_font();
+    ImGui::EndGroup();
+    ImGui::SameLine(0, 24.0f*m_scale);
+
+    // draw a small syringe: outline + material fill by remaining/planned volume
+    const float sw = 26.0f*m_scale, sh = 62.0f*m_scale;
+    ImVec2 org = ImGui::GetCursorScreenPos();
+    ImDrawList *dl = ImGui::GetWindowDrawList();
+    const ImU32 stroke = IM_COL32(150,150,150,255);
+    const ImU32 fillc  = IM_COL32((int)(mat_col.x*255),(int)(mat_col.y*255),(int)(mat_col.z*255),255);
+    // barrel
+    ImVec2 b0(org.x, org.y+sh*0.18f), b1(org.x+sw, org.y+sh*0.9f);
+    float frac = nominal>0.0 ? (float)std::min(1.0, std::max(0.0, 1.0 - (total_ml>thr? std::fmod(total_ml,thr):total_ml)/nominal)) : 1.0f;
+    // fill grows from bottom
+    float fill_top = b1.y - (b1.y-b0.y)*frac;
+    dl->AddRectFilled(ImVec2(b0.x+1, fill_top), ImVec2(b1.x-1, b1.y-1), fillc, 4.0f);
+    dl->AddRect(b0, b1, stroke, 4.0f, 0, 1.5f);
+    // plunger cap
+    dl->AddRectFilled(ImVec2(org.x+sw*0.25f, org.y), ImVec2(org.x+sw*0.75f, b0.y), IM_COL32(235,235,234,255), 2.0f);
+    dl->AddRect(ImVec2(org.x+sw*0.25f, org.y), ImVec2(org.x+sw*0.75f, b0.y), stroke, 2.0f, 0, 1.5f);
+    // nozzle tip
+    dl->AddTriangleFilled(ImVec2(b0.x, b1.y), ImVec2(b1.x, b1.y), ImVec2(org.x+sw*0.5f, b1.y+sh*0.1f), stroke);
+    ImGui::Dummy(ImVec2(sw+8.0f*m_scale, sh+6.0f*m_scale));
+    ImGui::SameLine(0, 12.0f*m_scale);
+
+    ImGui::BeginGroup();
+    ImGui::TextColored(label_col,"%s", _u8L("MATERIAL NEEDED").c_str());
+    imgui.push_bold_font();
+    char mb[48]; ::sprintf(mb,"%.1f ml", total_ml); imgui.text(mb);
+    imgui.pop_bold_font();
+    ImGui::TextColored(label_col,"%s", _u8L("Refills").c_str());
+    ::sprintf(mb,"%d", refills); imgui.text(mb);
+    ImGui::EndGroup();
+    imgui.end();
+
+    ImGui::PopStyleVar(3);
+    ImGui::PopStyleColor(6);
 }
 
 void GCodeViewer::push_combo_style()

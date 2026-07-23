@@ -159,11 +159,11 @@ static const std::map<const wchar_t, std::string> font_icons_extra_large = {
     //{ImGui::ClippyMarker            , "notification_clippy"             },
 };
 
-const ImVec4 ImGuiWrapper::COL_GREY_DARK         = { 0.333f, 0.333f, 0.333f, 1.0f };
-const ImVec4 ImGuiWrapper::COL_GREY_LIGHT        = { 0.4f, 0.4f, 0.4f, 1.0f };
-const ImVec4 ImGuiWrapper::COL_ORANGE_DARK       = { 0.757f, 0.404f, 0.216f, 1.0f };
+const ImVec4 ImGuiWrapper::COL_GREY_DARK         = { 0.937f, 0.933f, 0.925f, 1.0f }; // Quasizero light frame
+const ImVec4 ImGuiWrapper::COL_GREY_LIGHT        = { 0.906f, 0.902f, 0.894f, 1.0f }; // Quasizero
+const ImVec4 ImGuiWrapper::COL_ORANGE_DARK       = { 0.227f, 0.220f, 0.208f, 1.0f }; // Quasizero charcoal
 const ImVec4 ImGuiWrapper::COL_ORANGE_LIGHT      = to_ImVec4(ColorRGBA::ORANGE());
-const ImVec4 ImGuiWrapper::COL_WINDOW_BACKGROUND = { 0.1f, 0.1f, 0.1f, 0.8f };
+const ImVec4 ImGuiWrapper::COL_WINDOW_BACKGROUND = { 1.0f, 1.0f, 1.0f, 0.94f }; // Quasizero white card
 const ImVec4 ImGuiWrapper::COL_BUTTON_BACKGROUND = COL_ORANGE_DARK;
 const ImVec4 ImGuiWrapper::COL_BUTTON_HOVERED    = COL_ORANGE_LIGHT;
 const ImVec4 ImGuiWrapper::COL_BUTTON_ACTIVE     = COL_BUTTON_HOVERED;
@@ -172,8 +172,8 @@ const ImVec4 ImGuiWrapper::COL_BUTTON_ACTIVE     = COL_BUTTON_HOVERED;
 const ImVec4 ImGuiWrapper::COL_RED               = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
 const ImVec4 ImGuiWrapper::COL_GREEN             = ImVec4(1.00f, 0.46f, 0.08f, 1.00f);
 const ImVec4 ImGuiWrapper::COL_BLUE              = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
-const ImVec4 ImGuiWrapper::COL_BLUE_LIGHT        = ImVec4(0.122f, 0.557f, 0.918f, 1.0f);
-const ImVec4 ImGuiWrapper::COL_GREEN_LIGHT       = { 0.f, 156 / 255.f, 136 / 255.f, 0.25f }; // ORCA used on various places like text selection bg. Replaced with orca color
+const ImVec4 ImGuiWrapper::COL_BLUE_LIGHT        = ImVec4(0.227f, 0.220f, 0.208f, 1.0f); // Quasizero charcoal
+const ImVec4 ImGuiWrapper::COL_GREEN_LIGHT       = { 0.227f, 0.220f, 0.208f, 0.18f }; // Quasizero neutral selection
 const ImVec4 ImGuiWrapper::COL_HOVER             = { 0.933f, 0.933f, 0.933f, 1.0f };
 const ImVec4 ImGuiWrapper::COL_ACTIVE            = { 0.675f, 0.675f, 0.675f, 1.0f };
 const ImVec4 ImGuiWrapper::COL_SEPARATOR         = { 0.93f, 0.93f, 0.93f, 1.0f };
@@ -3019,6 +3019,8 @@ void ImGuiWrapper::init_style()
     style.WindowRounding = 0.0f;
     set_color(ImGuiCol_WindowBg, COL_WINDOW_BACKGROUND);
     set_color(ImGuiCol_TitleBgActive, COL_WINDOW_BACKGROUND);
+    set_color(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f)); // Quasizero dark text on light cards
+    set_color(ImGuiCol_TextDisabled, ImVec4(0.55f, 0.55f, 0.54f, 1.0f));
 
     // Generics
     set_color(ImGuiCol_FrameBg, COL_GREY_DARK);
