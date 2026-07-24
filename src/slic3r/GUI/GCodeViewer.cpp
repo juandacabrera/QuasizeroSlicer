@@ -56,6 +56,9 @@ namespace GUI {
 // Quasizero: previous-frame geometry of the quick-settings capsules, used for
 // responsive placement and for anchoring the nozzle-position panel above them.
 static ImVec2 g_qz_cap1_pos(0.0f, 0.0f), g_qz_cap1_size(0.0f, 0.0f), g_qz_cap2_size(0.0f, 0.0f);
+static ImVec2 g_qz_slider_size(0.0f, 0.0f);
+static float  g_qz_reserved_bottom = 170.0f;   // px reserved at the bottom for the capsule cluster
+static bool   g_qz_quickbar_active = false;    // quick bar visible -> native moves slider hidden
 
 
 //BBS translation of EViewType
@@ -983,7 +986,7 @@ void GCodeViewer::SequentialView::render(const bool has_render_path, float legen
         bottom -= wxGetApp().plater()->get_view_toolbar().get_height();
 #endif
     if (has_render_path)
-        gcode_window.render(legend_height + 2, std::max(10.f, (float)canvas_height - 170.0f), (float)canvas_width - (float)right_margin, gcode_id); // Quasizero: keep clear of the bottom capsules
+        gcode_window.render(legend_height + 2, std::max(10.f, (float)canvas_height - g_qz_reserved_bottom * m_scale), (float)canvas_width - (float)right_margin, gcode_id); // Quasizero: keep clear of the bottom capsules
 }
 
 GCodeViewer::GCodeViewer()
@@ -3149,7 +3152,8 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.235f, 0.196f, 0.165f, 1.0f));
     ImGui::SetNextWindowBgAlpha(0.92f);
-    const float max_height = 0.75f * static_cast<float>(cnv_size.get_height());
+    const float max_height = std::min(0.75f * static_cast<float>(cnv_size.get_height()),
+                                      static_cast<float>(cnv_size.get_height()) - g_qz_reserved_bottom * m_scale); // Quasizero: no overlap with capsules
     const float child_height = 0.3333f * max_height;
     ImGui::SetNextWindowSizeConstraints({ 0.0f, 0.0f }, { -1.0f, max_height });
     imgui.begin(std::string("Legend"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
@@ -4771,8 +4775,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     // material colour.
     const DynamicPrintConfig &pcfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
     const ConfigOptionBool *qz_en = pcfg.option<ConfigOptionBool>("qzmini_enable");
-    if (qz_en == nullptr || !qz_en->value)
-        return;
+    if (qz_en == nullptr || !qz_en->value) { g_qz_quickbar_active = false; g_qz_reserved_bottom = 170.0f; return; }
 
     ImGuiWrapper &imgui = *wxGetApp().imgui();
     DynamicPrintConfig &print_cfg = wxGetApp().preset_bundle->prints.get_edited_preset().config;
@@ -4819,7 +4822,8 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
     const float bottom_y = (float)canvas_height - 70.0f * m_scale;
-    if ((float)canvas_width < 520.0f * m_scale) return; // too narrow: keep the viewport clean
+    if ((float)canvas_width < 520.0f * m_scale) { g_qz_quickbar_active = false; g_qz_reserved_bottom = 170.0f; return; }
+    g_qz_quickbar_active = true;
 
     // Responsive layout from previous-frame sizes: center the pair, clamp to
     // edges, and stack capsule 2 above capsule 1 when they no longer fit.
@@ -4830,8 +4834,9 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     float qz_left = qz_stack ? std::max(qz_margin, ((float)canvas_width - g_qz_cap1_size.x) * 0.5f)
                              : std::max(qz_margin, ((float)canvas_width - qz_total) * 0.5f);
 
-    // ---------- Capsule 1: the four parameters ----------
-    imgui.set_next_window_pos(qz_left, bottom_y, ImGuiCond_Always, 0.0f, 1.0f);
+    const float qz_slider_h = std::max(g_qz_slider_size.y, 40.0f * m_scale);
+    // ---------- Capsule 1: the four parameters (above the moves capsule) ----------
+    imgui.set_next_window_pos(qz_left, bottom_y - qz_slider_h - qz_gap, ImGuiCond_Always, 0.0f, 1.0f);
     imgui.begin(std::string("QZParams"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     auto field = [&](const char *label,const char *id,double *val,const char *unit,double vmin,double vmax){
@@ -4870,13 +4875,66 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     g_qz_cap1_size = ImGui::GetWindowSize();
     imgui.end();
 
+    // ---------- Moves capsule: play/pause + intra-layer path + elapsed time ----------
+    {
+        static bool   s_play = false;
+        static double s_acc  = 0.0;
+        const int lo = m_moves_slider->GetMinValue();
+        const int hi = m_moves_slider->GetMaxValue();
+        int cur = m_moves_slider->GetHigherValue();
+        if (s_play && hi > lo) {
+            const double rate = std::max(30.0, (double)(hi - lo) / 20.0); // full layer path in ~20 s
+            s_acc += ImGui::GetIO().DeltaTime * rate;
+            const int step = (int)s_acc;
+            if (step > 0) {
+                s_acc -= step;
+                cur += step;
+                if (cur >= hi) cur = lo; // loop
+                m_moves_slider->SetHigherValue(cur);
+                m_moves_slider->set_as_dirty();
+            }
+        }
+        imgui.set_next_window_pos(qz_left, bottom_y, ImGuiCond_Always, 0.0f, 1.0f);
+        if (g_qz_cap1_size.x > 0.0f)
+            ImGui::SetNextWindowSize(ImVec2(g_qz_cap1_size.x, 0.0f)); // same width as the params capsule
+        imgui.begin(std::string("QZMoves"), ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+        if (imgui.button(s_play ? std::string("II") : std::string(reinterpret_cast<const char*>(u8"\u25B6"))))
+            s_play = !s_play;
+        ImGui::SameLine(0, 10.0f * m_scale);
+        // elapsed time to the current move (right side)
+        std::string qz_elapsed = "-";
+        {
+            const libvgcode::PathVertex &v = m_viewer.get_current_vertex();
+            const float t = v.times[static_cast<size_t>(m_viewer.get_time_mode())];
+            if (t > 0.0f) qz_elapsed = short_time(get_time_dhms(t));
+        }
+        const float t_w = ImGui::CalcTextSize(qz_elapsed.c_str()).x;
+        const float slider_w = ImGui::GetContentRegionAvail().x - t_w - 16.0f * m_scale;
+        ImGui::SetNextItemWidth(std::max(60.0f * m_scale, slider_w));
+        int v_slider = cur;
+        ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.23f, 0.22f, 0.21f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.15f, 0.15f, 0.14f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.937f, 0.933f, 0.925f, 1.0f));
+        if (ImGui::SliderInt("##qzmoves", &v_slider, lo, std::max(lo, hi), "")) {
+            m_moves_slider->SetHigherValue(v_slider);
+            m_moves_slider->set_as_dirty();
+            s_play = false;
+        }
+        ImGui::PopStyleColor(3);
+        ImGui::SameLine(0, 8.0f * m_scale);
+        ImGui::TextColored(label_col, "%s", qz_elapsed.c_str());
+        g_qz_slider_size = ImGui::GetWindowSize();
+        imgui.end();
+    }
+
     // ---------- Capsule 2: vertical pill — est time on top, material + real SVG syringe below ----------
     {
         float c2x, c2y; 
         if (qz_stack) {
             c2x = std::min((float)canvas_width - qz_margin - g_qz_cap2_size.x,
                            std::max(qz_margin, ((float)canvas_width - g_qz_cap2_size.x) * 0.5f));
-            c2y = bottom_y - g_qz_cap1_size.y - qz_gap;
+            c2y = bottom_y - qz_slider_h - qz_gap - g_qz_cap1_size.y - qz_gap; // above the stacked pair
         } else {
             c2x = std::min(qz_left + g_qz_cap1_size.x + qz_gap,
                            (float)canvas_width - qz_margin - std::max(g_qz_cap2_size.x, 1.0f));
@@ -4930,8 +4988,16 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     ::sprintf(mb,"%d", refills); imgui.text(mb);
     ImGui::SetWindowFontScale(1.0f);
     ImGui::EndGroup();
+    {   // square composition: pad to the combined height of the two left capsules
+        const float want_h = g_qz_cap1_size.y + qz_gap + qz_slider_h;
+        const float pad = want_h - ImGui::GetWindowSize().y;
+        if (pad > 0.0f) ImGui::Dummy(ImVec2(0.0f, pad - 6.0f * m_scale));
+    }
     g_qz_cap2_size = ImGui::GetWindowSize();
     imgui.end();
+
+    // reserve for legend / gcode window (in unscaled px, multiplied by m_scale at use)
+    g_qz_reserved_bottom = (g_qz_cap1_size.y + qz_gap + qz_slider_h) / std::max(0.5f, m_scale) + 96.0f;
 
     ImGui::PopStyleVar(3);
     ImGui::PopStyleColor(6);
@@ -4959,7 +5025,8 @@ void GCodeViewer::pop_combo_style()
 }
 
 void GCodeViewer::render_slider(int canvas_width, int canvas_height) {
-    m_moves_slider->render(canvas_width, canvas_height);
+    if (!g_qz_quickbar_active)
+        m_moves_slider->render(canvas_width, canvas_height); // Quasizero: quick bar embeds the moves control
     m_layers_slider->render(canvas_width, canvas_height);
 }
 
