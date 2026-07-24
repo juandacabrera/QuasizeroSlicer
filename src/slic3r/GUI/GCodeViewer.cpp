@@ -335,7 +335,10 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
     if (viewer != nullptr) {
         ImGuiWrapper& imgui = *wxGetApp().imgui();
         // const Size cnv_size = wxGetApp().plater()->get_current_canvas3D()->get_canvas_size();
-        imgui.set_next_window_pos((float)canvas_width*0.5f - 130.0f*m_scale, (float)canvas_height - 150.0f*m_scale, ImGuiCond_Always, 1.0f, 1.0f); // Quasizero: just above the params capsule
+        if (g_qz_cap1_size.x > 0.0f)
+            imgui.set_next_window_pos(g_qz_cap1_pos.x, g_qz_cap1_pos.y - 8.0f * m_scale, ImGuiCond_Always, 0.0f, 1.0f); // Quasizero: above the params capsule
+        else
+            imgui.set_next_window_pos(8.0f * m_scale, (float)canvas_height - 150.0f * m_scale, ImGuiCond_Always, 0.0f, 1.0f);
         ImGui::PushStyleColor(ImGuiCol_Button, ImGuiWrapper::COL_BUTTON_BACKGROUND);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_BUTTON_ACTIVE);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_BUTTON_HOVERED);
@@ -696,7 +699,10 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
         ImGuiWrapper& imgui = *wxGetApp().imgui();
         //const Size cnv_size = wxGetApp().plater()->get_current_canvas3D()->get_canvas_size();
         //imgui.set_next_window_pos(0.5f * static_cast<float>(cnv_size.get_width()), static_cast<float>(cnv_size.get_height()), ImGuiCond_Always, 0.5f, 1.0f);
-        imgui.set_next_window_pos((float)canvas_width*0.5f - 130.0f*m_scale, (float)canvas_height - 150.0f*m_scale, ImGuiCond_Always, 1.0f, 1.0f); // Quasizero: just above the params capsule
+        if (g_qz_cap1_size.x > 0.0f)
+            imgui.set_next_window_pos(g_qz_cap1_pos.x, g_qz_cap1_pos.y - 8.0f * m_scale, ImGuiCond_Always, 0.0f, 1.0f); // Quasizero: above the params capsule
+        else
+            imgui.set_next_window_pos(8.0f * m_scale, (float)canvas_height - 150.0f * m_scale, ImGuiCond_Always, 0.0f, 1.0f);
         ImGui::PushStyleColor(ImGuiCol_Border   , ImVec4(.0f,.0f,.0f,.0f));
         ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.22f,0.20f,0.17f,0.15f)); // Quasizero soft
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f * m_scale);
@@ -4752,6 +4758,10 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
 }
 
 
+// Quasizero: previous-frame geometry of the quick-settings capsules, used for
+// responsive placement and for anchoring the nozzle-position panel above them.
+static ImVec2 g_qz_cap1_pos(0.0f, 0.0f), g_qz_cap1_size(0.0f, 0.0f), g_qz_cap2_size(0.0f, 0.0f);
+
 void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
 {
     // Quasizero floating quick-settings (Tesla-style): two borderless white
@@ -4808,9 +4818,19 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
     const float bottom_y = (float)canvas_height - 70.0f * m_scale;
+    if ((float)canvas_width < 520.0f * m_scale) return; // too narrow: keep the viewport clean
+
+    // Responsive layout from previous-frame sizes: center the pair, clamp to
+    // edges, and stack capsule 2 above capsule 1 when they no longer fit.
+    const float qz_gap = 12.0f * m_scale;
+    const float qz_margin = 8.0f * m_scale;
+    float qz_total = g_qz_cap1_size.x + qz_gap + g_qz_cap2_size.x;
+    bool  qz_stack = (qz_total > (float)canvas_width - 2.0f*qz_margin) && g_qz_cap1_size.x > 0.0f;
+    float qz_left = qz_stack ? std::max(qz_margin, ((float)canvas_width - g_qz_cap1_size.x) * 0.5f)
+                             : std::max(qz_margin, ((float)canvas_width - qz_total) * 0.5f);
 
     // ---------- Capsule 1: the four parameters ----------
-    imgui.set_next_window_pos((float)canvas_width*0.5f - 130.0f*m_scale, bottom_y, ImGuiCond_Always, 1.0f, 1.0f);
+    imgui.set_next_window_pos(qz_left, bottom_y, ImGuiCond_Always, 0.0f, 1.0f);
     imgui.begin(std::string("QZParams"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     auto field = [&](const char *label,const char *id,double *val,const char *unit,double vmin,double vmax){
@@ -4845,10 +4865,24 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
             s_dirty=false;
         }
     }
+    g_qz_cap1_pos  = ImGui::GetWindowPos();
+    g_qz_cap1_size = ImGui::GetWindowSize();
     imgui.end();
 
     // ---------- Capsule 2: vertical pill — est time on top, material + real SVG syringe below ----------
-    imgui.set_next_window_pos((float)canvas_width*0.5f + 150.0f*m_scale, bottom_y, ImGuiCond_Always, 0.0f, 1.0f);
+    {
+        float c2x, c2y; 
+        if (qz_stack) {
+            c2x = std::min((float)canvas_width - qz_margin - g_qz_cap2_size.x,
+                           std::max(qz_margin, ((float)canvas_width - g_qz_cap2_size.x) * 0.5f));
+            c2y = bottom_y - g_qz_cap1_size.y - qz_gap;
+        } else {
+            c2x = std::min(qz_left + g_qz_cap1_size.x + qz_gap,
+                           (float)canvas_width - qz_margin - std::max(g_qz_cap2_size.x, 1.0f));
+            c2y = bottom_y;
+        }
+        imgui.set_next_window_pos(c2x, c2y, ImGuiCond_Always, 0.0f, 1.0f);
+    }
     imgui.begin(std::string("QZMaterial"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
 
@@ -4895,6 +4929,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     ::sprintf(mb,"%d", refills); imgui.text(mb);
     ImGui::SetWindowFontScale(1.0f);
     ImGui::EndGroup();
+    g_qz_cap2_size = ImGui::GetWindowSize();
     imgui.end();
 
     ImGui::PopStyleVar(3);
