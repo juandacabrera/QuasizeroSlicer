@@ -27,10 +27,10 @@ SideButton::SideButton(wxWindow* parent, wxString text, wxString icon, long stly
     text_orientation = HO_Left;
 
     // Quasizero (Tesla reference): light gray pill, dark label; hover/press darken subtly.
-    border_color.append(0xF0F0EF, StateColor::Disabled);
-    border_color.append(wxColour(214, 212, 209), StateColor::Pressed);
-    border_color.append(wxColour(224, 222, 219), StateColor::Hovered);
-    border_color.append(0xE9E7E4, StateColor::Normal);
+    border_color.append(0xF5F5F4, StateColor::Disabled);
+    border_color.append(wxColour(216, 214, 211), StateColor::Pressed);
+    border_color.append(wxColour(236, 235, 233), StateColor::Hovered);
+    border_color.append(0xFFFFFF, StateColor::Normal);
     border_color.setTakeFocusedAsHovered(false);
 
     text_color.append(0xB0AFAD, StateColor::Disabled);
@@ -38,13 +38,13 @@ SideButton::SideButton(wxWindow* parent, wxString text, wxString icon, long stly
     text_color.append(0x1F1F1F, StateColor::Hovered);
     text_color.append(0x1F1F1F, StateColor::Normal);
 
-    background_color.append(0xF0F0EF, StateColor::Disabled);
-    background_color.append(wxColour(214, 212, 209), StateColor::Pressed);
-    background_color.append(wxColour(224, 222, 219), StateColor::Hovered);
-    background_color.append(0xE9E7E4, StateColor::Normal);
+    background_color.append(0xF5F5F4, StateColor::Disabled);
+    background_color.append(wxColour(216, 214, 211), StateColor::Pressed);
+    background_color.append(wxColour(236, 235, 233), StateColor::Hovered);
+    background_color.append(0xFFFFFF, StateColor::Normal);
     background_color.setTakeFocusedAsHovered(false);
 
-    SetBottomColour(wxColour("#FAFAF9")); // match topbar background
+    SetBottomColour(wxColour(240, 240, 239)); // Quasizero: corners blend into the topbar
 
     state_handler.attach({ &border_color, &text_color, &background_color });
     state_handler.update_binds();

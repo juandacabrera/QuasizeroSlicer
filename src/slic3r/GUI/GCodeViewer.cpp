@@ -4853,7 +4853,12 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
         float f=(float)*val;
         if (ImGui::InputFloat(id,&f,0.0f,0.0f,"%.2f")) { *val=std::min(vmax,std::max(vmin,(double)f)); s_dirty=true; }
         pop_big();
-        ImGui::SameLine(0,4.0f*m_scale);
+        ImGui::SameLine(0, 3.0f*m_scale); // unit tight to the number, vertically centered
+        {
+            const float big_h   = qz_big ? qz_big->FontSize : ImGui::GetFontSize()*1.5f;
+            const float small_h = ImGui::GetFontSize()*0.85f;
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (big_h - small_h)*0.5f);
+        }
         ImGui::SetWindowFontScale(0.85f);
         ImGui::TextColored(label_col,"%s",unit);
         ImGui::SetWindowFontScale(1.0f);
@@ -4880,7 +4885,9 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.33f,0.32f,0.31f,1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15f,0.15f,0.14f,1.0f));
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f,1.0f,1.0f,1.0f));                // white label
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(20.0f, 7.0f) * m_scale);   // wider pill
         const bool apply_now = imgui.button(_u8L("Apply"));
+        ImGui::PopStyleVar();
         ImGui::PopStyleColor(4);
         ImGui::EndGroup();
         if (apply_now) {

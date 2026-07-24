@@ -2292,6 +2292,13 @@ Sidebar::Sidebar(Plater *parent)
     auto *sizer = new wxBoxSizer(wxVERTICAL);
     sizer->Add(p->scrolled, 1, wxEXPAND);
     SetSizer(sizer);
+
+    // Quasizero (Tesla reference): start with the Printer and Biomaterial cards
+    // collapsed; a click on their title bars expands them (native toggles).
+    if (p->m_panel_printer_content)  p->m_panel_printer_content->Show(false);
+    if (p->m_panel_filament_content) p->m_panel_filament_content->Show(false);
+    if (p->scrolled) p->scrolled->Layout();
+
 }
 
 Sidebar::~Sidebar() {}
