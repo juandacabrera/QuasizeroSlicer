@@ -333,7 +333,7 @@ void OG_CustomCtrl::OnPaint(wxPaintEvent&)
     // BBS: new layout
     if (!GetLabel().IsEmpty()) {
         dc.SetFont(Label::Head_16);
-        wxColour color = StateColor::darkModeColorFor("#362E29");
+        wxColour color = StateColor::darkModeColorFor("#353534");
         draw_title(dc, {0, v_pos}, GetLabel(), &color, h_pos);
         dc.SetFont(m_font);
     }

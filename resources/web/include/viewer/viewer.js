@@ -1826,7 +1826,7 @@
               removeListener(viewer, EVENT_TRANSITION_END, hidden);
             }
           }
-        }; // Note that the `CLASS_TRANSITION` class will be removed on pointer down (#553A26)
+        }; // Note that the `CLASS_TRANSITION` class will be removed on pointer down (#545453)
 
         if (this.viewed && hasClass(this.image, CLASS_TRANSITION)) {
           addListener(this.image, EVENT_TRANSITION_END, hide, {

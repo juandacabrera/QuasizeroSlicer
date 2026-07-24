@@ -41,7 +41,7 @@ html, body {
 .RedFont
 {
 	font-size:12px;
-	color: #F07E4A;		
+	color: #EEEEEA;		
 }
 
 .LinkBtn
@@ -200,7 +200,7 @@ body
 
 .bambu-status-dot.online
 {
-	background-color: #AF7A54;
+	background-color: #ADADAA;
 }
 
 #BambuCloudBody
@@ -320,12 +320,12 @@ body
 
 .BtnItem:hover
 {
-	background-color: #E1CFC2; /*ORCA color with %25 opacity*/
+	background-color: #DFDFDC; /*ORCA color with %25 opacity*/
 }
 
 .BtnItemSelected
 {
-	background-color: #E1CFC2; /*ORCA color with %25 opacity*/
+	background-color: #DFDFDC; /*ORCA color with %25 opacity*/
 }
 
 .BtnIcon
@@ -587,7 +587,7 @@ body
 	border: 1px solid #D7D7D7;
     top: 100px;
 	border-radius: 5px;
-	color: #3D3733;
+	color: #3C3C3B;
 	background-color: #fff;
     display: none;
 	z-index: 1;

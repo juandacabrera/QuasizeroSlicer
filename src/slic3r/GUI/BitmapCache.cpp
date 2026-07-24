@@ -324,11 +324,11 @@ wxBitmap* BitmapCache::load_svg(const std::string &bitmap_name, unsigned target_
 
     // map of color replaces
     std::map<std::string, std::string> replaces;
-    replaces["\"#0x8A6244\""] = "\"#3A3835\"";
-    replaces["\"#FF7614\""] = "\"#C7885B\"";
+    replaces["\"#0x3A3835\""] = "\"#3A3835\"";
+    replaces["\"#FF7614\""] = "\"#C5C5C2\"";
     if (dark_mode) {
-        replaces["\"#302B27\""] = "\"#EFEFF0\"";
-        replaces["\"#3D3733\""] = "\"#B3B3B5\"";
+        replaces["\"#30302F\""] = "\"#EFEFF0\"";
+        replaces["\"#3C3C3B\""] = "\"#B3B3B5\"";
         replaces["\"#808080\""] = "\"#818183\"";
         //replaces["\"#ACACAC\""] = "\"#54545A\"";
         replaces["\"#CECECE\""] = "\"#54545B\"";
@@ -339,7 +339,7 @@ wxBitmap* BitmapCache::load_svg(const std::string &bitmap_name, unsigned target_
         replaces["\"#F1F1F1\""] = "\"#36363B\"";
         replaces["#DBDBDB"] = "#4A4A51"; // ORCA border color
         replaces["#F0F0F1"] = "#333337"; // ORCA disabled background color
-        replaces["#302B27"] = "#EFEFF0"; // ORCA
+        replaces["#30302F"] = "#EFEFF0"; // ORCA
     } else {
         replaces["#949494"] = "#7C8282"; // ORCA replace icon line color for light theme
     }

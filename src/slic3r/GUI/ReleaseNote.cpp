@@ -488,7 +488,7 @@ void UpdateVersionDialog::update_version_info(wxString release_note, wxString ve
         m_text_up_info->SetLabel(wxString::Format(_L("Click to download new version in default browser: %s"), version));
     auto data_buf_in = release_note.utf8_str();
     auto bg_color = StateColor::darkModeColorFor(wxColour("#FFFFFF")).GetAsString();
-    auto fg_color = StateColor::darkModeColorFor(wxColour("#302B27")).GetAsString();
+    auto fg_color = StateColor::darkModeColorFor(wxColour("#30302F")).GetAsString();
     auto style    = "body {color:" + fg_color + "; background-color:" + bg_color + "; font-family:sans-serif}"
                   + "a    {color: #3A3835}"               // matches hyperlink colors
                   + "img  {max-width:100%; height:auto}"  // fixes overflowing images

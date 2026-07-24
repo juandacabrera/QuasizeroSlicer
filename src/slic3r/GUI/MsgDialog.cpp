@@ -98,7 +98,7 @@ void MsgDialog::show_dsa_button(wxString const &title)
     m_dsa_sizer->Add(m_text_dsa, 0, wxALL | wxALIGN_CENTER, FromDIP(2));
     m_dsa_sizer->AddSpacer(FromDIP(10)); // spacing after checkbox
     m_text_dsa->SetFont(::Label::Body_13);
-    m_text_dsa->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#3D3733")));
+    m_text_dsa->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#3C3C3B")));
     btn_sizer->Layout();
     Fit();
 }

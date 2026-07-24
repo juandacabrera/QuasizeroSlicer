@@ -3020,6 +3020,7 @@ void ImGuiWrapper::init_style()
     set_color(ImGuiCol_WindowBg, COL_WINDOW_BACKGROUND);
     set_color(ImGuiCol_TitleBgActive, COL_WINDOW_BACKGROUND);
     set_color(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f)); // Quasizero dark text on light cards
+    set_color(ImGuiCol_Border, ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); // Quasizero borderless cards
     set_color(ImGuiCol_TextDisabled, ImVec4(0.55f, 0.55f, 0.54f, 1.0f));
 
     // Generics

@@ -450,7 +450,7 @@ wxSize SearchItem::DrawTextString(wxDC &dc, const wxString &text, const wxPoint 
     }
 
     dc.SetBackgroundMode(wxTRANSPARENT);
-    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour("#3C3733")));
+    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour("#3B3B3A")));
     dc.DrawText(text, pt);
     return dc.GetTextExtent(text);
 }
@@ -522,7 +522,7 @@ void SearchItem::OnPaint(wxPaintEvent &event)
 
 void SearchItem::on_mouse_enter(wxMouseEvent &evt)
 {
-    SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#E1CFC2"))); // ORCA color with %25 opacity
+    SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#DFDFDC"))); // ORCA color with %25 opacity
     Refresh();
 }
 
@@ -534,7 +534,7 @@ void SearchItem::on_mouse_leave(wxMouseEvent &evt)
 
 void SearchItem::on_mouse_left_down(wxMouseEvent &evt)
 {
-    SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#E1CFC2"))); // ORCA color with %25 opacity
+    SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#DFDFDC"))); // ORCA color with %25 opacity
     Refresh();
 }
 

@@ -145,7 +145,7 @@ void AMSMaterialsSetting::create_panel_normal(wxWindow* parent)
 
     // make the style the same with disable m_input_k_val, FIXME
     m_readonly_filament = new TextInput(parent, wxEmptyString, "", "", wxDefaultPosition, AMS_MATERIALS_SETTING_COMBOX_WIDTH, wxTE_CENTRE | wxTE_PROCESS_ENTER);
-    m_readonly_filament->SetBorderColor(StateColor(std::make_pair(0xDBDBDB, (int)StateColor::Focused), std::make_pair(0x8A6244, (int)StateColor::Hovered),
+    m_readonly_filament->SetBorderColor(StateColor(std::make_pair(0xDBDBDB, (int)StateColor::Focused), std::make_pair(0x3A3835, (int)StateColor::Hovered),
         std::make_pair(0xDBDBDB, (int)StateColor::Normal)));
     m_readonly_filament->SetFont(::Label::Body_14);
     m_readonly_filament->SetLabelColor(AMS_MATERIALS_SETTING_GREY800);
@@ -1537,9 +1537,9 @@ ColorPickerPopup::ColorPickerPopup(wxWindow* parent)
     m_def_colors.push_back(wxColour("#DCF478"));
     m_def_colors.push_back(wxColour("#CC641A"));
     m_def_colors.push_back(wxColour("#773A0E"));
-    m_def_colors.push_back(wxColour("#844417"));
+    m_def_colors.push_back(wxColour("#838381"));
     m_def_colors.push_back(wxColour("#E2701F"));
-    m_def_colors.push_back(wxColour("#F4B080"));
+    m_def_colors.push_back(wxColour("#F2F2EE"));
     m_def_colors.push_back(wxColour("#46a8f9"));
     m_def_colors.push_back(wxColour("#2850E0"));
     m_def_colors.push_back(wxColour("#443089"));
@@ -1549,10 +1549,10 @@ ColorPickerPopup::ColorPickerPopup(wxWindow* parent)
     m_def_colors.push_back(wxColour("#f95d73"));
     m_def_colors.push_back(wxColour("#f72323"));
     m_def_colors.push_back(wxColour("#7c4b00"));
-    m_def_colors.push_back(wxColour("#f98c36"));
-    m_def_colors.push_back(wxColour("#fcecd6"));
-    m_def_colors.push_back(wxColour("#D3C5A3"));
-    m_def_colors.push_back(wxColour("#AF7933"));
+    m_def_colors.push_back(wxColour("#F7F7F3"));
+    m_def_colors.push_back(wxColour("#F9F9F5"));
+    m_def_colors.push_back(wxColour("#D1D1CE"));
+    m_def_colors.push_back(wxColour("#ADADAA"));
     m_def_colors.push_back(wxColour("#898989"));
     m_def_colors.push_back(wxColour("#BCBCBC"));
     m_def_colors.push_back(wxColour("#161616"));

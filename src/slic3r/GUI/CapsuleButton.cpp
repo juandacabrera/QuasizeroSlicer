@@ -9,8 +9,8 @@ namespace Slic3r { namespace GUI {
 static const wxColour BgNormalColor  = wxColour("#FFFFFF");
 static const wxColour BgSelectColor  = wxColour("#E5F0EE"); // ORCA
 
-static const wxColour TextNormalColor = wxColour("#302B27");
-static const wxColour TextSelectColor = wxColour("#302B27"); // ORCA use same color on selected to improve readability
+static const wxColour TextNormalColor = wxColour("#30302F");
+static const wxColour TextSelectColor = wxColour("#30302F"); // ORCA use same color on selected to improve readability
 
 static const wxColour BorderNormalColor   = wxColour("#CECECE");
 static const wxColour BorderSelectColor = wxColour("#3A3835");

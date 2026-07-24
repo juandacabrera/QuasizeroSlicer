@@ -93,7 +93,7 @@ public:
     wxRenderer() : wxDelegateRendererNative(wxRendererNative::Get()) {}
     virtual void DrawItemSelectionRect(wxWindow *win, wxDC& dc, const wxRect& rect, int flags = 0) override
     {   // ORCA draw selection background to improve consistency between platforms
-        dc.SetBrush(StateColor::darkModeColorFor(wxColour("#E1CFC2")));
+        dc.SetBrush(StateColor::darkModeColorFor(wxColour("#DFDFDC")));
         dc.DrawRectangle(rect);
         //GetGeneric().DrawItemSelectionRect(win, dc, rect, flags);
     }
@@ -127,7 +127,7 @@ public:
     ) override
     {   // ORCA draw custom text to improve consistency between platforms
         //dc.SetFont(win->GetFont()); Without SetFont it pulls font from window
-        dc.SetTextForeground(StateColor::darkModeColorFor(wxColour("#302B27"))); // use same color for selected / non-selected
+        dc.SetTextForeground(StateColor::darkModeColorFor(wxColour("#30302F"))); // use same color for selected / non-selected
         dc.DrawText(text,wxPoint(rect.x, rect.y));
     }
 };

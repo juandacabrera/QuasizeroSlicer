@@ -39,7 +39,7 @@ body
 .BtnItem:hover
 {
 	color: #efeff0;
-	background-color: #3C2E24;
+	background-color: #3B3B3A;
 }
 
 .BtnItem:hover .LeftIcon
@@ -50,7 +50,7 @@ body
 .BtnItemSelected
 {
 	color: #efeff0;
-	background-color: #3C2E24;
+	background-color: #3B3B3A;
 }
 
 .BtnItemSelected .LeftIcon
@@ -62,7 +62,7 @@ body
 .MenuItem:hover
 {
 	border-color: #262523;
-	background-color: #3C2E24;
+	background-color: #3B3B3A;
 }
 
 .FileImg

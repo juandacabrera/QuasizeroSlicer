@@ -13,20 +13,20 @@
 /*/// COLORS ///*/
 :root { 
 	--main-color			: #3A3835;
-	--main-color-hover		: #A66130;
+	--main-color-hover		: #A4A4A2;
 	--main-color-fixed		: #3A3835;
 	--bg-color				: #FFFFFF;
 	--bg-color-secondary	: #F4F4F4;
 	--bg-color-alt			: #F0F0F0;
-	--fg-color-text			: #302B27;
+	--fg-color-text			: #30302F;
 	--fg-color-label		: #363636;
 	--fg-color-disabled		: #ACACAC;
-	--focus-bg-item			: #E1CFC2;
+	--focus-bg-item			: #DFDFDC;
 	--focus-bg-box			: #E5F0EE;
 	--border-color			: #DBDBDB;
 	--icon-color			: #7C8282;
 	--button-fg-light		: #FEFEFE;
-	--button-fg-text		: #302B27;
+	--button-fg-text		: #30302F;
 	--button-fg-disabled	: #6B6B6B;
 	--button-bg-normal		: #DFDFDF;
 	--button-bg-hover		: #D4D4D4;
@@ -45,8 +45,8 @@
 	--fg-color-text			: #EFEFF0;
 	--fg-color-label		: #B2B3B5;
 	--fg-color-disabled		: #65656A;
-	--focus-bg-item			: #3C2E24;
-	--focus-bg-box			: #322D29;
+	--focus-bg-item			: #3B3B3A;
+	--focus-bg-box			: #323231;
 	--border-color			: #4A4A51;
 	--icon-color			: #949494;
 	--button-fg-light		: #FEFEFE;

@@ -7,6 +7,7 @@
 #include "libslic3r/Geometry.hpp"
 #include "libslic3r/Model.hpp"
 #include "libslic3r/Utils.hpp"
+#include "GLTexture.hpp"
 #include "libslic3r/LocalesUtils.hpp"
 #include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/QuasiZero/QzVolumetricModel.hpp"
@@ -334,7 +335,7 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
     if (viewer != nullptr) {
         ImGuiWrapper& imgui = *wxGetApp().imgui();
         // const Size cnv_size = wxGetApp().plater()->get_current_canvas3D()->get_canvas_size();
-        imgui.set_next_window_pos(8.0f * m_scale, 8.0f * m_scale, ImGuiCond_Always, 0.0f, 0.0f); // Quasizero: top-left, clear of the model and quick bar
+        imgui.set_next_window_pos((float)canvas_width*0.5f - 130.0f*m_scale, (float)canvas_height - 150.0f*m_scale, ImGuiCond_Always, 1.0f, 1.0f); // Quasizero: just above the params capsule
         ImGui::PushStyleColor(ImGuiCol_Button, ImGuiWrapper::COL_BUTTON_BACKGROUND);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiWrapper::COL_BUTTON_ACTIVE);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiWrapper::COL_BUTTON_HOVERED);
@@ -695,7 +696,7 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
         ImGuiWrapper& imgui = *wxGetApp().imgui();
         //const Size cnv_size = wxGetApp().plater()->get_current_canvas3D()->get_canvas_size();
         //imgui.set_next_window_pos(0.5f * static_cast<float>(cnv_size.get_width()), static_cast<float>(cnv_size.get_height()), ImGuiCond_Always, 0.5f, 1.0f);
-        imgui.set_next_window_pos(8.0f * m_scale, 8.0f * m_scale, ImGuiCond_Always, 0.0f, 0.0f); // Quasizero: top-left, clear of the model and quick bar
+        imgui.set_next_window_pos((float)canvas_width*0.5f - 130.0f*m_scale, (float)canvas_height - 150.0f*m_scale, ImGuiCond_Always, 1.0f, 1.0f); // Quasizero: just above the params capsule
         ImGui::PushStyleColor(ImGuiCol_Border   , ImVec4(.0f,.0f,.0f,.0f));
         ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.22f,0.20f,0.17f,0.15f)); // Quasizero soft
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f * m_scale);
@@ -805,9 +806,9 @@ void GCodeViewer::SequentialView::GCodeWindow::render(float top, float bottom, f
 
     static const ImVec4 LINE_NUMBER_COLOR    = ImGuiWrapper::COL_ORANGE_LIGHT;
     static const ImVec4 SELECTION_RECT_COLOR = ImGuiWrapper::COL_ORANGE_DARK;
-    static const ImVec4 COMMAND_COLOR        = {0.8f, 0.8f, 0.0f, 1.0f};
-    static const ImVec4 PARAMETERS_COLOR     = { 1.0f, 1.0f, 1.0f, 1.0f };
-    static const ImVec4 COMMENT_COLOR        = { 0.7f, 0.7f, 0.7f, 1.0f };
+    static const ImVec4 COMMAND_COLOR        = {0.12f, 0.12f, 0.12f, 1.0f}; // Quasizero dark
+    static const ImVec4 PARAMETERS_COLOR     = { 0.35f, 0.34f, 0.33f, 1.0f }; // Quasizero
+    static const ImVec4 COMMENT_COLOR        = { 0.62f, 0.61f, 0.60f, 1.0f }; // Quasizero
 
     if (!wxGetApp().show_gcode_window() || m_filename.empty() || m_lines_ends.empty() || curr_line_id == 0)
         return;
@@ -971,7 +972,7 @@ void GCodeViewer::SequentialView::render(const bool has_render_path, float legen
         bottom -= wxGetApp().plater()->get_view_toolbar().get_height();
 #endif
     if (has_render_path)
-        gcode_window.render(legend_height + 2, std::max(10.f, (float)canvas_height - 40), (float)canvas_width - (float)right_margin, gcode_id);
+        gcode_window.render(legend_height + 2, std::max(10.f, (float)canvas_height - 170.0f), (float)canvas_width - (float)right_margin, gcode_id); // Quasizero: keep clear of the bottom capsules
 }
 
 GCodeViewer::GCodeViewer()
@@ -4814,12 +4815,13 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     auto field = [&](const char *label,const char *id,double *val,const char *unit,double vmin,double vmax){
         ImGui::BeginGroup();
+        ImGui::SetWindowFontScale(0.85f);
         ImGui::TextColored(label_col,"%s",label);
-        imgui.push_bold_font();
-        ImGui::SetNextItemWidth(70.0f*m_scale);
+        ImGui::SetWindowFontScale(1.5f);
+        ImGui::SetNextItemWidth(78.0f*m_scale);
         float f=(float)*val;
         if (ImGui::InputFloat(id,&f,0.0f,0.0f,"%.2f")) { *val=std::min(vmax,std::max(vmin,(double)f)); s_dirty=true; }
-        imgui.pop_bold_font();
+        ImGui::SetWindowFontScale(1.0f);
         ImGui::SameLine(0,4.0f*m_scale); ImGui::TextColored(label_col,"%s",unit);
         ImGui::EndGroup();
     };
@@ -4845,46 +4847,53 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     }
     imgui.end();
 
-    // ---------- Capsule 2: est time + material + syringe ----------
+    // ---------- Capsule 2: vertical pill — est time on top, material + real SVG syringe below ----------
     imgui.set_next_window_pos((float)canvas_width*0.5f + 150.0f*m_scale, bottom_y, ImGuiCond_Always, 0.0f, 1.0f);
     imgui.begin(std::string("QZMaterial"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
-    ImGui::BeginGroup();
-    ImGui::TextColored(label_col,"%s", _u8L("EST. PRINT TIME").c_str());
-    imgui.push_bold_font();
-    imgui.text(short_time(get_time_dhms(total_time)));
-    imgui.pop_bold_font();
-    ImGui::EndGroup();
-    ImGui::SameLine(0, 24.0f*m_scale);
 
-    // draw a small syringe: outline + material fill by remaining/planned volume
-    const float sw = 26.0f*m_scale, sh = 62.0f*m_scale;
+    // top level: estimated print time
+    ImGui::SetWindowFontScale(1.45f);
+    imgui.text(short_time(get_time_dhms(total_time)));
+    ImGui::SetWindowFontScale(0.85f);
+    ImGui::TextColored(label_col,"%s", _u8L("Est. print time").c_str());
+    ImGui::SetWindowFontScale(1.0f);
+    ImGui::Separator();
+    ImGui::Dummy(ImVec2(0.0f, 4.0f*m_scale));
+
+    // bottom level: syringe (real qz_syringe.svg outline over material fill) + figures
+    static GLTexture qz_syr_tex;
+    if (qz_syr_tex.get_id() == 0)
+        qz_syr_tex.load_from_svg_file(Slic3r::var("qz_syringe.svg"), true, false, false, 256);
+    const float sh = 74.0f*m_scale;
+    const float sw = sh * (158.0f/586.7f);
     ImVec2 org = ImGui::GetCursorScreenPos();
     ImDrawList *dl = ImGui::GetWindowDrawList();
-    const ImU32 stroke = IM_COL32(150,150,150,255);
-    const ImU32 fillc  = IM_COL32((int)(mat_col.x*255),(int)(mat_col.y*255),(int)(mat_col.z*255),255);
-    // barrel
-    ImVec2 b0(org.x, org.y+sh*0.18f), b1(org.x+sw, org.y+sh*0.9f);
-    float frac = nominal>0.0 ? (float)std::min(1.0, std::max(0.0, 1.0 - (total_ml>thr? std::fmod(total_ml,thr):total_ml)/nominal)) : 1.0f;
-    // fill grows from bottom
-    float fill_top = b1.y - (b1.y-b0.y)*frac;
-    dl->AddRectFilled(ImVec2(b0.x+1, fill_top), ImVec2(b1.x-1, b1.y-1), fillc, 4.0f);
-    dl->AddRect(b0, b1, stroke, 4.0f, 0, 1.5f);
-    // plunger cap
-    dl->AddRectFilled(ImVec2(org.x+sw*0.25f, org.y), ImVec2(org.x+sw*0.75f, b0.y), IM_COL32(235,235,234,255), 2.0f);
-    dl->AddRect(ImVec2(org.x+sw*0.25f, org.y), ImVec2(org.x+sw*0.75f, b0.y), stroke, 2.0f, 0, 1.5f);
-    // nozzle tip
-    dl->AddTriangleFilled(ImVec2(b0.x, b1.y), ImVec2(b1.x, b1.y), ImVec2(org.x+sw*0.5f, b1.y+sh*0.1f), stroke);
-    ImGui::Dummy(ImVec2(sw+8.0f*m_scale, sh+6.0f*m_scale));
-    ImGui::SameLine(0, 12.0f*m_scale);
+    // material fill under the transparent-interior outline (viewBox fractions)
+    const float fx0=31.0f/158.0f, fx1=127.4f/158.0f, fy0=239.1f/586.7f, fy1=491.6f/586.7f;
+    float frac = nominal>0.0 ? (float)std::min(1.0, std::max(0.0, total_ml>0.0 ? std::min(total_ml,nominal)/nominal : 1.0)) : 1.0f;
+    float fill_top_y = org.y + sh*(fy1 - (fy1-fy0)*frac);
+    const ImU32 fillc = IM_COL32((int)(mat_col.x*255),(int)(mat_col.y*255),(int)(mat_col.z*255),255);
+    dl->AddRectFilled(ImVec2(org.x + sw*fx0, fill_top_y), ImVec2(org.x + sw*fx1, org.y + sh*fy1), fillc, 3.0f*m_scale);
+    if (qz_syr_tex.get_id() != 0)
+        dl->AddImage((ImTextureID)(intptr_t)qz_syr_tex.get_id(), org, ImVec2(org.x+sw, org.y+sh));
+    ImGui::Dummy(ImVec2(sw + 10.0f*m_scale, sh));
+    ImGui::SameLine(0, 10.0f*m_scale);
 
     ImGui::BeginGroup();
-    ImGui::TextColored(label_col,"%s", _u8L("MATERIAL NEEDED").c_str());
-    imgui.push_bold_font();
-    char mb[48]; ::sprintf(mb,"%.1f ml", total_ml); imgui.text(mb);
-    imgui.pop_bold_font();
+    ImGui::SetWindowFontScale(0.85f);
+    ImGui::TextColored(label_col,"%s", _u8L("Material needed").c_str());
+    ImGui::SetWindowFontScale(1.45f);
+    char mb[64]; ::sprintf(mb,"%.1f ml", total_ml); imgui.text(mb);
+    ImGui::SetWindowFontScale(0.85f);
+    std::string mat_name = wxGetApp().preset_bundle->filaments.get_edited_preset().name;
+    if (mat_name.size() > 26) mat_name = mat_name.substr(0,24) + "...";
+    ImGui::TextColored(label_col,"%s", mat_name.c_str());
+    ImGui::Dummy(ImVec2(0.0f, 3.0f*m_scale));
     ImGui::TextColored(label_col,"%s", _u8L("Refills").c_str());
+    ImGui::SetWindowFontScale(1.15f);
     ::sprintf(mb,"%d", refills); imgui.text(mb);
+    ImGui::SetWindowFontScale(1.0f);
     ImGui::EndGroup();
     imgui.end();
 

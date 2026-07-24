@@ -51,10 +51,10 @@ MediaPlayCtrl::MediaPlayCtrl(wxWindow *parent, wxMediaCtrl2 *media_ctrl, const w
     m_button_play->SetCanFocus(false);
 
     m_label_status = new Label(this, "");
-    m_label_status->SetForegroundColour(wxColour("#3C3733"));
+    m_label_status->SetForegroundColour(wxColour("#3B3B3A"));
 
     m_label_stat = new Label(this, "");
-    m_label_stat->SetForegroundColour(wxColour("#3C3733"));
+    m_label_stat->SetForegroundColour(wxColour("#3B3B3A"));
     m_media_ctrl->Bind(EVT_MEDIA_CTRL_STAT, [this](auto & e) {
 #if !BBL_RELEASE_TO_PUBLIC
         wxSize size = m_media_ctrl->GetVideoSize();

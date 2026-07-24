@@ -8,7 +8,7 @@
 
 namespace Slic3r { namespace GUI {
 
-static const wxColour LabelEnableColor = wxColour("#302B27");
+static const wxColour LabelEnableColor = wxColour("#30302F");
 static const wxColour LabelDisableColor = wxColour("#ACACAC");
 static const wxColour GreyColor = wxColour("#6B6B6B");
 static const wxColour BackGroundColor = wxColour("#FFFFFF");
