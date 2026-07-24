@@ -4809,7 +4809,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
 
     const ImVec4 label_col(0.55f,0.55f,0.54f,1.0f);
     const ImVec4 value_col(0.10f,0.10f,0.10f,1.0f);
-    ImFont *qz_big = imgui.large_font;
+    ImFont *qz_big = imgui.get_large_font();
     auto push_big=[&](){ if (qz_big) ImGui::PushFont(qz_big); else ImGui::SetWindowFontScale(1.5f); };
     auto pop_big =[&](){ if (qz_big) ImGui::PopFont(); else ImGui::SetWindowFontScale(1.0f); };
 

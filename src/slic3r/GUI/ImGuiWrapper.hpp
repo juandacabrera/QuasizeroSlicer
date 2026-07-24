@@ -195,6 +195,7 @@ public:
 
     // set font
     const std::vector<std::string> get_fonts_names() const { return m_fonts_names; }
+    ImFont* get_large_font() { return large_font; } // Quasizero: crisp 1.5x font for capsules
     bool push_bold_font();
     bool pop_bold_font();
     bool push_font_by_name(std::string font_name);
