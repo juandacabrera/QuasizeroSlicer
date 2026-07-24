@@ -53,6 +53,11 @@
 namespace Slic3r {
 namespace GUI {
 
+// Quasizero: previous-frame geometry of the quick-settings capsules, used for
+// responsive placement and for anchoring the nozzle-position panel above them.
+static ImVec2 g_qz_cap1_pos(0.0f, 0.0f), g_qz_cap1_size(0.0f, 0.0f), g_qz_cap2_size(0.0f, 0.0f);
+
+
 //BBS translation of EViewType
 //const std::string EViewType_Map[(int) GCodeViewer::EViewType::Count] = {
 //        _u8L("Line Type"),
@@ -4757,10 +4762,6 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     ImGui::PopStyleVar(2);
 }
 
-
-// Quasizero: previous-frame geometry of the quick-settings capsules, used for
-// responsive placement and for anchoring the nozzle-position panel above them.
-static ImVec2 g_qz_cap1_pos(0.0f, 0.0f), g_qz_cap1_size(0.0f, 0.0f), g_qz_cap2_size(0.0f, 0.0f);
 
 void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
 {
