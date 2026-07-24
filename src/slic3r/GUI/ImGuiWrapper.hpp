@@ -389,6 +389,7 @@ private:
     LastSliderStatus m_last_slider_status;
     ImFont* default_font = nullptr;
     ImFont* bold_font = nullptr;
+    ImFont* large_font = nullptr; // Quasizero: 1.5x regular for capsule values
     std::map<std::string, ImFont*> im_fonts_map;
     std::vector<std::string> m_fonts_names;
 };
