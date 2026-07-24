@@ -4822,10 +4822,12 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 18.0f * m_scale);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(22.0f,14.0f) * m_scale);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 9.0f * m_scale);                       // rounded value boxes / buttons
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, ImVec4(0.878f,0.874f,0.866f,1.0f));     // light selection, dark text readable
 
     const float bottom_y = (float)canvas_height - 70.0f * m_scale;
     if ((float)canvas_width < 520.0f * m_scale) { g_qz_quickbar_active = false; g_qz_reserved_bottom = 170.0f;
-        ImGui::PopStyleVar(3); ImGui::PopStyleColor(6); return; }
+        ImGui::PopStyleVar(4); ImGui::PopStyleColor(7); return; }
     g_qz_quickbar_active = true;
 
     const float qz_gap = 12.0f * m_scale;
@@ -4871,7 +4873,17 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     field(_u8L("FLOW").c_str(),"##qzfl",&s_flow,"x",0.1,4.0);
     if (s_dirty) {
         ImGui::SameLine(0,22.0f*m_scale);
-        if (imgui.button(_u8L("Apply"))) {
+        ImGui::BeginGroup();
+        const float btn_h = ImGui::GetFontSize() + 12.0f*m_scale;
+        ImGui::Dummy(ImVec2(0.0f, std::max(0.0f, (qz_field_h - btn_h) * 0.5f))); // vertical centering
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.227f,0.220f,0.208f,1.0f));        // charcoal pill
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.33f,0.32f,0.31f,1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15f,0.15f,0.14f,1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f,1.0f,1.0f,1.0f));                // white label
+        const bool apply_now = imgui.button(_u8L("Apply"));
+        ImGui::PopStyleColor(4);
+        ImGui::EndGroup();
+        if (apply_now) {
             DynamicPrintConfig np;
             np.set_key_value("layer_height", new ConfigOptionFloat(s_layer));
             np.set_key_value("line_width", new ConfigOptionFloatOrPercent(s_width,false));
@@ -4880,6 +4892,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
             DynamicPrintConfig nf; nf.set_key_value("filament_flow_ratio", new ConfigOptionFloats{ s_flow });
             if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) ft->load_config(nf);
             s_dirty=false;
+            wxGetApp().plater()->reslice(); // Apply == Slice plate in one tap
         }
     }
     g_qz_cap1_pos  = ImGui::GetWindowPos();
@@ -5078,8 +5091,8 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
 
     g_qz_reserved_bottom = (g_qz_cap1_size.y + qz_gap + qz_slider_h) / std::max(0.5f, m_scale) + 96.0f;
 
-    ImGui::PopStyleVar(3);
-    ImGui::PopStyleColor(6);
+    ImGui::PopStyleVar(4);
+    ImGui::PopStyleColor(7);
 }
 
 void GCodeViewer::push_combo_style()
