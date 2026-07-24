@@ -272,7 +272,7 @@ void BBLTopbar::Init(wxFrame* parent)
 
     // Quasizero: brand block at the far left (logo + product name), per reference
     {
-        wxBitmap qz_logo = create_scaled_bitmap("OrcaSlicer", nullptr, FromDIP(20)); // Q mark (rebranded asset)
+        wxBitmap qz_logo = create_scaled_bitmap("OrcaSlicer", nullptr, FromDIP(28)); // Q mark, larger per feedback
         auto *qz_logo_ctrl = new wxStaticBitmap(this, wxID_ANY, qz_logo);
         this->AddControl(qz_logo_ctrl, "");
         auto *qz_name = new wxStaticText(this, wxID_ANY, "QuasizeroSlicer");

@@ -2918,6 +2918,19 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
         physical_printers.select_printer(initial_physical_printer_name);
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": finished, preferred printer_model_id %1%")%preferred_selection.printer_model_id;
+
+    // Quasizero: QZmini printers default to the 4.0 nozzle variant (the physical
+    // primary nozzle); alphabetical selection would otherwise pick "2.0 nozzle".
+    {
+        const std::string cur = printers.get_selected_preset_name();
+        if (cur.find("QZmini") != std::string::npos && cur.find("2.0 nozzle") != std::string::npos) {
+            std::string alt = cur;
+            const size_t p_ = alt.find("2.0 nozzle");
+            alt.replace(p_, 3, "4.0");
+            if (printers.find_preset(alt, false) != nullptr)
+                printers.select_preset_by_name(alt, true);
+        }
+    }
 }
 
 // Export selections (current print, current filaments, current printer) into config.ini

@@ -1827,8 +1827,8 @@ wxBoxSizer* MainFrame::create_side_tools()
 
     auto slice_panel = new wxPanel(this,wxID_ANY,wxDefaultPosition,wxDefaultSize);
     auto print_panel = new wxPanel(this,wxID_ANY,wxDefaultPosition,wxDefaultSize);
-    slice_panel->SetBackgroundColour(wxColour(240, 240, 239)); // Quasizero: match topbar, no dark seams
-    print_panel->SetBackgroundColour(wxColour(240, 240, 239)); // Quasizero
+    slice_panel->SetBackgroundColour(wxColour(245, 245, 244)); // Quasizero: tab-strip gray
+    print_panel->SetBackgroundColour(wxColour(245, 245, 244)); // Quasizero
 
     m_slice_btn = new SideButton(slice_panel, _L("Slice plate"), "");
     m_slice_option_btn = new SideButton(slice_panel, "", "sidebutton_dropdown", 0, 14);
@@ -1836,13 +1836,13 @@ wxBoxSizer* MainFrame::create_side_tools()
     m_print_option_btn = new SideButton(print_panel, "", "sidebutton_dropdown", 0, 14);
 
     auto slice_sizer = new wxBoxSizer(wxHORIZONTAL);
-    slice_sizer->Add(m_slice_option_btn, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, FromDIP(1));
-    slice_sizer->Add(m_slice_btn, 0, wxLEFT | wxALIGN_CENTER_VERTICAL, FromDIP(1));
+    slice_sizer->Add(m_slice_option_btn, 0, wxALIGN_CENTER_VERTICAL, 0); // Quasizero: continuous pill, no seam
+    slice_sizer->Add(m_slice_btn, 0, wxALIGN_CENTER_VERTICAL, 0);
     slice_panel->SetSizer(slice_sizer);
 
     auto print_sizer = new wxBoxSizer(wxHORIZONTAL);
-    print_sizer->Add(m_print_option_btn, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, FromDIP(1));
-    print_sizer->Add(m_print_btn, 0, wxLEFT | wxALIGN_CENTER_VERTICAL, FromDIP(1));
+    print_sizer->Add(m_print_option_btn, 0, wxALIGN_CENTER_VERTICAL, 0);
+    print_sizer->Add(m_print_btn, 0, wxALIGN_CENTER_VERTICAL, 0);
     print_panel->SetSizer(print_sizer);
 
     update_side_button_style();

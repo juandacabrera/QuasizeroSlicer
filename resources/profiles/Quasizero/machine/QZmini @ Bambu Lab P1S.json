@@ -7,6 +7,6 @@
  "family": "Quasizero",
  "bed_model": "qz_bbl_p1s_bed.stl",
  "bed_texture": "",
- "default_materials": "QZ Sawdust Biomaterial - Cold Extrusion",
+ "default_materials": "Biocomposite Sawdust",
  "hotend_model": "qz_hotend.stl"
 }

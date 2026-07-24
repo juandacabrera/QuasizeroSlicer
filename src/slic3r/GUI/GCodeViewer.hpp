@@ -206,7 +206,7 @@ private:
     float m_z_offset{ 0.0f };
 
     ConfigOptionMode m_user_mode;
-    bool m_fold = {false};
+    bool m_fold = {true}; // Quasizero: legend starts folded (clean stage)
 
     size_t m_extruders_count;
     std::vector<float> m_filament_diameters;

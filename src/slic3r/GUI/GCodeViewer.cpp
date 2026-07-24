@@ -59,6 +59,7 @@ static ImVec2 g_qz_cap1_pos(0.0f, 0.0f), g_qz_cap1_size(0.0f, 0.0f), g_qz_cap2_s
 static ImVec2 g_qz_slider_size(0.0f, 0.0f);
 static float  g_qz_reserved_bottom = 170.0f;   // px reserved at the bottom for the capsule cluster
 static bool   g_qz_quickbar_active = false;    // quick bar visible -> native moves slider hidden
+static float  g_qz_legend_top = 0.0f;          // for stacking the G-code window above the legend
 
 
 //BBS translation of EViewType
@@ -986,7 +987,11 @@ void GCodeViewer::SequentialView::render(const bool has_render_path, float legen
         bottom -= wxGetApp().plater()->get_view_toolbar().get_height();
 #endif
     if (has_render_path)
-        gcode_window.render(legend_height + 2, std::max(10.f, (float)canvas_height - g_qz_reserved_bottom * m_scale), (float)canvas_width - (float)right_margin, gcode_id); // Quasizero: keep clear of the bottom capsules
+        {
+            const float gc_bottom = (g_qz_legend_top > 0.0f) ? g_qz_legend_top - 8.0f : (float)canvas_height - g_qz_reserved_bottom * m_scale;
+            const float gc_top    = std::max(50.0f, gc_bottom - 340.0f * m_scale);
+            gcode_window.render(gc_top, gc_bottom, (float)canvas_width - (float)right_margin, gcode_id); // Quasizero: stacked above the legend, bottom-right
+        }
 }
 
 GCodeViewer::GCodeViewer()
@@ -3137,7 +3142,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     ImGuiWrapper& imgui = *wxGetApp().imgui();
 
     //BBS: GUI refactor: move to the right
-    imgui.set_next_window_pos(float(canvas_width - right_margin * m_scale), 4.0f * m_scale, ImGuiCond_Always, 1.0f, 0.0f); // ORCA add a small gap to top to create seperation with main toolbar
+    imgui.set_next_window_pos(float(canvas_width - right_margin * m_scale), (float)canvas_height - 6.0f * m_scale, ImGuiCond_Always, 1.0f, 1.0f); // Quasizero: bottom-right, grows upward
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f * m_scale); // Quasizero floating card rounding
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0,0.0));
     ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.24f,0.20f,0.17f,0.18f)); // Quasizero soft separator
@@ -4761,6 +4766,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         render_legend_color_arr_recommen(window_padding);
 
     legend_height = ImGui::GetCurrentWindow()->Size.y;
+    g_qz_legend_top = ImGui::GetWindowPos().y;
     imgui.end();
     ImGui::PopStyleColor(9); // Quasizero: +WindowBg +Text
     ImGui::PopStyleVar(2);
@@ -4849,20 +4855,22 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
         ImGui::TextColored(label_col,"%s",label);
         ImGui::SetWindowFontScale(1.0f);
         push_big();
-        ImGui::SetNextItemWidth(78.0f*m_scale);
+        ImGui::SetNextItemWidth(64.0f*m_scale);
         float f=(float)*val;
         if (ImGui::InputFloat(id,&f,0.0f,0.0f,"%.2f")) { *val=std::min(vmax,std::max(vmin,(double)f)); s_dirty=true; }
         pop_big();
-        ImGui::SameLine(0, 3.0f*m_scale); // unit tight to the number, vertically centered
+        ImGui::SameLine(0, 2.0f*m_scale); // unit tight to the digits
+        ImGui::BeginGroup(); // isolate the vertical offset so it cannot drift the row baseline
         {
             const float big_h   = qz_big ? qz_big->FontSize : ImGui::GetFontSize()*1.5f;
             const float small_h = ImGui::GetFontSize()*0.85f;
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (big_h - small_h)*0.5f);
+            ImGui::Dummy(ImVec2(0.0f, (big_h - small_h)*0.5f));
         }
         ImGui::SetWindowFontScale(0.85f);
         ImGui::TextColored(label_col,"%s",unit);
         ImGui::SetWindowFontScale(1.0f);
-        ImGui::EndGroup();
+        ImGui::EndGroup(); // unit block
+        ImGui::EndGroup(); // whole field
     };
     auto vsep = [&](){
         ImGui::SameLine(0, 16.0f*m_scale);
@@ -5073,9 +5081,27 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     imgui.text(mb);
     pop_big();
     ImGui::SetWindowFontScale(0.85f);
-    std::string mat_name = wxGetApp().preset_bundle->filaments.get_edited_preset().name;
-    if (mat_name.size() > 26) mat_name = mat_name.substr(0,24) + "...";
-    ImGui::TextColored(label_col,"%s", mat_name.c_str());
+    {
+        std::string mat_name = wxGetApp().preset_bundle->filaments.get_edited_preset().name;
+        std::string mat_short = mat_name.size() > 26 ? mat_name.substr(0,24) + "..." : mat_name;
+        push_combo_style(); // same look as the Summary/Line Type selector
+        ImGui::SetNextItemWidth(150.0f * m_scale);
+        if (ImGui::BeginCombo("##qzmatsel", mat_short.c_str(), ImGuiComboFlags_None)) {
+            const auto &fils = wxGetApp().preset_bundle->filaments;
+            for (const auto &preset : fils.get_presets()) {
+                if (!preset.is_visible || preset.is_default) continue;
+                if (!preset.is_compatible) continue;
+                const bool selected = preset.name == mat_name;
+                if (ImGui::Selectable(preset.name.c_str(), selected) && !selected) {
+                    if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
+                        ft->select_preset(preset.name);
+                }
+                if (selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+        pop_combo_style();
+    }
     ImGui::Dummy(ImVec2(0.0f, 3.0f*m_scale));
     ImGui::TextColored(label_col,"%s", _u8L("Refills").c_str());
     ImGui::SetWindowFontScale(1.15f);

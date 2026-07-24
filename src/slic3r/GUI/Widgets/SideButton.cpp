@@ -44,7 +44,7 @@ SideButton::SideButton(wxWindow* parent, wxString text, wxString icon, long stly
     background_color.append(0xFFFFFF, StateColor::Normal);
     background_color.setTakeFocusedAsHovered(false);
 
-    SetBottomColour(wxColour(240, 240, 239)); // Quasizero: corners blend into the topbar
+    SetBottomColour(wxColour(245, 245, 244)); // Quasizero: exact tab-strip gray, corners invisible
 
     state_handler.attach({ &border_color, &text_color, &background_color });
     state_handler.update_binds();

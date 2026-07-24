@@ -133,7 +133,7 @@
  "single_extruder_multi_material": "0",
  "change_filament_gcode": "",
  "default_filament_profile": [
-  "QZ Sawdust Biomaterial - Cold Extrusion"
+  "Biocomposite Sawdust"
  ],
  "default_print_profile": "QZmini 1.5 mm - Smooth Biomaterial",
  "printer_settings_id": "Quasizero",

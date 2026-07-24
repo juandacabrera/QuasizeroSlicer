@@ -2294,10 +2294,14 @@ Sidebar::Sidebar(Plater *parent)
     SetSizer(sizer);
 
     // Quasizero (Tesla reference): start with the Printer and Biomaterial cards
-    // collapsed; a click on their title bars expands them (native toggles).
-    if (p->m_panel_printer_content)  p->m_panel_printer_content->Show(false);
-    if (p->m_panel_filament_content) p->m_panel_filament_content->Show(false);
-    if (p->scrolled) p->scrolled->Layout();
+    // collapsed. Deferred via CallAfter so the initial preset load (which can
+    // auto-expand the printer section) cannot undo it.
+    wxGetApp().CallAfter([this]() {
+        if (p->m_panel_printer_content)  p->m_panel_printer_content->Show(false);
+        if (p->m_panel_filament_content) p->m_panel_filament_content->Show(false);
+        if (p->scrolled) p->scrolled->Layout();
+        Layout();
+    });
 
 }
 

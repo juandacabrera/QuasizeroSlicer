@@ -2,11 +2,11 @@
 
 ## Preset naming
 
-ASCII hyphens are used in preset names (`QZ Sawdust Biomaterial - Cold Extrusion`,
+ASCII hyphens are used in preset names (`Biocomposite Sawdust`,
 `QZmini 3 mm - Smooth Biomaterial`) instead of em dashes for maximum file-system and
 profile-validator compatibility.
 
-## Material: QZ Sawdust Biomaterial - Cold Extrusion
+## Material: Biocomposite Sawdust
 
 | Parameter | Value | Note |
 |---|---|---|

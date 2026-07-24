@@ -2,7 +2,7 @@
  "type": "filament",
  "filament_id": "QZF01",
  "setting_id": "QZFS01",
- "name": "QZ Sawdust Biomaterial - Cold Extrusion",
+ "name": "Biocomposite Sawdust",
  "from": "system",
  "instantiation": "true",
  "filament_vendor": [

@@ -29,8 +29,8 @@
  ],
  "filament_list": [
   {
-   "name": "QZ Sawdust Biomaterial - Cold Extrusion",
-   "sub_path": "filament/QZ Sawdust Biomaterial - Cold Extrusion.json"
+   "name": "Biocomposite Sawdust",
+   "sub_path": "filament/Biocomposite Sawdust.json"
   }
  ],
  "machine_list": [

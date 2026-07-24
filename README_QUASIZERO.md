@@ -17,7 +17,7 @@ Development branch: `quasizero-slicer-mvp`.
 - **Quasizero preset library** (`resources/profiles/Quasizero/`): printers
   `QZmini @ Artillery Sidewinder X2` (primary target), `QZmini @ Bambu Lab A1 mini` and
   `QZmini @ Bambu Lab P1S` (both **Experimental / Slice-only**), material
-  `QZ Sawdust Biomaterial - Cold Extrusion` and process `QZmini 3 mm - Smooth Biomaterial`.
+  `Biocomposite Sawdust` and process `QZmini 3 mm - Smooth Biomaterial`.
   Selecting a QZmini printer auto-selects the compatible material and process.
 - **Cold extrusion**: 0 °C nozzle/bed, no thermal waits, no purge tower/AMS/nozzle-wipe,
   part-cooling off, G28 homing preserved, machine limits inherited from the original printers.
