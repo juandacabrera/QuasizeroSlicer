@@ -72,7 +72,7 @@ static float  g_qz_legend_top = 0.0f;          // for stacking the G-code window
 //        _u8L("Temperature"),
 //        _u8L("Flow"),
 //        _u8L("Tool"),
-//        _u8L("Filament")
+//        _u8L("Biomaterial")
 //    };
 
 static std::string get_view_type_string(libvgcode::EViewType view_type)
@@ -104,7 +104,7 @@ static std::string get_view_type_string(libvgcode::EViewType view_type)
     else if (view_type == libvgcode::EViewType::Tool)
         return _u8L("Tool");
     else if (view_type == libvgcode::EViewType::ColorPrint)
-        return _u8L("Filament");
+        return _u8L("Biomaterial");
     else if (view_type == libvgcode::EViewType::LayerTimeLinear)
         return _u8L("Layer Time");
     else if (view_type == libvgcode::EViewType::LayerTimeLogarithmic)
@@ -988,7 +988,7 @@ void GCodeViewer::SequentialView::render(const bool has_render_path, float legen
 #endif
     if (has_render_path)
         {
-            const float gc_bottom = (g_qz_legend_top > 0.0f) ? g_qz_legend_top - 8.0f : (float)canvas_height - g_qz_reserved_bottom * m_scale;
+            const float gc_bottom = (g_qz_legend_top > 0.0f) ? g_qz_legend_top - 14.0f * m_scale : (float)canvas_height - g_qz_reserved_bottom * m_scale;
             const float gc_top    = std::max(50.0f, gc_bottom - 340.0f * m_scale);
             gcode_window.render(gc_top, gc_bottom, (float)canvas_width - (float)right_margin, gcode_id); // Quasizero: stacked above the legend, bottom-right
         }
@@ -2739,7 +2739,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
 
         std::vector<std::pair<std::string, std::vector<::string>>> title_columns;
         if (displayed_columns & ColumnData::Model) {
-            title_columns.push_back({ _u8L("Filament"), {""} });
+            title_columns.push_back({ _u8L("Biomaterial"), {""} });
             title_columns.push_back({ _u8L("Model"), {buff} });
         }
         if (displayed_columns & ColumnData::Support) {
@@ -2769,7 +2769,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
         for (auto it = model_volume_of_extruders_all_plates.begin(); it != model_volume_of_extruders_all_plates.end(); it++) {
             if (i < model_used_filaments_m_all_plates.size() && i < model_used_filaments_g_all_plates.size()) {
                 std::vector<std::pair<std::string, float>> columns_offsets;
-                columns_offsets.push_back({ std::to_string(it->first + 1), offsets[_u8L("Filament")]});
+                columns_offsets.push_back({ std::to_string(it->first + 1), offsets[_u8L("Biomaterial")]});
 
                 char buf[64];
                 float column_sum_m = 0.0f;
@@ -3142,7 +3142,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     ImGuiWrapper& imgui = *wxGetApp().imgui();
 
     //BBS: GUI refactor: move to the right
-    imgui.set_next_window_pos(float(canvas_width - right_margin * m_scale), (float)canvas_height - 6.0f * m_scale, ImGuiCond_Always, 1.0f, 1.0f); // Quasizero: bottom-right, grows upward
+    imgui.set_next_window_pos(float(canvas_width - right_margin * m_scale), (float)canvas_height - 60.0f * m_scale, ImGuiCond_Always, 1.0f, 1.0f); // Quasizero: bottom-right, grows upward, aligned with quickbar/nav cube
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f * m_scale); // Quasizero floating card rounding
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0,0.0));
     ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.24f,0.20f,0.17f,0.18f)); // Quasizero soft separator
@@ -3762,7 +3762,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         }
 
         offsets = calculate_offsets({ { "Extruder NNN", {""}}}, icon_size);
-        append_headers({ {_u8L("Filament"), offsets[0]}, {_u8L("Usage"), offsets[1]} });
+        append_headers({ {_u8L("Biomaterial"), offsets[0]}, {_u8L("Usage"), offsets[1]} });
         break;
     }
     case libvgcode::EViewType::ColorPrint:
@@ -3776,7 +3776,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
 
         std::vector<std::pair<std::string, std::vector<::string>>> title_columns;
         if (displayed_columns & ColumnData::Model) {
-            title_columns.push_back({ _u8L("Filament"), {""} });
+            title_columns.push_back({ _u8L("Biomaterial"), {""} });
             title_columns.push_back({ _u8L("Model"), total_filaments });
         }
         if (displayed_columns & ColumnData::Support) {
@@ -4074,7 +4074,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         for (auto extruder_idx : used_extruders_ids) {
             if (i < model_used_filaments_m.size() && i < model_used_filaments_g.size()) {
                 std::vector<std::pair<std::string, float>> columns_offsets;
-                columns_offsets.push_back({ std::to_string(extruder_idx + 1), color_print_offsets[_u8L("Filament")]});
+                columns_offsets.push_back({ std::to_string(extruder_idx + 1), color_print_offsets[_u8L("Biomaterial")]});
 
                 char buf[64];
                 float column_sum_m = 0.0f;
@@ -4136,7 +4136,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
             window->DrawList->AddLine(separator.Min, ImVec2(separator.Max.x, separator.Min.y), ImGui::GetColorU32(ImGuiCol_Separator));
 
             std::vector<std::pair<std::string, float>> columns_offsets;
-            columns_offsets.push_back({ _u8L("Total"), color_print_offsets[_u8L("Filament")]});
+            columns_offsets.push_back({ _u8L("Total"), color_print_offsets[_u8L("Biomaterial")]});
             if (displayed_columns & ColumnData::Model) {
                 const std::string weight_text = format_compact_weight(total_model_used_filament_g, imperial_units);
                 if ((displayed_columns & ~ColumnData::Model) > 0)
@@ -4467,7 +4467,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
                 ret = std::max(ret, ImGui::CalcTextSize((_u8L("Print settings") + std::string(":")).c_str()).x);
             if (!m_settings_ids.filament.empty()) {
                 for (unsigned char i : m_viewer.get_used_extruders_ids()) {
-                    ret = std::max(ret, ImGui::CalcTextSize((_u8L("Filament") + " " + std::to_string(i + 1) + ":").c_str()).x);
+                    ret = std::max(ret, ImGui::CalcTextSize((_u8L("Biomaterial") + " " + std::to_string(i + 1) + ":").c_str()).x);
                 }
             }
             if (ret > 0.0f)
@@ -4493,7 +4493,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         if (!m_settings_ids.filament.empty()) {
             for (unsigned char i : m_viewer.get_used_extruders_ids()) {
                 if (i < static_cast<unsigned char>(m_settings_ids.filament.size()) && !m_settings_ids.filament[i].empty()) {
-                    std::string txt = _u8L("Filament");
+                    std::string txt = _u8L("Biomaterial");
                     txt += (m_viewer.get_used_extruders_count() == 1) ? ":" : " " + std::to_string(i + 1);
                     imgui.text(txt);
                     ImGui::SameLine(offset);
@@ -4575,6 +4575,8 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
 
 
     // ===================== Quasizero QZmini biomaterial summary =====================
+    if (m_viewer.get_view_type() == libvgcode::EViewType::Summary ||
+        m_viewer.get_view_type() == libvgcode::EViewType::ColorPrint) {
     {
         const DynamicPrintConfig &qz_cfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
         const ConfigOptionBool   *qz_en  = qz_cfg.option<ConfigOptionBool>("qzmini_enable");
@@ -4626,9 +4628,11 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
             }
         }
     }
+    } // only on Summary / Biomaterial views
     // =================== end Quasizero QZmini biomaterial summary ===================
 
-    // total estimated printing time section
+    // total estimated printing time section (Quasizero: hidden on Line Type view)
+    if (m_viewer.get_view_type() != libvgcode::EViewType::FeatureType) {
     ImGui::Spacing();
     std::string time_title = m_viewer.get_view_type() == libvgcode::EViewType::FeatureType ? _u8L("Total Estimation") : _u8L("Time Estimation");
     auto can_show_mode_button = [this](libvgcode::ETimeMode mode) {
@@ -4750,6 +4754,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     }
     default : { assert(false); break; }
     }
+    } // end estimation block
 
     if (m_viewer.get_view_type() == libvgcode::EViewType::ColorPrint) {
         ImGui::Spacing();
@@ -4831,7 +4836,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 9.0f * m_scale);                       // rounded value boxes / buttons
     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, ImVec4(0.878f,0.874f,0.866f,1.0f));     // light selection, dark text readable
 
-    const float bottom_y = (float)canvas_height - 70.0f * m_scale;
+    const float bottom_y = (float)canvas_height - 60.0f * m_scale; // aligned with the legend bottom line
     if ((float)canvas_width < 520.0f * m_scale) { g_qz_quickbar_active = false; g_qz_reserved_bottom = 170.0f;
         ImGui::PopStyleVar(4); ImGui::PopStyleColor(7); return; }
     g_qz_quickbar_active = true;
@@ -4849,17 +4854,19 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     imgui.begin(std::string("QZParams"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     const float qz_field_h = (qz_big ? qz_big->FontSize : ImGui::GetFontSize()*1.5f) + ImGui::GetFontSize()*0.85f + 8.0f*m_scale;
-    auto field = [&](const char *label,const char *id,double *val,const char *unit,double vmin,double vmax){
+    float qz_row_y = -1.0f; // pin every column to the same row top (kills baseline drift)
+    auto field = [&](const char *label,const char *id,double *val,const char *unit,double vmin,double vmax,double disp=1.0,const char *fmt="%.2f"){
+        if (qz_row_y < 0.0f) qz_row_y = ImGui::GetCursorPosY(); else ImGui::SetCursorPosY(qz_row_y);
         ImGui::BeginGroup();
         ImGui::SetWindowFontScale(0.85f);
         ImGui::TextColored(label_col,"%s",label);
         ImGui::SetWindowFontScale(1.0f);
         push_big();
         ImGui::SetNextItemWidth(64.0f*m_scale);
-        float f=(float)*val;
-        if (ImGui::InputFloat(id,&f,0.0f,0.0f,"%.2f")) { *val=std::min(vmax,std::max(vmin,(double)f)); s_dirty=true; }
+        float f=(float)(*val*disp);
+        if (ImGui::InputFloat(id,&f,0.0f,0.0f,fmt)) { *val=std::min(vmax,std::max(vmin,(double)f/disp)); s_dirty=true; }
         pop_big();
-        ImGui::SameLine(0, 2.0f*m_scale); // unit tight to the digits
+        ImGui::SameLine(0.0f, 0.0f); // unit glued to the digits
         ImGui::BeginGroup(); // isolate the vertical offset so it cannot drift the row baseline
         {
             const float big_h   = qz_big ? qz_big->FontSize : ImGui::GetFontSize()*1.5f;
@@ -4883,7 +4890,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     field(_u8L("LAYER HEIGHT").c_str(),"##qzlh",&s_layer,"mm",0.3,10.0);   vsep();
     field(_u8L("LINE WIDTH").c_str(),"##qzlw",&s_width,"mm",0.4,12.0);     vsep();
     field(_u8L("SPEED").c_str(),"##qzsp",&s_speed,"mm/s",1.0,300.0);       vsep();
-    field(_u8L("FLOW").c_str(),"##qzfl",&s_flow,"x",0.1,4.0);
+    field(_u8L("FLOW").c_str(),"##qzfl",&s_flow,"%",0.1,4.0,100.0,"%.0f"); // shown as percent, stored as ratio
     if (s_dirty) {
         ImGui::SameLine(0,22.0f*m_scale);
         ImGui::BeginGroup();
@@ -5086,7 +5093,18 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
         std::string mat_short = mat_name.size() > 26 ? mat_name.substr(0,24) + "..." : mat_name;
         push_combo_style(); // same look as the Summary/Line Type selector
         ImGui::SetNextItemWidth(150.0f * m_scale);
-        if (ImGui::BeginCombo("##qzmatsel", mat_short.c_str(), ImGuiComboFlags_None)) {
+        ImDrawList *qz_dl = ImGui::GetWindowDrawList(); // capture BEFORE the combo (popup switches the current window)
+        const ImVec2 qz_cpos = ImGui::GetCursorScreenPos();
+        const float  qz_ch2  = ImGui::GetFrameHeight();
+        const bool qz_mat_open = ImGui::BeginCombo("##qzmatsel", mat_short.c_str(), ImGuiComboFlags_NoArrowButton);
+        {   // thin stroked chevron instead of the solid arrow
+            const float cx = qz_cpos.x + 150.0f*m_scale - 13.0f*m_scale;
+            const float cy = qz_cpos.y + qz_ch2*0.5f - 1.5f*m_scale;
+            const float w  = 4.0f*m_scale;
+            qz_dl->AddLine(ImVec2(cx-w, cy), ImVec2(cx, cy+w), IM_COL32(60,58,55,255), 1.5f*m_scale);
+            qz_dl->AddLine(ImVec2(cx, cy+w), ImVec2(cx+w, cy), IM_COL32(60,58,55,255), 1.5f*m_scale);
+        }
+        if (qz_mat_open) {
             const auto &fils = wxGetApp().preset_bundle->filaments;
             for (const auto &preset : fils.get_presets()) {
                 if (!preset.is_visible || preset.is_default) continue;

@@ -655,8 +655,14 @@ void Sidebar::priv::layout_printer(bool isBBL, bool isDual)
     // ORCA ensure printer section is visible after changing printer from printer selection dialog
     // this will inform user on printer change when printer section is collapsed
     if (m_panel_printer_content){
+        // Quasizero: the first auto-expand fires while the app is still initializing
+        // (Home -> Prepare tab switch); swallow it so the card truly starts collapsed.
+        static bool qz_startup_expand_swallowed = false;
         bool isShown = m_panel_printer_content->IsShown();
-        if(!isShown && m_text_printer_settings){
+        if (!isShown && !qz_startup_expand_swallowed) {
+            qz_startup_expand_swallowed = true;
+        }
+        else if(!isShown && m_text_printer_settings){
             m_text_printer_settings->SetLabel(_L("Printer")); // ensure title returns to default state
             m_panel_printer_content->Show();
         }

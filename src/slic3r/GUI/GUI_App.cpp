@@ -905,7 +905,7 @@ void GUI_App::post_init()
 
     hms_query = new HMSQuery();
 
-    m_show_gcode_window = app_config->get_bool("show_gcode_window");
+    m_show_gcode_window = false; // Quasizero: G-code panel starts folded every session
     if (m_networking_need_update) {
         show_network_plugin_download_dialog(false);
     }

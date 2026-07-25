@@ -272,9 +272,12 @@ void BBLTopbar::Init(wxFrame* parent)
 
     // Quasizero: brand block at the far left (logo + product name), per reference
     {
-        wxBitmap qz_logo = create_scaled_bitmap("OrcaSlicer", nullptr, FromDIP(28)); // Q mark, larger per feedback
-        auto *qz_logo_ctrl = new wxStaticBitmap(this, wxID_ANY, qz_logo);
-        this->AddControl(qz_logo_ctrl, "");
+        // Tool items are vertically centered by the toolbar (like the save icon),
+        // unlike AddControl which top-aligns - so the logo rides as an inactive tool.
+        wxBitmap qz_logo = create_scaled_bitmap("OrcaSlicer", nullptr, FromDIP(32));
+        wxAuiToolBarItem *qz_logo_item = this->AddTool(ID_LOGO, "", qz_logo);
+        qz_logo_item->SetHoverBitmap(qz_logo);
+        qz_logo_item->SetActive(false);
         auto *qz_name = new wxStaticText(this, wxID_ANY, "QuasizeroSlicer");
         qz_name->SetFont(Label::Head_13);
         qz_name->SetForegroundColour(wxColour(31, 31, 31));
