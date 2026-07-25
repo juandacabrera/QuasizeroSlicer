@@ -8393,6 +8393,8 @@ void GLCanvas3D::_render_overlays()
     //_render_view_toolbar();
     _render_paint_toolbar();
 
+    _render_qz_quick_cards(); // Quasizero: floating quick-access cards
+
     //BBS: GUI refactor: GLToolbar
     //move gizmos behind of main
     _render_gizmos_overlay();
@@ -10821,6 +10823,230 @@ ModelInstance *get_model_instance(const GLVolume &gl_volume, const ModelObject &
     if (instance_idx >= object.instances.size())
         return nullptr;
     return object.instances[instance_idx];
+}
+
+
+// Quasizero: floating quick-access cards (Process + Printer), bottom-left, folded
+// by default - the fast path that replaces the hidden wx sidebar for QZmini users.
+void GLCanvas3D::_render_qz_quick_cards()
+{
+    if (m_canvas_type != CanvasView3D && m_canvas_type != CanvasPreview)
+        return;
+    PresetBundle &bundle = *wxGetApp().preset_bundle;
+    const DynamicPrintConfig &prcfg = bundle.printers.get_edited_preset().config;
+    const ConfigOptionBool *qz_en = prcfg.option<ConfigOptionBool>("qzmini_enable");
+    if (qz_en == nullptr || !qz_en->value)
+        return;
+
+    ImGuiWrapper &imgui = *wxGetApp().imgui();
+    const float scale = get_scale();
+    const Size cnv_size = get_canvas_size();
+    const float cw = (float)cnv_size.get_width();
+    const float ch = (float)cnv_size.get_height();
+    if (cw < 420.0f * scale || ch < 300.0f * scale)
+        return;
+
+    // shared style, matching the preview quickbar capsules
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4(1.0f, 1.0f, 1.0f, 0.96f));
+    ImGui::PushStyleColor(ImGuiCol_Text,            ImVec4(0.10f, 0.10f, 0.10f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,         ImVec4(0.937f, 0.933f, 0.925f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,  ImVec4(0.906f, 0.902f, 0.894f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,   ImVec4(0.882f, 0.878f, 0.870f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Border,          ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_CheckMark,       ImVec4(0.227f, 0.220f, 0.208f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg,         ImVec4(1.0f, 1.0f, 1.0f, 0.98f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4(0.918f, 0.914f, 0.906f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive,    ImVec4(0.882f, 0.878f, 0.870f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Button,          ImVec4(0.937f, 0.933f, 0.925f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,   ImVec4(0.906f, 0.902f, 0.894f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,    ImVec4(0.882f, 0.878f, 0.870f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg,  ImVec4(0.878f, 0.874f, 0.866f, 1.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding,   14.0f * scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,    ImVec2(16.0f * scale, 12.0f * scale));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding,    7.0f * scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,  0.0f);
+
+    static bool   s_open_process = false;   // folded by default, like the reference
+    static bool   s_open_printer = false;
+    static ImVec2 s_printer_size(0.0f, 0.0f);
+
+    const float left   = 12.0f * scale;
+    const float bottom = ch - 60.0f * scale; // same bottom line as quickbar / legend
+    const float gap    = 10.0f * scale;
+    const ImVec4 lbl_col(0.55f, 0.55f, 0.54f, 1.0f);
+
+    // clickable title row with a thin stroked chevron (Line Type selector style)
+    auto title_row = [&](const char *label, bool *open) {
+        ImGui::PushID(label);
+        const ImVec2 p0 = ImGui::GetCursorScreenPos();
+        const float  h  = ImGui::GetFontSize() + 10.0f * scale;
+        float avail = ImGui::GetContentRegionAvail().x;
+        if (avail < 130.0f * scale) avail = 130.0f * scale;
+        const bool clicked = ImGui::InvisibleButton("##hdr", ImVec2(avail, h));
+        const bool hov = ImGui::IsItemHovered();
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+        const ImU32 col = hov ? IM_COL32(20, 20, 20, 255) : IM_COL32(60, 58, 55, 255);
+        const float cx = p0.x + 7.0f * scale;
+        const float cy = p0.y + h * 0.5f;
+        const float w  = 4.0f * scale;
+        if (*open) { // chevron down
+            dl->AddLine(ImVec2(cx - w, cy - w * 0.5f), ImVec2(cx, cy + w * 0.5f), col, 1.5f * scale);
+            dl->AddLine(ImVec2(cx, cy + w * 0.5f), ImVec2(cx + w, cy - w * 0.5f), col, 1.5f * scale);
+        } else {     // chevron up (card expands upward)
+            dl->AddLine(ImVec2(cx - w, cy + w * 0.5f), ImVec2(cx, cy - w * 0.5f), col, 1.5f * scale);
+            dl->AddLine(ImVec2(cx, cy - w * 0.5f), ImVec2(cx + w, cy + w * 0.5f), col, 1.5f * scale);
+        }
+        dl->AddText(ImVec2(p0.x + 20.0f * scale, p0.y + (h - ImGui::GetFontSize()) * 0.5f), col, label);
+        if (clicked) *open = !*open;
+        ImGui::PopID();
+    };
+
+    auto section = [&](const char *name) {
+        ImGui::Dummy(ImVec2(0.0f, 3.0f * scale));
+        ImGui::SetWindowFontScale(0.8f);
+        ImGui::TextColored(lbl_col, "%s", name);
+        ImGui::SetWindowFontScale(1.0f);
+    };
+
+    const float label_w = 128.0f * scale;
+    const float input_w = 76.0f * scale;
+
+    auto row_label = [&](const char *label) {
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted(label);
+        ImGui::SameLine(label_w);
+        ImGui::SetNextItemWidth(input_w);
+    };
+
+    Tab *print_tab = wxGetApp().get_tab(Preset::TYPE_PRINT);
+    const DynamicPrintConfig &pcfg = bundle.prints.get_edited_preset().config;
+
+    // integer row: applies on +/- click immediately, on typing when the field loses focus
+    auto int_row = [&](const char *label, const char *id, const char *key, int vmin, int vmax) {
+        int cur = 0;
+        if (const ConfigOption *o = pcfg.option(key)) cur = (int)o->getInt();
+        int v = cur;
+        row_label(label);
+        ImGui::InputInt(id, &v, 1, 1);
+        if (v != cur && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+            v = std::min(vmax, std::max(vmin, v));
+            if (v != cur && print_tab != nullptr) {
+                DynamicPrintConfig nf;
+                nf.set_key_value(key, new ConfigOptionInt(v));
+                print_tab->load_config(nf);
+            }
+        }
+    };
+
+    auto bool_row = [&](const char *label, const char *id, const char *key) {
+        bool cur = false;
+        if (const ConfigOption *o = pcfg.option(key)) cur = o->getBool();
+        bool v = cur;
+        row_label(label);
+        if (ImGui::Checkbox(id, &v) && v != cur && print_tab != nullptr) {
+            DynamicPrintConfig nf;
+            nf.set_key_value(key, new ConfigOptionBool(v));
+            print_tab->load_config(nf);
+        }
+    };
+
+    // combo with a thin chevron instead of the solid arrow
+    auto preset_combo = [&](const char *id, PresetCollection &coll, Preset::Type type, float width) {
+        const std::string cur_name = coll.get_edited_preset().name;
+        std::string short_name = cur_name.size() > 30 ? cur_name.substr(0, 28) + "..." : cur_name;
+        ImGui::SetNextItemWidth(width);
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+        const ImVec2 cpos = ImGui::GetCursorScreenPos();
+        const float  fh   = ImGui::GetFrameHeight();
+        const bool open = ImGui::BeginCombo(id, short_name.c_str(), ImGuiComboFlags_NoArrowButton);
+        {
+            const float cx = cpos.x + width - 13.0f * scale;
+            const float cy = cpos.y + fh * 0.5f - 1.5f * scale;
+            const float w  = 4.0f * scale;
+            dl->AddLine(ImVec2(cx - w, cy), ImVec2(cx, cy + w), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+            dl->AddLine(ImVec2(cx, cy + w), ImVec2(cx + w, cy), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+        }
+        if (open) {
+            for (const Preset &preset : coll.get_presets()) {
+                if (!preset.is_visible || preset.is_default) continue;
+                if (type != Preset::TYPE_PRINTER && !preset.is_compatible) continue;
+                const bool selected = preset.name == cur_name;
+                if (ImGui::Selectable(preset.name.c_str(), selected) && !selected) {
+                    if (Tab *t = wxGetApp().get_tab(type))
+                        t->select_preset(preset.name);
+                }
+                if (selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+    };
+
+    const int card_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+                           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+                           ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing;
+
+    // ---------------- Printer card (bottom of the stack) ----------------
+    imgui.set_next_window_pos(left, bottom, ImGuiCond_Always, 0.0f, 1.0f);
+    imgui.begin(std::string("QZCardPrinter"), card_flags);
+    title_row(_u8L("Printer").c_str(), &s_open_printer);
+    if (s_open_printer) {
+        ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+        preset_combo("##qzprinter", bundle.printers, Preset::TYPE_PRINTER, 220.0f * scale);
+        double nozzle = 0.0;
+        if (const ConfigOptionFloats *nd = prcfg.option<ConfigOptionFloats>("nozzle_diameter"); nd && !nd->values.empty())
+            nozzle = nd->values.front();
+        ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextColored(lbl_col, "%s", _u8L("Nozzle").c_str());
+        ImGui::SameLine(0.0f, 8.0f * scale);
+        char nb[32]; ::sprintf(nb, "%.1f mm", nozzle);
+        ImGui::TextUnformatted(nb);
+    }
+    s_printer_size = ImGui::GetWindowSize();
+    imgui.end();
+
+    // ---------------- Process card (stacked above) ----------------
+    imgui.set_next_window_pos(left, bottom - s_printer_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
+    imgui.begin(std::string("QZCardProcess"), card_flags);
+    title_row(_u8L("Process").c_str(), &s_open_process);
+    if (s_open_process) {
+        ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+        preset_combo("##qzprocess", bundle.prints, Preset::TYPE_PRINT, 220.0f * scale);
+
+        section(_u8L("WALLS").c_str());
+        int_row(_u8L("Wall loops").c_str(), "##qzwl", "wall_loops", 0, 20);
+
+        section(_u8L("INFILL").c_str());
+        {   // percent option needs its own writer
+            int cur = 0;
+            if (const ConfigOptionPercent *o = pcfg.option<ConfigOptionPercent>("sparse_infill_density")) cur = (int)std::lround(o->value);
+            int v = cur;
+            row_label(_u8L("Density (%)").c_str());
+            ImGui::InputInt("##qzid", &v, 5, 5);
+            if (v != cur && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                v = std::min(100, std::max(0, v));
+                if (v != cur && print_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("sparse_infill_density", new ConfigOptionPercent(v));
+                    print_tab->load_config(nf);
+                }
+            }
+        }
+
+        section(_u8L("SHELLS").c_str());
+        int_row(_u8L("Top layers").c_str(),    "##qztl", "top_shell_layers",    0, 50);
+        int_row(_u8L("Bottom layers").c_str(), "##qzbl", "bottom_shell_layers", 0, 50);
+
+        section(_u8L("OTHERS").c_str());
+        int_row(_u8L("Skirt loops").c_str(), "##qzsk", "skirt_loops", 0, 10);
+        bool_row(_u8L("Spiral vase").c_str(), "##qzsv", "spiral_mode");
+        bool_row(_u8L("Support").c_str(),     "##qzsu", "enable_support");
+    }
+    imgui.end();
+
+    ImGui::PopStyleVar(5);
+    ImGui::PopStyleColor(14);
 }
 
 } // namespace GUI

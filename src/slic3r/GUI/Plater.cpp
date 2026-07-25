@@ -2307,6 +2307,11 @@ Sidebar::Sidebar(Plater *parent)
         if (p->m_panel_filament_content) p->m_panel_filament_content->Show(false);
         if (p->scrolled) p->scrolled->Layout();
         Layout();
+        // Quasizero: with a QZmini printer the whole sidebar starts hidden -
+        // the floating Process/Printer cards are the primary quick access.
+        const DynamicPrintConfig &qzc = wxGetApp().preset_bundle->printers.get_edited_preset().config;
+        if (const ConfigOptionBool *qe = qzc.option<ConfigOptionBool>("qzmini_enable"); qe && qe->value)
+            wxGetApp().plater()->collapse_sidebar(true);
     });
 
 }
