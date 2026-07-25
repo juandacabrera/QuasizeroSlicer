@@ -2307,11 +2307,6 @@ Sidebar::Sidebar(Plater *parent)
         if (p->m_panel_filament_content) p->m_panel_filament_content->Show(false);
         if (p->scrolled) p->scrolled->Layout();
         Layout();
-        // Quasizero: with a QZmini printer the whole sidebar starts hidden -
-        // the floating Process/Printer cards are the primary quick access.
-        const DynamicPrintConfig &qzc = wxGetApp().preset_bundle->printers.get_edited_preset().config;
-        if (const ConfigOptionBool *qe = qzc.option<ConfigOptionBool>("qzmini_enable"); qe && qe->value)
-            wxGetApp().plater()->collapse_sidebar(true);
     });
 
 }
@@ -5663,6 +5658,14 @@ void Plater::priv::apply_free_camera_correction(bool apply/* = true*/)
 //BBS: add no slice option
 void Plater::priv::select_view_3D(const std::string& name, bool no_slice)
 {
+    // Quasizero: with a QZmini printer the sidebar must be collapsed whenever the
+    // user lands on Prepare or Preview; the native Expand Sidebar button (which
+    // relabels itself) remains the explicit way to open the Advanced panel.
+    if (name == "3D" || name == "Preview") {
+        const DynamicPrintConfig &qzcfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
+        if (const ConfigOptionBool *qe = qzcfg.option<ConfigOptionBool>("qzmini_enable"); qe && qe->value && !q->is_sidebar_collapsed())
+            q->collapse_sidebar(true);
+    }
     if (name == "3D") {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << "select view3D";
         if (q->only_gcode_mode() || q->using_exported_file()) {

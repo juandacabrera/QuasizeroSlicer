@@ -20,6 +20,7 @@
 #include "GLShader.hpp"
 #include "GUI.hpp"
 #include "Tab.hpp"
+#include "GLTexture.hpp"
 #include "GUI_Preview.hpp"
 #include "OpenGLManager.hpp"
 #include "Plater.hpp"
@@ -10871,8 +10872,8 @@ void GLCanvas3D::_render_qz_quick_cards()
     static bool   s_open_printer = false;
     static ImVec2 s_printer_size(0.0f, 0.0f);
 
-    const float left   = 12.0f * scale;
-    const float bottom = ch - 60.0f * scale; // same bottom line as quickbar / legend
+    const float left   = 200.0f * scale; // clear of the nav cube / burger / search icons
+    const float bottom = ch - 20.0f * scale; // same bottom line as quickbar / legend
     const float gap    = 10.0f * scale;
     const ImVec4 lbl_col(0.55f, 0.55f, 0.54f, 1.0f);
 
@@ -10991,17 +10992,105 @@ void GLCanvas3D::_render_qz_quick_cards()
     imgui.begin(std::string("QZCardPrinter"), card_flags);
     title_row(_u8L("Printer").c_str(), &s_open_printer);
     if (s_open_printer) {
+        const std::string cur_model   = prcfg.opt_string("printer_model");
+        const std::string cur_variant = prcfg.opt_string("printer_variant");
+
+        auto select_printer = [&](const std::string &model, const std::string &variant) {
+            const Preset *pick = nullptr;
+            for (const Preset &pr : bundle.printers.get_presets()) {
+                if (!pr.is_visible || pr.is_default) continue;
+                if (pr.config.opt_string("printer_model") != model) continue;
+                if (pick == nullptr) pick = &pr;
+                if (!variant.empty() && pr.config.opt_string("printer_variant") == variant) { pick = &pr; break; }
+            }
+            if (pick != nullptr && pick->name != bundle.printers.get_edited_preset().name)
+                if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(pick->name);
+        };
+        auto thin_chevron = [&](ImDrawList *dl, const ImVec2 &cpos, float width, float fh) {
+            const float ccx = cpos.x + width - 13.0f * scale;
+            const float ccy = cpos.y + fh * 0.5f - 1.5f * scale;
+            const float cw2 = 4.0f * scale;
+            dl->AddLine(ImVec2(ccx - cw2, ccy), ImVec2(ccx, ccy + cw2), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+            dl->AddLine(ImVec2(ccx, ccy + cw2), ImVec2(ccx + cw2, ccy), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+        };
+
+        // cover thumbnail; falls away on small windows, like the native sidebar
+        static GLTexture   s_qz_cover;
+        static std::string s_qz_cover_path;
+        if (ch >= 520.0f * scale) {
+            const std::string cover_path = resources_dir() + "/profiles/Quasizero/" + cur_model + "_cover.png";
+            if (s_qz_cover_path != cover_path) {
+                s_qz_cover.reset();
+                if (wxFileExists(wxString::FromUTF8(cover_path.c_str())))
+                    s_qz_cover.load_from_file(cover_path, false, GLTexture::None, false);
+                s_qz_cover_path = cover_path;
+            }
+            if (s_qz_cover.get_id() != 0) {
+                const float iw  = 108.0f * scale;
+                const float ih2 = iw * (float)s_qz_cover.get_height() / (float)std::max(1, s_qz_cover.get_width());
+                ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (220.0f * scale - iw) * 0.5f);
+                ImGui::Image((ImTextureID)(intptr_t)s_qz_cover.get_id(), ImVec2(iw, ih2));
+            }
+        }
+
+        // model selector (no nozzle suffix, like the native sidebar cell)
         ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
-        preset_combo("##qzprinter", bundle.printers, Preset::TYPE_PRINTER, 220.0f * scale);
-        double nozzle = 0.0;
-        if (const ConfigOptionFloats *nd = prcfg.option<ConfigOptionFloats>("nozzle_diameter"); nd && !nd->values.empty())
-            nozzle = nd->values.front();
+        {
+            std::string short_model = cur_model.size() > 30 ? cur_model.substr(0, 28) + "..." : cur_model;
+            ImGui::SetNextItemWidth(220.0f * scale);
+            ImDrawList *dl = ImGui::GetWindowDrawList();
+            const ImVec2 cpos = ImGui::GetCursorScreenPos();
+            const float  fh   = ImGui::GetFrameHeight();
+            const bool open = ImGui::BeginCombo("##qzpmodel", short_model.c_str(), ImGuiComboFlags_NoArrowButton);
+            thin_chevron(dl, cpos, 220.0f * scale, fh);
+            if (open) {
+                std::vector<std::string> seen;
+                for (const Preset &pr : bundle.printers.get_presets()) {
+                    if (!pr.is_visible || pr.is_default) continue;
+                    const std::string model = pr.config.opt_string("printer_model");
+                    if (model.empty() || std::find(seen.begin(), seen.end(), model) != seen.end()) continue;
+                    seen.push_back(model);
+                    const bool selected = model == cur_model;
+                    if (ImGui::Selectable(model.c_str(), selected) && !selected)
+                        select_printer(model, cur_variant);
+                    if (selected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+        // nozzle selector (variants available for the current model)
         ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
         ImGui::AlignTextToFramePadding();
         ImGui::TextColored(lbl_col, "%s", _u8L("Nozzle").c_str());
-        ImGui::SameLine(0.0f, 8.0f * scale);
-        char nb[32]; ::sprintf(nb, "%.1f mm", nozzle);
-        ImGui::TextUnformatted(nb);
+        ImGui::SameLine(0.0f, 10.0f * scale);
+        {
+            ImGui::SetNextItemWidth(80.0f * scale);
+            ImDrawList *dl = ImGui::GetWindowDrawList();
+            const ImVec2 cpos = ImGui::GetCursorScreenPos();
+            const float  fh   = ImGui::GetFrameHeight();
+            const bool open = ImGui::BeginCombo("##qzpnozzle", cur_variant.c_str(), ImGuiComboFlags_NoArrowButton);
+            thin_chevron(dl, cpos, 80.0f * scale, fh);
+            if (open) {
+                std::vector<std::string> vars;
+                for (const Preset &pr : bundle.printers.get_presets()) {
+                    if (!pr.is_visible || pr.is_default) continue;
+                    if (pr.config.opt_string("printer_model") != cur_model) continue;
+                    const std::string v = pr.config.opt_string("printer_variant");
+                    if (v.empty() || std::find(vars.begin(), vars.end(), v) != vars.end()) continue;
+                    vars.push_back(v);
+                }
+                std::sort(vars.begin(), vars.end());
+                for (const std::string &v : vars) {
+                    const bool selected = v == cur_variant;
+                    if (ImGui::Selectable(v.c_str(), selected) && !selected)
+                        select_printer(cur_model, v);
+                    if (selected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
     }
     s_printer_size = ImGui::GetWindowSize();
     imgui.end();

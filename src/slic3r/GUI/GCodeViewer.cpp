@@ -16,6 +16,8 @@
 
 #include "GUI_App.hpp"
 #include "MainFrame.hpp"
+#include "ParamsDialog.hpp"
+#include "ParamsPanel.hpp"
 #include "Plater.hpp"
 #include "Tab.hpp"
 #include "Camera.hpp"
@@ -72,7 +74,7 @@ static float  g_qz_legend_top = 0.0f;          // for stacking the G-code window
 //        _u8L("Temperature"),
 //        _u8L("Flow"),
 //        _u8L("Tool"),
-//        _u8L("Biomaterial")
+//        _u8L("Filament")
 //    };
 
 static std::string get_view_type_string(libvgcode::EViewType view_type)
@@ -104,7 +106,7 @@ static std::string get_view_type_string(libvgcode::EViewType view_type)
     else if (view_type == libvgcode::EViewType::Tool)
         return _u8L("Tool");
     else if (view_type == libvgcode::EViewType::ColorPrint)
-        return _u8L("Biomaterial");
+        return _u8L("Material"); // Quasizero
     else if (view_type == libvgcode::EViewType::LayerTimeLinear)
         return _u8L("Layer Time");
     else if (view_type == libvgcode::EViewType::LayerTimeLogarithmic)
@@ -2739,7 +2741,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
 
         std::vector<std::pair<std::string, std::vector<::string>>> title_columns;
         if (displayed_columns & ColumnData::Model) {
-            title_columns.push_back({ _u8L("Biomaterial"), {""} });
+            title_columns.push_back({ _u8L("Filament"), {""} });
             title_columns.push_back({ _u8L("Model"), {buff} });
         }
         if (displayed_columns & ColumnData::Support) {
@@ -2769,7 +2771,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
         for (auto it = model_volume_of_extruders_all_plates.begin(); it != model_volume_of_extruders_all_plates.end(); it++) {
             if (i < model_used_filaments_m_all_plates.size() && i < model_used_filaments_g_all_plates.size()) {
                 std::vector<std::pair<std::string, float>> columns_offsets;
-                columns_offsets.push_back({ std::to_string(it->first + 1), offsets[_u8L("Biomaterial")]});
+                columns_offsets.push_back({ std::to_string(it->first + 1), offsets[_u8L("Filament")]});
 
                 char buf[64];
                 float column_sum_m = 0.0f;
@@ -3142,7 +3144,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     ImGuiWrapper& imgui = *wxGetApp().imgui();
 
     //BBS: GUI refactor: move to the right
-    imgui.set_next_window_pos(float(canvas_width - right_margin * m_scale), (float)canvas_height - 60.0f * m_scale, ImGuiCond_Always, 1.0f, 1.0f); // Quasizero: bottom-right, grows upward, aligned with quickbar/nav cube
+    imgui.set_next_window_pos(float(canvas_width - right_margin * m_scale), (float)canvas_height - 20.0f * m_scale, ImGuiCond_Always, 1.0f, 1.0f); // Quasizero: bottom-right, aligned with the corner icons
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f * m_scale); // Quasizero floating card rounding
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0,0.0));
     ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.24f,0.20f,0.17f,0.18f)); // Quasizero soft separator
@@ -3544,6 +3546,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         legend_height = ImGui::GetFrameHeight() + window_padding * 4; // ORCA using 4 instead 2 gives correct toolbar margins while its folded
         ImGui::SameLine(window_width);                // ORCA use stored window width while folded. This prevents annoying position change on fold/expand button
         ImGui::Dummy({ 0, 0 });
+        g_qz_legend_top = ImGui::GetWindowPos().y;    // Quasizero: keep the G-code window glued above even while folded
         imgui.end();
         ImGui::PopStyleColor(7);
         ImGui::PopStyleVar(2);
@@ -3762,7 +3765,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         }
 
         offsets = calculate_offsets({ { "Extruder NNN", {""}}}, icon_size);
-        append_headers({ {_u8L("Biomaterial"), offsets[0]}, {_u8L("Usage"), offsets[1]} });
+        append_headers({ {_u8L("Filament"), offsets[0]}, {_u8L("Usage"), offsets[1]} });
         break;
     }
     case libvgcode::EViewType::ColorPrint:
@@ -3776,7 +3779,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
 
         std::vector<std::pair<std::string, std::vector<::string>>> title_columns;
         if (displayed_columns & ColumnData::Model) {
-            title_columns.push_back({ _u8L("Biomaterial"), {""} });
+            title_columns.push_back({ _u8L("Filament"), {""} });
             title_columns.push_back({ _u8L("Model"), total_filaments });
         }
         if (displayed_columns & ColumnData::Support) {
@@ -4074,7 +4077,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         for (auto extruder_idx : used_extruders_ids) {
             if (i < model_used_filaments_m.size() && i < model_used_filaments_g.size()) {
                 std::vector<std::pair<std::string, float>> columns_offsets;
-                columns_offsets.push_back({ std::to_string(extruder_idx + 1), color_print_offsets[_u8L("Biomaterial")]});
+                columns_offsets.push_back({ std::to_string(extruder_idx + 1), color_print_offsets[_u8L("Filament")]});
 
                 char buf[64];
                 float column_sum_m = 0.0f;
@@ -4136,7 +4139,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
             window->DrawList->AddLine(separator.Min, ImVec2(separator.Max.x, separator.Min.y), ImGui::GetColorU32(ImGuiCol_Separator));
 
             std::vector<std::pair<std::string, float>> columns_offsets;
-            columns_offsets.push_back({ _u8L("Total"), color_print_offsets[_u8L("Biomaterial")]});
+            columns_offsets.push_back({ _u8L("Total"), color_print_offsets[_u8L("Filament")]});
             if (displayed_columns & ColumnData::Model) {
                 const std::string weight_text = format_compact_weight(total_model_used_filament_g, imperial_units);
                 if ((displayed_columns & ~ColumnData::Model) > 0)
@@ -4467,7 +4470,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
                 ret = std::max(ret, ImGui::CalcTextSize((_u8L("Print settings") + std::string(":")).c_str()).x);
             if (!m_settings_ids.filament.empty()) {
                 for (unsigned char i : m_viewer.get_used_extruders_ids()) {
-                    ret = std::max(ret, ImGui::CalcTextSize((_u8L("Biomaterial") + " " + std::to_string(i + 1) + ":").c_str()).x);
+                    ret = std::max(ret, ImGui::CalcTextSize((_u8L("Filament") + " " + std::to_string(i + 1) + ":").c_str()).x);
                 }
             }
             if (ret > 0.0f)
@@ -4493,7 +4496,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         if (!m_settings_ids.filament.empty()) {
             for (unsigned char i : m_viewer.get_used_extruders_ids()) {
                 if (i < static_cast<unsigned char>(m_settings_ids.filament.size()) && !m_settings_ids.filament[i].empty()) {
-                    std::string txt = _u8L("Biomaterial");
+                    std::string txt = _u8L("Filament");
                     txt += (m_viewer.get_used_extruders_count() == 1) ? ":" : " " + std::to_string(i + 1);
                     imgui.text(txt);
                     ImGui::SameLine(offset);
@@ -4836,7 +4839,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 9.0f * m_scale);                       // rounded value boxes / buttons
     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, ImVec4(0.878f,0.874f,0.866f,1.0f));     // light selection, dark text readable
 
-    const float bottom_y = (float)canvas_height - 60.0f * m_scale; // aligned with the legend bottom line
+    const float bottom_y = (float)canvas_height - 20.0f * m_scale; // aligned with the legend bottom line
     if ((float)canvas_width < 520.0f * m_scale) { g_qz_quickbar_active = false; g_qz_reserved_bottom = 170.0f;
         ImGui::PopStyleVar(4); ImGui::PopStyleColor(7); return; }
     g_qz_quickbar_active = true;
@@ -4858,6 +4861,9 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     auto field = [&](const char *label,const char *id,double *val,const char *unit,double vmin,double vmax,double disp=1.0,const char *fmt="%.2f"){
         if (qz_row_y < 0.0f) qz_row_y = ImGui::GetCursorPosY(); else ImGui::SetCursorPosY(qz_row_y);
         ImGui::BeginGroup();
+        // the shared row inherits a text-baseline offset from the previous column's
+        // framed input; zero it so every column's label starts at the same top
+        ImGui::GetCurrentWindow()->DC.CurrLineTextBaseOffset = 0.0f;
         ImGui::SetWindowFontScale(0.85f);
         ImGui::TextColored(label_col,"%s",label);
         ImGui::SetWindowFontScale(1.0f);
@@ -5119,6 +5125,35 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
             ImGui::EndCombo();
         }
         pop_combo_style();
+        // pencil: click to edit the material preset (opens the settings dialog)
+        ImGui::SameLine(0.0f, 6.0f*m_scale);
+        {
+            const ImVec2 ep = ImGui::GetCursorScreenPos();
+            const float  eh = ImGui::GetFrameHeight();
+            const bool eclk = ImGui::InvisibleButton("##qzmatedit", ImVec2(eh, eh));
+            const bool ehov = ImGui::IsItemHovered();
+            ImDrawList *edl = ImGui::GetWindowDrawList();
+            const ImU32 ecol = ehov ? IM_COL32(20,20,20,255) : IM_COL32(90,88,85,255);
+            const float m0 = 4.0f*m_scale;
+            const ImVec2 a(ep.x + m0, ep.y + eh - m0);            // tip (bottom-left)
+            const ImVec2 b(ep.x + eh - m0, ep.y + m0);            // cap (top-right)
+            edl->AddLine(a, b, ecol, 1.6f*m_scale);
+            edl->AddLine(ImVec2(b.x - 3.5f*m_scale, b.y - 1.2f*m_scale),
+                         ImVec2(b.x + 1.2f*m_scale, b.y + 3.5f*m_scale), ecol, 1.6f*m_scale); // eraser cap
+            edl->AddTriangleFilled(a, ImVec2(a.x + 3.0f*m_scale, a.y), ImVec2(a.x, a.y - 3.0f*m_scale), ecol);
+            if (ehov) ImGui::SetTooltip("%s", _u8L("Click to edit preset").c_str());
+            if (eclk) {
+                if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) {
+                    if (ft->GetParent() == wxGetApp().params_panel())
+                        wxGetApp().mainframe->select_tab(MainFrame::tp3DEditor);
+                    else {
+                        wxGetApp().params_dialog()->Popup();
+                        ft->OnActivate();
+                    }
+                    ft->restore_last_select_item();
+                }
+            }
+        }
     }
     ImGui::Dummy(ImVec2(0.0f, 3.0f*m_scale));
     ImGui::TextColored(label_col,"%s", _u8L("Refills").c_str());
