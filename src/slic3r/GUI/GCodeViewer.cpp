@@ -4943,7 +4943,15 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
         if (s_play) {
             if (GLCanvas3D *cnv = wxGetApp().plater()->get_current_canvas3D()) cnv->request_extra_frame(); // keep animating without input
             if (hi > lo) {
-                const double rate = std::max(30.0, (double)(hi - lo) / 20.0); // one layer path in ~20 s
+                // pace by the layer's estimated print time (~3x real speed): dense
+                // micro-segment areas flow instead of crawling, sparse ones do not jump
+                double t_layer = 20.0;
+                {
+                    const std::vector<float> lts = m_viewer.get_layers_estimated_times();
+                    const int li = layer_cur - 1;
+                    if (li >= 0 && li < (int)lts.size() && lts[li] > 0.5f) t_layer = (double)lts[li];
+                }
+                const double rate = std::max(30.0, (double)(hi - lo) / std::max(2.0, t_layer / 3.0));
                 s_acc += ImGui::GetIO().DeltaTime * rate;
                 const int step = (int)s_acc;
                 if (step > 0) {
@@ -5134,13 +5142,13 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
             const bool ehov = ImGui::IsItemHovered();
             ImDrawList *edl = ImGui::GetWindowDrawList();
             const ImU32 ecol = ehov ? IM_COL32(20,20,20,255) : IM_COL32(90,88,85,255);
-            const float m0 = 4.0f*m_scale;
-            const ImVec2 a(ep.x + m0, ep.y + eh - m0);            // tip (bottom-left)
-            const ImVec2 b(ep.x + eh - m0, ep.y + m0);            // cap (top-right)
-            edl->AddLine(a, b, ecol, 1.6f*m_scale);
-            edl->AddLine(ImVec2(b.x - 3.5f*m_scale, b.y - 1.2f*m_scale),
-                         ImVec2(b.x + 1.2f*m_scale, b.y + 3.5f*m_scale), ecol, 1.6f*m_scale); // eraser cap
-            edl->AddTriangleFilled(a, ImVec2(a.x + 3.0f*m_scale, a.y), ImVec2(a.x, a.y - 3.0f*m_scale), ecol);
+            // native look: rounded sheet outline with a pencil crossing its corner
+            const float m0 = 3.0f*m_scale;
+            const ImVec2 r0(ep.x + m0, ep.y + m0 + 1.5f*m_scale);
+            const ImVec2 r1(ep.x + eh - m0 - 4.5f*m_scale, ep.y + eh - m0);
+            edl->AddRect(r0, r1, ecol, 2.0f*m_scale, 0, 1.4f*m_scale);
+            edl->AddLine(ImVec2(r0.x + (r1.x - r0.x)*0.45f, r1.y - 2.0f*m_scale),
+                         ImVec2(ep.x + eh - m0, ep.y + m0), ecol, 1.6f*m_scale);
             if (ehov) ImGui::SetTooltip("%s", _u8L("Click to edit preset").c_str());
             if (eclk) {
                 if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) {
@@ -5195,11 +5203,12 @@ void GCodeViewer::push_combo_style()
     ImGui::PushStyleColor(ImGuiCol_BorderActive, ImVec4(0.75f, 0.74f, 0.73f, 1.00f));
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.918f, 0.914f, 0.906f, 1.00f));
     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.882f, 0.878f, 0.870f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.918f, 0.914f, 0.906f, 1.00f)); // selected item: light bg, dark text
 }
 void GCodeViewer::pop_combo_style()
 {
     ImGui::PopStyleVar(3);
-    ImGui::PopStyleColor(8);
+    ImGui::PopStyleColor(9);
 }
 
 void GCodeViewer::render_slider(int canvas_width, int canvas_height) {

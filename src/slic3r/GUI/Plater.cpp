@@ -1743,7 +1743,7 @@ Sidebar::Sidebar(Plater *parent)
 
         struct PanelColors {
             wxColour bg_normal = "#FFFFFF";
-            wxColour bg_focus  = "#E5F0EE";
+            wxColour bg_focus  = "#ECEBE9"; // Quasizero neutral
             wxColour bd_normal = "#DBDBDB";
             wxColour bd_hover  = "#3A3835";
             wxColour bd_focus  = "#3A3835";
@@ -2298,6 +2298,10 @@ Sidebar::Sidebar(Plater *parent)
     auto *sizer = new wxBoxSizer(wxVERTICAL);
     sizer->Add(p->scrolled, 1, wxEXPAND);
     SetSizer(sizer);
+
+    // Quasizero: no dark seams - sidebar chrome matches the light canvas
+    this->SetBackgroundColour(wxColour(245, 245, 244));
+    if (p->scrolled) p->scrolled->SetBackgroundColour(wxColour(245, 245, 244));
 
     // Quasizero (Tesla reference): start with the Printer and Biomaterial cards
     // collapsed. Deferred via CallAfter so the initial preset load (which can
@@ -11394,6 +11398,17 @@ void Plater::priv::set_bed_shape(const Pointfs       &shape,
     else
         SCALING_FACTOR = SCALING_FACTOR_INTERNAL_LARGE_PRINTER;
 
+    // Quasizero: QZmini printers get the Quasizero plate logo when no custom texture is set
+    std::string qz_custom_texture = custom_texture;
+    if (qz_custom_texture.empty()) {
+        const ConfigOptionBool *qz_en = wxGetApp().preset_bundle->printers.get_edited_preset().config.option<ConfigOptionBool>("qzmini_enable");
+        if (qz_en != nullptr && qz_en->value) {
+            const std::string qz_logo = resources_dir() + "/profiles/Quasizero/qz_plate_logo.svg";
+            boost::system::error_code qz_ec;
+            if (boost::filesystem::exists(qz_logo, qz_ec)) qz_custom_texture = qz_logo;
+        }
+    }
+
     //BBS: add shape position
     Vec2d shape_position = partplate_list.get_current_shape_position();
     bool new_shape = bed.set_shape(shape, printable_height, extruder_areas, extruder_heights, custom_model, force_as_custom, shape_position);
@@ -11407,8 +11422,8 @@ void Plater::priv::set_bed_shape(const Pointfs       &shape,
     Pointfs prev_wrapping_exclude_areas = partplate_list.get_wrapping_exclude_area();
     new_shape |= (height_to_lid != prev_height_lid) || (height_to_rod != prev_height_rod) || (prev_exclude_areas != exclude_areas)
         || (prev_wrapping_exclude_areas != wrapping_exclude_areas);
-    if (!new_shape && partplate_list.get_logo_texture_filename() != custom_texture) {
-        partplate_list.update_logo_texture_filename(custom_texture);
+    if (!new_shape && partplate_list.get_logo_texture_filename() != qz_custom_texture) {
+        partplate_list.update_logo_texture_filename(qz_custom_texture);
     }
     if (new_shape) {
         if (view3D) view3D->bed_shape_changed();
@@ -11421,7 +11436,7 @@ void Plater::priv::set_bed_shape(const Pointfs       &shape,
         double z = config->opt_float("printable_height");
 
         partplate_list.reset_size(max.x() - min.x() - Bed3D::Axes::DefaultTipRadius, max.y() - min.y() - Bed3D::Axes::DefaultTipRadius, z);
-        partplate_list.set_shapes(shape, exclude_areas, wrapping_exclude_areas, extruder_areas, extruder_heights, custom_texture, height_to_lid, height_to_rod);
+        partplate_list.set_shapes(shape, exclude_areas, wrapping_exclude_areas, extruder_areas, extruder_heights, qz_custom_texture, height_to_lid, height_to_rod);
 
         Vec2d new_shape_position = partplate_list.get_current_shape_position();
         if (shape_position != new_shape_position)

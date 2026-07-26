@@ -2125,6 +2125,10 @@ void Tab::on_presets_changed()
     }
 
     bool is_bbl_vendor_preset = m_preset_bundle->is_bbl_vendor();
+    { // Quasizero: QZmini plates show the Quasizero logo texture instead of the Bambu bedtype textures
+        const ConfigOptionBool *qz_en = m_preset_bundle->printers.get_edited_preset().config.option<ConfigOptionBool>("qzmini_enable");
+        if (qz_en != nullptr && qz_en->value) is_bbl_vendor_preset = false;
+    }
     if (is_bbl_vendor_preset) {
         wxGetApp().plater()->get_partplate_list().set_render_option(true, true);
         if (m_preset_bundle->printers.get_edited_preset().has_cali_lines(wxGetApp().preset_bundle)) {

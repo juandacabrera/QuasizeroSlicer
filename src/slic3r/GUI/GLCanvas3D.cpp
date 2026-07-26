@@ -21,6 +21,8 @@
 #include "GUI.hpp"
 #include "Tab.hpp"
 #include "GLTexture.hpp"
+#include "ParamsDialog.hpp"
+#include "ParamsPanel.hpp"
 #include "GUI_Preview.hpp"
 #include "OpenGLManager.hpp"
 #include "Plater.hpp"
@@ -2211,6 +2213,8 @@ void GLCanvas3D::render(bool only_init)
             right_margin = SLIDER_RIGHT_MARGIN * scale_factor * GCODE_VIEWER_SLIDER_SCALE;
             bottom_margin = SLIDER_BOTTOM_MARGIN * scale_factor * GCODE_VIEWER_SLIDER_SCALE;
         }
+        // Quasizero: transient notifications live top-right, under Slice/Print
+        bottom_margin = std::max(60.0f, (float)get_canvas_size().get_height() - 300.0f * get_scale());
         wxGetApp().plater()->get_notification_manager()->render_notifications(*this, get_overlay_window_width(), bottom_margin, right_margin);
         wxGetApp().plater()->get_dailytips()->render();
     }
@@ -10858,6 +10862,7 @@ void GLCanvas3D::_render_qz_quick_cards()
     ImGui::PushStyleColor(ImGuiCol_PopupBg,         ImVec4(1.0f, 1.0f, 1.0f, 0.98f));
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4(0.918f, 0.914f, 0.906f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_HeaderActive,    ImVec4(0.882f, 0.878f, 0.870f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Header,          ImVec4(0.918f, 0.914f, 0.906f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_Button,          ImVec4(0.937f, 0.933f, 0.925f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered,   ImVec4(0.906f, 0.902f, 0.894f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive,    ImVec4(0.882f, 0.878f, 0.870f, 1.0f));
@@ -11031,6 +11036,32 @@ void GLCanvas3D::_render_qz_quick_cards()
                 ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (220.0f * scale - iw) * 0.5f);
                 ImGui::Image((ImTextureID)(intptr_t)s_qz_cover.get_id(), ImVec2(iw, ih2));
+                // edit pencil at the top-right corner of the card, over the cover row
+                const ImVec2 imn = ImGui::GetItemRectMin();
+                const float  peh = 18.0f * scale;
+                const float  pex = ImGui::GetWindowPos().x + ImGui::GetWindowSize().x - peh - 10.0f * scale;
+                const ImVec2 keep = ImGui::GetCursorScreenPos();
+                ImGui::SetCursorScreenPos(ImVec2(pex, imn.y));
+                const bool pclk = ImGui::InvisibleButton("##qzpedit", ImVec2(peh, peh));
+                const bool phov = ImGui::IsItemHovered();
+                ImDrawList *pdl = ImGui::GetWindowDrawList();
+                const ImU32 pcol = phov ? IM_COL32(20, 20, 20, 255) : IM_COL32(110, 108, 105, 255);
+                const float pm = 2.5f * scale;
+                pdl->AddRect(ImVec2(pex + pm, imn.y + pm + 1.5f * scale), ImVec2(pex + peh - pm - 3.5f * scale, imn.y + peh - pm), pcol, 2.0f * scale, 0, 1.3f * scale);
+                pdl->AddLine(ImVec2(pex + peh * 0.42f, imn.y + peh - 3.0f * scale), ImVec2(pex + peh - pm, imn.y + pm), pcol, 1.5f * scale);
+                if (phov) ImGui::SetTooltip("%s", _u8L("Click to edit preset").c_str());
+                if (pclk) {
+                    if (Tab *pt2 = wxGetApp().get_tab(Preset::TYPE_PRINTER)) {
+                        if (pt2->GetParent() == wxGetApp().params_panel())
+                            wxGetApp().mainframe->select_tab(MainFrame::tp3DEditor);
+                        else {
+                            wxGetApp().params_dialog()->Popup();
+                            pt2->OnActivate();
+                        }
+                        pt2->restore_last_select_item();
+                    }
+                }
+                ImGui::SetCursorScreenPos(keep);
             }
         }
 
@@ -11056,6 +11087,11 @@ void GLCanvas3D::_render_qz_quick_cards()
                         select_printer(model, cur_variant);
                     if (selected) ImGui::SetItemDefaultFocus();
                 }
+                ImGui::Separator();
+                if (ImGui::Selectable((_u8L("Select/Remove printers (system presets)") + "##qzwiz").c_str()))
+                    wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS); });
+                if (ImGui::Selectable((_u8L("Create printer") + "##qzwiz2").c_str()))
+                    wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_CUSTOM); });
                 ImGui::EndCombo();
             }
         }
@@ -11102,6 +11138,19 @@ void GLCanvas3D::_render_qz_quick_cards()
     if (s_open_process) {
         ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
         preset_combo("##qzprocess", bundle.prints, Preset::TYPE_PRINT, 220.0f * scale);
+        if (bundle.prints.get_edited_preset().is_dirty && print_tab != nullptr) {
+            ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+            if (ImGui::Button((_u8L("Save") + "##qzsavep").c_str()))
+                wxGetApp().CallAfter([print_tab]() { print_tab->save_preset(); });
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", _u8L("Save current settings as a new preset").c_str());
+            ImGui::SameLine(0.0f, 6.0f * scale);
+            if (ImGui::Button((_u8L("Reset") + "##qzresetp").c_str()))
+                wxGetApp().CallAfter([print_tab]() {
+                    wxGetApp().preset_bundle->prints.discard_current_changes();
+                    print_tab->load_current_preset();
+                });
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", _u8L("Click to drop current modify and reset to saved value").c_str());
+        }
 
         section(_u8L("WALLS").c_str());
         int_row(_u8L("Wall loops").c_str(), "##qzwl", "wall_loops", 0, 20);
@@ -11135,7 +11184,7 @@ void GLCanvas3D::_render_qz_quick_cards()
     imgui.end();
 
     ImGui::PopStyleVar(5);
-    ImGui::PopStyleColor(14);
+    ImGui::PopStyleColor(15);
 }
 
 } // namespace GUI

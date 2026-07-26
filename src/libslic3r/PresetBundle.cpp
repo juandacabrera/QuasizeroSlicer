@@ -2927,8 +2927,13 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
             std::string alt = cur;
             const size_t p_ = alt.find("2.0 nozzle");
             alt.replace(p_, 3, "4.0");
-            if (printers.find_preset(alt, false) != nullptr)
+            if (printers.find_preset(alt, false) != nullptr) {
                 printers.select_preset_by_name(alt, true);
+                // and load that nozzle's default process too
+                const auto *dpp = printers.get_selected_preset().config.option<ConfigOptionString>("default_print_profile");
+                if (dpp != nullptr && !dpp->value.empty() && prints.find_preset(dpp->value, false) != nullptr)
+                    prints.select_preset_by_name(dpp->value, true);
+            }
         }
     }
 }
