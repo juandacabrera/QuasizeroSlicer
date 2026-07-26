@@ -3698,6 +3698,9 @@ void GUI_App::select_machine(const std::string& agent_id)
 
 bool GUI_App::dark_mode()
 {
+    // Quasizero: the whole product ships a single light theme; never let the OS
+    // dark appearance leak into the window chrome, title bar or icon variants.
+    return false;
 #ifdef SUPPORT_DARK_MODE
 #if __APPLE__
     // The check for dark mode returns false positive on 10.12 and 10.13,
