@@ -1097,7 +1097,9 @@ void PartPlate::show_tooltip(const std::string tooltip)
     ImGui::PushStyleColor(ImGuiCol_Border, {0, 0, 0, 0});
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
     ImGui::BeginTooltip();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f)); // Quasizero: readable dark text
     ImGui::TextUnformatted(tooltip.c_str());
+    ImGui::PopStyleColor();
     ImGui::EndTooltip();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(2);

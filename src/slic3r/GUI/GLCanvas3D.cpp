@@ -10847,7 +10847,20 @@ void GLCanvas3D::_render_qz_quick_cards()
     PresetBundle &bundle = *wxGetApp().preset_bundle;
     const DynamicPrintConfig &prcfg = bundle.printers.get_edited_preset().config;
     const ConfigOptionBool *qz_en = prcfg.option<ConfigOptionBool>("qzmini_enable");
-    if (qz_en == nullptr || !qz_en->value)
+    const bool is_qz_printer = (qz_en != nullptr && qz_en->value);
+    const std::string cur_model_top = prcfg.opt_string("printer_model");
+    const std::string base_model = (cur_model_top.rfind("QZmini @ ", 0) == 0) ? cur_model_top.substr(9) : cur_model_top;
+    // stock printer with a QZmini sibling still shows the cards, so the user can
+    // switch the extruder back and forth without leaving the ecosystem
+    bool has_qz_sibling = false;
+    {
+        const std::string want = std::string("QZmini @ ") + base_model;
+        for (const Preset &pr : bundle.printers.get_presets()) {
+            if (pr.is_default) continue;
+            if (pr.config.opt_string("printer_model") == want) { has_qz_sibling = true; break; }
+        }
+    }
+    if (!is_qz_printer && !has_qz_sibling)
         return;
 
     ImGuiWrapper &imgui = *wxGetApp().imgui();
@@ -10855,8 +10868,8 @@ void GLCanvas3D::_render_qz_quick_cards()
     const Size cnv_size = get_canvas_size();
     const float cw = (float)cnv_size.get_width();
     const float ch = (float)cnv_size.get_height();
-    if (cw < 420.0f * scale || ch < 300.0f * scale)
-        return;
+    if (cw < 700.0f * scale || ch < 300.0f * scale)
+        return; // too small: the model view has priority
 
     // shared style, matching the preview quickbar capsules
     ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4(1.0f, 1.0f, 1.0f, 0.96f));
@@ -10880,9 +10893,11 @@ void GLCanvas3D::_render_qz_quick_cards()
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding,    7.0f * scale);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,  0.0f);
 
-    static bool   s_open_process = false;   // folded by default, like the reference
-    static bool   s_open_printer = false;
+    static bool   s_open_process  = false;   // folded by default, like the reference
+    static bool   s_open_printer  = false;
+    static bool   s_open_extruder = false;
     static ImVec2 s_printer_size(0.0f, 0.0f);
+    static ImVec2 s_extruder_size(0.0f, 0.0f);
 
     const float left   = 200.0f * scale; // clear of the nav cube / burger / search icons
     const float bottom = ch - 20.0f * scale; // same bottom line as quickbar / legend
@@ -11045,16 +11060,88 @@ void GLCanvas3D::_render_qz_quick_cards()
         }
     };
 
+    auto thin_chevron = [&](ImDrawList *dl, const ImVec2 &cpos, float width, float fh) {
+        const float ccx = cpos.x + width - 13.0f * scale;
+        const float ccy = cpos.y + fh * 0.5f - 1.5f * scale;
+        const float cw2 = 4.0f * scale;
+        dl->AddLine(ImVec2(ccx - cw2, ccy), ImVec2(ccx, ccy + cw2), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+        dl->AddLine(ImVec2(ccx, ccy + cw2), ImVec2(ccx + cw2, ccy), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+    };
+
     const int card_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
                            ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
                            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing;
+    // an open card never grows past ~55% of the canvas height - it scrolls instead
+    const float qz_card_max_h = ch * 0.55f;
+    const int card_flags_open = (card_flags & ~ImGuiWindowFlags_NoScrollbar);
 
-    // ---------------- Printer card (bottom of the stack) ----------------
+    // ---------------- Extruder card (bottom of the stack) ----------------
     imgui.set_next_window_pos(left, bottom, ImGuiCond_Always, 0.0f, 1.0f);
-    imgui.begin(std::string("QZCardPrinter"), card_flags);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, qz_card_max_h));
+    imgui.begin(std::string("QZCardExtruder"), s_open_extruder ? card_flags_open : card_flags);
+    title_row(_u8L("Extruder").c_str(), &s_open_extruder);
+    if (s_open_extruder) {
+        // candidates for both extruders of the current base printer
+        const Preset *qz_pick = nullptr, *stock_pick = nullptr;
+        for (const Preset &pr : bundle.printers.get_presets()) {
+            if (pr.is_default) continue;
+            const std::string m = pr.config.opt_string("printer_model");
+            if (m == std::string("QZmini @ ") + base_model) {
+                if (qz_pick == nullptr || pr.config.opt_string("printer_variant") == "4.0") qz_pick = &pr;
+            } else if (m == base_model) {
+                if (stock_pick == nullptr || pr.config.opt_string("printer_variant") == "0.4") stock_pick = &pr;
+            }
+        }
+        // thumbnail only for the QZmini extruder
+        if (is_qz_printer && ch >= 520.0f * scale) {
+            static GLTexture s_qz_ext_tex;
+            if (s_qz_ext_tex.get_id() == 0) {
+                const std::string ext_png = resources_dir() + "/images/qz_extruder_qzmini.png";
+                if (wxFileExists(wxString::FromUTF8(ext_png.c_str())))
+                    s_qz_ext_tex.load_from_file(ext_png, false, GLTexture::None, false);
+            }
+            if (s_qz_ext_tex.get_id() != 0) {
+                const float ihh = 96.0f * scale;
+                const float iww = ihh * (float)s_qz_ext_tex.get_width() / (float)std::max(1, s_qz_ext_tex.get_height());
+                ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (220.0f * scale - iww) * 0.5f);
+                ImGui::Image((ImTextureID)(intptr_t)s_qz_ext_tex.get_id(), ImVec2(iww, ihh));
+            }
+        }
+        ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+        {
+            const std::string cur_ex = is_qz_printer ? "QZmini" : _u8L("Default");
+            ImGui::SetNextItemWidth(220.0f * scale);
+            ImDrawList *dl = ImGui::GetWindowDrawList();
+            const ImVec2 cpos = ImGui::GetCursorScreenPos();
+            const float  fh   = ImGui::GetFrameHeight();
+            const bool open = ImGui::BeginCombo("##qzextsel", cur_ex.c_str(), ImGuiComboFlags_NoArrowButton);
+            thin_chevron(dl, cpos, 220.0f * scale, fh);
+            if (open) {
+                if (qz_pick != nullptr) {
+                    if (ImGui::Selectable("QZmini", is_qz_printer) && !is_qz_printer)
+                        if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(qz_pick->name);
+                    if (is_qz_printer) ImGui::SetItemDefaultFocus();
+                }
+                if (stock_pick != nullptr) {
+                    if (ImGui::Selectable(_u8L("Default").c_str(), !is_qz_printer) && is_qz_printer)
+                        if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(stock_pick->name);
+                    if (!is_qz_printer) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+    }
+    s_extruder_size = ImGui::GetWindowSize();
+    imgui.end();
+
+    // ---------------- Printer card (above the extruder) ----------------
+    imgui.set_next_window_pos(left, bottom - s_extruder_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, qz_card_max_h));
+    imgui.begin(std::string("QZCardPrinter"), s_open_printer ? card_flags_open : card_flags);
     title_row(_u8L("Printer").c_str(), &s_open_printer);
     if (s_open_printer) {
-        const std::string cur_model   = prcfg.opt_string("printer_model");
+        const std::string &cur_model  = cur_model_top;
         const std::string cur_variant = prcfg.opt_string("printer_variant");
 
         auto select_printer = [&](const std::string &model, const std::string &variant) {
@@ -11068,14 +11155,6 @@ void GLCanvas3D::_render_qz_quick_cards()
             if (pick != nullptr && pick->name != bundle.printers.get_edited_preset().name)
                 if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(pick->name);
         };
-        auto thin_chevron = [&](ImDrawList *dl, const ImVec2 &cpos, float width, float fh) {
-            const float ccx = cpos.x + width - 13.0f * scale;
-            const float ccy = cpos.y + fh * 0.5f - 1.5f * scale;
-            const float cw2 = 4.0f * scale;
-            dl->AddLine(ImVec2(ccx - cw2, ccy), ImVec2(ccx, ccy + cw2), IM_COL32(60, 58, 55, 255), 1.5f * scale);
-            dl->AddLine(ImVec2(ccx, ccy + cw2), ImVec2(ccx + cw2, ccy), IM_COL32(60, 58, 55, 255), 1.5f * scale);
-        };
-
         // cover thumbnail; falls away on small windows, like the native sidebar
         static GLTexture   s_qz_cover;
         static std::string s_qz_cover_path;
@@ -11192,9 +11271,10 @@ void GLCanvas3D::_render_qz_quick_cards()
     s_printer_size = ImGui::GetWindowSize();
     imgui.end();
 
-    // ---------------- Process card (stacked above) ----------------
-    imgui.set_next_window_pos(left, bottom - s_printer_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
-    imgui.begin(std::string("QZCardProcess"), card_flags);
+    // ---------------- Process card (top of the stack) ----------------
+    imgui.set_next_window_pos(left, bottom - s_extruder_size.y - gap - s_printer_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, qz_card_max_h));
+    imgui.begin(std::string("QZCardProcess"), s_open_process ? card_flags_open : card_flags);
     title_row(_u8L("Process").c_str(), &s_open_process);
     if (s_open_process) {
         ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));

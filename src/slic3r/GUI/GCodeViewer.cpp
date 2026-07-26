@@ -3136,6 +3136,13 @@ void GCodeViewer::render_legend_color_arr_recommen(float window_padding)
 
 void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canvas_height, int right_margin)
 {
+    {   // Quasizero: auto-fold the legend when the canvas gets narrow
+        static int qz_prev_cw = 1 << 29;
+        if (canvas_width < (int)(900.0f * m_scale) && qz_prev_cw >= (int)(900.0f * m_scale))
+            m_fold = true;
+        qz_prev_cw = canvas_width;
+    }
+
     if (!is_legend_shown())
         return;
 
