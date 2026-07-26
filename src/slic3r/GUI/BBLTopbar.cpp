@@ -100,7 +100,17 @@ public:
     virtual void DrawBackground(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE;
     virtual void DrawButton(wxDC& dc, wxWindow* wnd, const wxAuiToolBarItem& item, const wxRect& rect) wxOVERRIDE;
     virtual void DrawSeparator(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE; // Quasizero
+    virtual void DrawBorder(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE;     // Quasizero
 };
+
+void BBLTopbarArt::DrawBorder(wxDC& dc, wxWindow* wnd, const wxRect& rect)
+{
+    // Quasizero: paint the border in the bar background color - the default art
+    // drew a dark (system-theme) frame around the title bar
+    dc.SetPen(wxPen(wxColour(240, 240, 239)));
+    dc.SetBrush(*wxTRANSPARENT_BRUSH);
+    dc.DrawRectangle(rect);
+}
 
 void BBLTopbarArt::DrawSeparator(wxDC& dc, wxWindow* wnd, const wxRect& rect)
 {

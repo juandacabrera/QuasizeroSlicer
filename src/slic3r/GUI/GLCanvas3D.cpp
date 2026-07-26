@@ -907,8 +907,10 @@ void GLCanvas3D::Tooltip::render(const Vec2d& mouse_position, GLCanvas3D& canvas
     const Vec2f position = validate_position(mouse_position, canvas, size);
 
     ImGuiWrapper& imgui = *wxGetApp().imgui();
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 0.98f)); // Quasizero: readable tooltip
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
     imgui.set_next_window_pos(position.x(), position.y(), ImGuiCond_Always, 0.0f, 0.0f);
 
     imgui.begin(wxString("canvas_tooltip"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing);
@@ -927,6 +929,7 @@ void GLCanvas3D::Tooltip::render(const Vec2d& mouse_position, GLCanvas3D& canvas
     size = ImGui::GetWindowSize();
 
     imgui.end();
+    ImGui::PopStyleColor(2);
     ImGui::PopStyleVar(2);
 }
 
@@ -2214,7 +2217,7 @@ void GLCanvas3D::render(bool only_init)
             bottom_margin = SLIDER_BOTTOM_MARGIN * scale_factor * GCODE_VIEWER_SLIDER_SCALE;
         }
         // Quasizero: transient notifications live top-right, under Slice/Print
-        bottom_margin = std::max(60.0f, (float)get_canvas_size().get_height() - 300.0f * get_scale());
+        bottom_margin = std::max(60.0f, (float)get_canvas_size().get_height() - 150.0f * get_scale());
         wxGetApp().plater()->get_notification_manager()->render_notifications(*this, get_overlay_window_width(), bottom_margin, right_margin);
         wxGetApp().plater()->get_dailytips()->render();
     }
@@ -6631,14 +6634,18 @@ void GLCanvas3D::_update_slice_error_status()
 void GLCanvas3D::_switch_toolbars_icon_filename()
 {
     BackgroundTexture::Metadata background_data;
-    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
     background_data.left = 16;
     background_data.top = 16;
     background_data.right = 16;
     background_data.bottom = 16;
+    // Quasizero: continuous bar - rounded only at the outer extremes
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_left.png";
     m_main_toolbar.init(background_data);
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_right.png";
     m_assemble_view_toolbar.init(background_data);
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_mid.png";
     m_separator_toolbar.init(background_data);
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
     wxGetApp().plater()->get_collapse_toolbar().init(background_data);
 
     // main toolbar
@@ -6718,7 +6725,7 @@ bool GLCanvas3D::_init_main_toolbar()
         return true;
 
     BackgroundTexture::Metadata background_data;
-    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_left.png"; // Quasizero: left end of the continuous bar
     background_data.left = 16;
     background_data.top = 16;
     background_data.right = 16;
@@ -6944,7 +6951,7 @@ bool GLCanvas3D::_init_assemble_view_toolbar()
         return true;
 
     BackgroundTexture::Metadata background_data;
-    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_right.png"; // Quasizero: right end of the continuous bar
     background_data.left = 16;
     background_data.top = 16;
     background_data.right = 16;
@@ -7001,7 +7008,7 @@ bool GLCanvas3D::_init_separator_toolbar()
         return true;
 
     BackgroundTexture::Metadata background_data;
-    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_mid.png"; // Quasizero: square middle section
     background_data.left = 0;
     background_data.top = 0;
     background_data.right = 0;
@@ -10927,14 +10934,43 @@ void GLCanvas3D::_render_qz_quick_cards()
 
     Tab *print_tab = wxGetApp().get_tab(Preset::TYPE_PRINT);
     const DynamicPrintConfig &pcfg = bundle.prints.get_edited_preset().config;
+    const DynamicPrintConfig &saved_pcfg = bundle.prints.get_selected_preset().config;
+    const ImVec4 qz_mod_bg(0.788f, 0.643f, 0.494f, 0.35f); // sand tint marks unsaved edits
 
-    // integer row: applies on +/- click immediately, on typing when the field loses focus
+    // small counterclockwise-arrow undo button (per-parameter reset)
+    auto undo_button = [&](const char *id) -> bool {
+        const float uh = ImGui::GetFrameHeight();
+        const ImVec2 up = ImGui::GetCursorScreenPos();
+        const bool clk = ImGui::InvisibleButton(id, ImVec2(uh, uh));
+        const bool hov = ImGui::IsItemHovered();
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+        const ImU32 col = hov ? IM_COL32(20, 20, 20, 255) : IM_COL32(110, 108, 105, 255);
+        const ImVec2 c(up.x + uh * 0.5f, up.y + uh * 0.5f);
+        const float r = uh * 0.30f;
+        dl->PathArcTo(c, r, 0.25f * 3.1415926f, 1.80f * 3.1415926f, 24);
+        dl->PathStroke(col, 0, 1.5f * scale);
+        const ImVec2 tip(c.x + r * 0.7071f, c.y + r * 0.7071f);
+        dl->AddTriangleFilled(tip, ImVec2(tip.x + 3.2f * scale, tip.y - 0.8f * scale),
+                              ImVec2(tip.x - 0.8f * scale, tip.y + 3.2f * scale), col);
+        return clk;
+    };
+
+    // integer row: applies on +/- click immediately, on typing when the field loses
+    // focus; unsaved edits get a sand-tinted field and their own undo button
     auto int_row = [&](const char *label, const char *id, const char *key, int vmin, int vmax) {
         int cur = 0;
         if (const ConfigOption *o = pcfg.option(key)) cur = (int)o->getInt();
+        int sv = cur; bool has_saved = false;
+        if (const ConfigOption *o = saved_pcfg.option(key)) { sv = (int)o->getInt(); has_saved = true; }
+        const bool modified = has_saved && sv != cur;
         int v = cur;
         row_label(label);
+        if (modified) {
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, qz_mod_bg);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.788f, 0.643f, 0.494f, 0.50f));
+        }
         ImGui::InputInt(id, &v, 1, 1);
+        if (modified) ImGui::PopStyleColor(2);
         if (v != cur && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
             v = std::min(vmax, std::max(vmin, v));
             if (v != cur && print_tab != nullptr) {
@@ -10943,17 +10979,38 @@ void GLCanvas3D::_render_qz_quick_cards()
                 print_tab->load_config(nf);
             }
         }
+        if (modified) {
+            ImGui::SameLine(0.0f, 4.0f * scale);
+            if (undo_button((std::string("##qzundo_") + key).c_str()) && print_tab != nullptr) {
+                DynamicPrintConfig nf;
+                nf.set_key_value(key, new ConfigOptionInt(sv));
+                print_tab->load_config(nf);
+            }
+        }
     };
 
     auto bool_row = [&](const char *label, const char *id, const char *key) {
         bool cur = false;
         if (const ConfigOption *o = pcfg.option(key)) cur = o->getBool();
+        bool sv = cur; bool has_saved = false;
+        if (const ConfigOption *o = saved_pcfg.option(key)) { sv = o->getBool(); has_saved = true; }
+        const bool modified = has_saved && sv != cur;
         bool v = cur;
         row_label(label);
+        if (modified) ImGui::PushStyleColor(ImGuiCol_FrameBg, qz_mod_bg);
         if (ImGui::Checkbox(id, &v) && v != cur && print_tab != nullptr) {
             DynamicPrintConfig nf;
             nf.set_key_value(key, new ConfigOptionBool(v));
             print_tab->load_config(nf);
+        }
+        if (modified) ImGui::PopStyleColor();
+        if (modified) {
+            ImGui::SameLine(0.0f, 4.0f * scale);
+            if (undo_button((std::string("##qzundo_") + key).c_str()) && print_tab != nullptr) {
+                DynamicPrintConfig nf;
+                nf.set_key_value(key, new ConfigOptionBool(sv));
+                print_tab->load_config(nf);
+            }
         }
     };
 
@@ -11039,17 +11096,21 @@ void GLCanvas3D::_render_qz_quick_cards()
                 // edit pencil at the top-right corner of the card, over the cover row
                 const ImVec2 imn = ImGui::GetItemRectMin();
                 const float  peh = 18.0f * scale;
-                const float  pex = ImGui::GetWindowPos().x + ImGui::GetWindowSize().x - peh - 10.0f * scale;
+                // anchor on the fixed 220px content width - NEVER on the window size
+                // (that fed the auto-resize and grew the card forever)
+                const float  pex = ImGui::GetWindowPos().x + ImGui::GetStyle().WindowPadding.x + 220.0f * scale - peh;
                 const ImVec2 keep = ImGui::GetCursorScreenPos();
                 ImGui::SetCursorScreenPos(ImVec2(pex, imn.y));
                 const bool pclk = ImGui::InvisibleButton("##qzpedit", ImVec2(peh, peh));
                 const bool phov = ImGui::IsItemHovered();
                 ImDrawList *pdl = ImGui::GetWindowDrawList();
-                const ImU32 pcol = phov ? IM_COL32(20, 20, 20, 255) : IM_COL32(110, 108, 105, 255);
-                const float pm = 2.5f * scale;
-                pdl->AddRect(ImVec2(pex + pm, imn.y + pm + 1.5f * scale), ImVec2(pex + peh - pm - 3.5f * scale, imn.y + peh - pm), pcol, 2.0f * scale, 0, 1.3f * scale);
-                pdl->AddLine(ImVec2(pex + peh * 0.42f, imn.y + peh - 3.0f * scale), ImVec2(pex + peh - pm, imn.y + pm), pcol, 1.5f * scale);
-                if (phov) ImGui::SetTooltip("%s", _u8L("Click to edit preset").c_str());
+                if (phov) pdl->AddRectFilled(ImVec2(pex, imn.y), ImVec2(pex + peh, imn.y + peh), IM_COL32(236, 235, 233, 255), 4.0f * scale);
+                static ImTextureID s_qz_edit_tex = nullptr;
+                if (s_qz_edit_tex == nullptr)
+                    IMTexture::load_from_svg_file(resources_dir() + "/images/menu_edit_preset.svg", 32, 32, s_qz_edit_tex);
+                if (s_qz_edit_tex != nullptr)
+                    pdl->AddImage(s_qz_edit_tex, ImVec2(pex + 2.0f * scale, imn.y + 2.0f * scale),
+                                  ImVec2(pex + peh - 2.0f * scale, imn.y + peh - 2.0f * scale));
                 if (pclk) {
                     if (Tab *pt2 = wxGetApp().get_tab(Preset::TYPE_PRINTER)) {
                         if (pt2->GetParent() == wxGetApp().params_panel())
@@ -11142,14 +11203,12 @@ void GLCanvas3D::_render_qz_quick_cards()
             ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
             if (ImGui::Button((_u8L("Save") + "##qzsavep").c_str()))
                 wxGetApp().CallAfter([print_tab]() { print_tab->save_preset(); });
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", _u8L("Save current settings as a new preset").c_str());
             ImGui::SameLine(0.0f, 6.0f * scale);
             if (ImGui::Button((_u8L("Reset") + "##qzresetp").c_str()))
                 wxGetApp().CallAfter([print_tab]() {
                     wxGetApp().preset_bundle->prints.discard_current_changes();
                     print_tab->load_current_preset();
                 });
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", _u8L("Click to drop current modify and reset to saved value").c_str());
         }
 
         section(_u8L("WALLS").c_str());
@@ -11159,14 +11218,30 @@ void GLCanvas3D::_render_qz_quick_cards()
         {   // percent option needs its own writer
             int cur = 0;
             if (const ConfigOptionPercent *o = pcfg.option<ConfigOptionPercent>("sparse_infill_density")) cur = (int)std::lround(o->value);
+            int sv = cur; bool has_saved = false;
+            if (const ConfigOptionPercent *o = saved_pcfg.option<ConfigOptionPercent>("sparse_infill_density")) { sv = (int)std::lround(o->value); has_saved = true; }
+            const bool modified = has_saved && sv != cur;
             int v = cur;
             row_label(_u8L("Density (%)").c_str());
+            if (modified) {
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, qz_mod_bg);
+                ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.788f, 0.643f, 0.494f, 0.50f));
+            }
             ImGui::InputInt("##qzid", &v, 5, 5);
+            if (modified) ImGui::PopStyleColor(2);
             if (v != cur && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
                 v = std::min(100, std::max(0, v));
                 if (v != cur && print_tab != nullptr) {
                     DynamicPrintConfig nf;
                     nf.set_key_value("sparse_infill_density", new ConfigOptionPercent(v));
+                    print_tab->load_config(nf);
+                }
+            }
+            if (modified) {
+                ImGui::SameLine(0.0f, 4.0f * scale);
+                if (undo_button("##qzundo_sid") && print_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("sparse_infill_density", new ConfigOptionPercent(sv));
                     print_tab->load_config(nf);
                 }
             }

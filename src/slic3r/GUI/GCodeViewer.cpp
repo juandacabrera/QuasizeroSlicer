@@ -5141,15 +5141,14 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
             const bool eclk = ImGui::InvisibleButton("##qzmatedit", ImVec2(eh, eh));
             const bool ehov = ImGui::IsItemHovered();
             ImDrawList *edl = ImGui::GetWindowDrawList();
-            const ImU32 ecol = ehov ? IM_COL32(20,20,20,255) : IM_COL32(90,88,85,255);
-            // native look: rounded sheet outline with a pencil crossing its corner
-            const float m0 = 3.0f*m_scale;
-            const ImVec2 r0(ep.x + m0, ep.y + m0 + 1.5f*m_scale);
-            const ImVec2 r1(ep.x + eh - m0 - 4.5f*m_scale, ep.y + eh - m0);
-            edl->AddRect(r0, r1, ecol, 2.0f*m_scale, 0, 1.4f*m_scale);
-            edl->AddLine(ImVec2(r0.x + (r1.x - r0.x)*0.45f, r1.y - 2.0f*m_scale),
-                         ImVec2(ep.x + eh - m0, ep.y + m0), ecol, 1.6f*m_scale);
-            if (ehov) ImGui::SetTooltip("%s", _u8L("Click to edit preset").c_str());
+            if (ehov) edl->AddRectFilled(ep, ImVec2(ep.x + eh, ep.y + eh), IM_COL32(236, 235, 233, 255), 4.0f*m_scale);
+            // the native edit-preset icon, no tooltip (self-explanatory)
+            static ImTextureID qz_edit_tex = nullptr;
+            if (qz_edit_tex == nullptr)
+                IMTexture::load_from_svg_file(Slic3r::resources_dir() + "/images/menu_edit_preset.svg", 32, 32, qz_edit_tex);
+            if (qz_edit_tex != nullptr)
+                edl->AddImage(qz_edit_tex, ImVec2(ep.x + 2.0f*m_scale, ep.y + 2.0f*m_scale),
+                              ImVec2(ep.x + eh - 2.0f*m_scale, ep.y + eh - 2.0f*m_scale));
             if (eclk) {
                 if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) {
                     if (ft->GetParent() == wxGetApp().params_panel())
