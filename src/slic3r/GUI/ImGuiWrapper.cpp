@@ -1105,7 +1105,7 @@ void ImGuiWrapper::tooltip(const char *label, float wrap_width)
 {
     ImGui::BeginTooltip();
     ImGui::PushTextWrapPos(wrap_width);
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.00f)); // Quasizero: dark text on light tooltip
     ImGui::TextUnformatted(label);
     ImGui::PopStyleColor(1);
     ImGui::PopTextWrapPos();
@@ -1120,7 +1120,7 @@ void ImGuiWrapper::tooltip(const wxString &label, float wrap_width)
 {
     ImGui::BeginTooltip();
     ImGui::PushTextWrapPos(wrap_width);
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.00f)); // Quasizero: dark text on light tooltip
     ImGui::TextUnformatted(label.ToUTF8().data());
     ImGui::PopStyleColor(1);
     ImGui::PopTextWrapPos();

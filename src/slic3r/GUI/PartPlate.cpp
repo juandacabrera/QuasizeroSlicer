@@ -2427,14 +2427,14 @@ void PartPlate::generate_plate_name_texture()
 
 	// generate m_name_texture texture from m_name with generate_from_text_string
 	m_name_texture.reset();
-	auto text = m_name.empty()? _L("Untitled") : from_u8(m_name);
+	auto text = m_name.empty()? wxString("Quasizero") : from_u8(m_name); // Quasizero default plate name
 
     // ORCA also scale font size to prevent low res texture
     int size = wxGetApp().em_unit() * PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE;
     auto l = Label::sysFont(size, true);
     wxFont* font = &l;
 
-	wxColour foreground(0xf2, 0x75, 0x4e, 0xff);
+	wxColour foreground(0xff, 0xff, 0xff, 0xff); // Quasizero: white plate texts
 	if (!m_name_texture.generate_from_text_string(text.ToUTF8().data(), *font, *wxBLACK, foreground)) {
 		BOOST_LOG_TRIVIAL(error) << "PartPlate::generate_plate_name_texture(): generate_from_text_string() failed";
 		return;
@@ -4145,7 +4145,7 @@ void PartPlateList::generate_icon_textures()
 			else
 				file_name = std::to_string(i+1);
 
-			wxColour foreground(0xf2, 0x75, 0x4e, 0xff);
+			wxColour foreground(0xff, 0xff, 0xff, 0xff); // Quasizero: white plate texts
 			if (!m_idx_textures[i].generate_from_text_string(file_name, *font, *wxBLACK, foreground)) {
 				BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(":load file %1% failed") % file_name;
 			}

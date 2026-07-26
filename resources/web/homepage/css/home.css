@@ -426,8 +426,8 @@ body
 
 .MenuItem:hover
 {
-	border-color: #3A3835;		/*ORCA color*/
-	background-color: #E5F0EE; /*ORCA color with %25 opacity*/
+	border-color: #3A3835;		/*Quasizero charcoal*/
+	background-color: #ECEBE9; /*Quasizero neutral hover*/
 }
 
 .MenuIcon

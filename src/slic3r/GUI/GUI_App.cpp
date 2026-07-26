@@ -307,7 +307,9 @@ public:
         bool dark_mode = m_fg_color != wxColour("#6B6A6A");
         wxSize sz  = m_window->GetClientSize();
         BitmapCache bmp_cache;
-        m_logo_bmp = *bmp_cache.load_svg(dark_mode ? "splash_logo_dark" : "splash_logo", sz.GetWidth(), sz.GetHeight());
+        // Quasizero: slightly smaller splash logo, drawn centered
+        const wxSize qz_lsz(int(sz.GetWidth() * 0.78), int(sz.GetHeight() * 0.78));
+        m_logo_bmp = *bmp_cache.load_svg(dark_mode ? "splash_logo_dark" : "splash_logo", qz_lsz.GetWidth(), qz_lsz.GetHeight());
 
         m_window->Bind(wxEVT_PAINT, &SplashScreen::OnPaint, this);
         m_window->Refresh();
@@ -322,7 +324,8 @@ public:
         dc.SetBackground(wxBrush(m_bg_color));
         dc.Clear();
         if (m_logo_bmp.IsOk())
-            dc.DrawBitmap(m_logo_bmp, 0, 0, true);
+            dc.DrawBitmap(m_logo_bmp, (c_sz.GetWidth() - m_logo_bmp.GetWidth()) / 2,
+                          (c_sz.GetHeight() - m_logo_bmp.GetHeight()) / 2, true);
 
         wxRect rc = wxRect(0, 0, c_sz.GetWidth(), 0);
         dc.SetTextForeground(m_fg_color);

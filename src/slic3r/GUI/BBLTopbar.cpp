@@ -99,7 +99,16 @@ class BBLTopbarArt : public wxAuiDefaultToolBarArt
 public:
     virtual void DrawBackground(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE;
     virtual void DrawButton(wxDC& dc, wxWindow* wnd, const wxAuiToolBarItem& item, const wxRect& rect) wxOVERRIDE;
+    virtual void DrawSeparator(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE; // Quasizero
 };
+
+void BBLTopbarArt::DrawSeparator(wxDC& dc, wxWindow* wnd, const wxRect& rect)
+{
+    // Quasizero: light hairline instead of the system (dark-theme) separator
+    dc.SetPen(wxPen(wxColour(223, 222, 220)));
+    const int x = rect.x + rect.width / 2;
+    dc.DrawLine(x, rect.y + wnd->FromDIP(6), x, rect.y + rect.height - wnd->FromDIP(6));
+}
 
 void BBLTopbarArt::DrawBackground(wxDC& dc, wxWindow* wnd, const wxRect& rect)
 {

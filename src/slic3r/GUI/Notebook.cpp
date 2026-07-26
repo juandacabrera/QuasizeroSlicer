@@ -40,7 +40,7 @@ ButtonsListCtrl::ButtonsListCtrl(wxWindow *parent, wxBoxSizer* side_tools) :
     this->SetSizer(m_sizer);
 
     m_buttons_sizer = new wxFlexGridSizer(1, m_btn_margin, m_btn_margin);
-    m_sizer->AddStretchSpacer(1); // Quasizero: center the page pills
+    m_sizer->AddSpacer(0); // Quasizero: width computed in the size handler to center the pills on the window
     m_sizer->Add(m_buttons_sizer, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxBOTTOM, m_btn_margin);
 
     if (side_tools != NULL) {
@@ -59,6 +59,25 @@ ButtonsListCtrl::ButtonsListCtrl(wxWindow *parent, wxBoxSizer* side_tools) :
         m_sizer->AddStretchSpacer(1); // keep the pills centered when there are no right-side tools
 
     this->Bind(wxEVT_PAINT, &ButtonsListCtrl::OnPaint, this); // Quasizero: continuous white bar with rounded ends
+    this->Bind(wxEVT_SIZE, [this](wxSizeEvent &evt) {
+        // Quasizero: center the pill group on the control center (the titlebar
+        // center), clamped so it never collides with the right-side tools
+        const int    W  = GetSize().x;
+        const wxSize bs = m_buttons_sizer->CalcMin();
+        int side_w = 0;
+        if (m_sizer->GetItemCount() >= 4) {
+            wxSizerItem *st = m_sizer->GetItem(m_sizer->GetItemCount() - 1);
+            if (st != nullptr && st->IsSizer()) side_w = st->GetSizer()->CalcMin().x;
+        }
+        int x = (W - bs.x) / 2;
+        x = std::max(0, std::min(x, W - bs.x - side_w - FromDIP(16)));
+        wxSizerItem *sp = m_sizer->GetItemCount() > 0 ? m_sizer->GetItem((size_t)0) : nullptr;
+        if (sp != nullptr && sp->IsSpacer() && sp->GetSize().x != x) {
+            sp->AssignSpacer(x, 0);
+            Layout();
+        }
+        evt.Skip();
+    });
     Bind(wxEVT_SYS_COLOUR_CHANGED, [this](auto& e){
     });
 }

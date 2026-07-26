@@ -2935,7 +2935,7 @@ namespace IMGUIZMO_NAMESPACE
                   gContext.mDrawList->AddConvexPolyFilled(faceCoordsScreen, 4, faceColor);
                   if (boxes[boxCoordInt])
                   {
-                     gContext.mDrawList->AddConvexPolyFilled(faceCoordsScreen, 4, IM_COL32(0xF0, 0xA0, 0x60, 0x80));
+                     gContext.mDrawList->AddConvexPolyFilled(faceCoordsScreen, 4, IM_COL32(0x3A, 0x38, 0x35, 0x46) /* Quasizero neutral hover */);
 
 #if IMGUI_VERSION_NUM >= 18723
                      ImGui::SetNextFrameWantCaptureMouse(true);
