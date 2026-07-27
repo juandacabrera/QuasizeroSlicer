@@ -10902,6 +10902,10 @@ void GLCanvas3D::_render_qz_quick_cards()
     const float left   = 200.0f * scale; // clear of the nav cube / burger / search icons
     const float bottom = ch - 20.0f * scale; // same bottom line as quickbar / legend
     const float gap    = 10.0f * scale;
+    // compact mode: not enough width for the vertical stack next to the centered
+    // quickbar - the three cards become one row of pills on the bottom line and
+    // the quickbar lifts above them (mirrored in GCodeViewer)
+    const bool qz_compact = cw < 1250.0f * scale;
     const ImVec4 lbl_col(0.55f, 0.55f, 0.54f, 1.0f);
 
     // clickable title row with a thin stroked chevron (Line Type selector style)
@@ -11122,6 +11126,8 @@ void GLCanvas3D::_render_qz_quick_cards()
                     if (ImGui::Selectable("QZmini", is_qz_printer) && !is_qz_printer)
                         if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(qz_pick->name);
                     if (is_qz_printer) ImGui::SetItemDefaultFocus();
+                } else {
+                    ImGui::Selectable("QZmini", false, ImGuiSelectableFlags_Disabled); // not available for this printer
                 }
                 if (stock_pick != nullptr) {
                     if (ImGui::Selectable(_u8L("Default").c_str(), !is_qz_printer) && is_qz_printer)
@@ -11135,8 +11141,11 @@ void GLCanvas3D::_render_qz_quick_cards()
     s_extruder_size = ImGui::GetWindowSize();
     imgui.end();
 
-    // ---------------- Printer card (above the extruder) ----------------
-    imgui.set_next_window_pos(left, bottom - s_extruder_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
+    // ---------------- Printer card (above the extruder / next in the row) ----------------
+    if (qz_compact)
+        imgui.set_next_window_pos(left + s_extruder_size.x + gap, bottom, ImGuiCond_Always, 0.0f, 1.0f);
+    else
+        imgui.set_next_window_pos(left, bottom - s_extruder_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
     ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, qz_card_max_h));
     imgui.begin(std::string("QZCardPrinter"), s_open_printer ? card_flags_open : card_flags);
     title_row(_u8L("Printer").c_str(), &s_open_printer);
@@ -11208,7 +11217,7 @@ void GLCanvas3D::_render_qz_quick_cards()
         // model selector (no nozzle suffix, like the native sidebar cell)
         ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
         {
-            std::string short_model = cur_model.size() > 30 ? cur_model.substr(0, 28) + "..." : cur_model;
+            std::string short_model = base_model.size() > 30 ? base_model.substr(0, 28) + "..." : base_model;
             ImGui::SetNextItemWidth(220.0f * scale);
             ImDrawList *dl = ImGui::GetWindowDrawList();
             const ImVec2 cpos = ImGui::GetCursorScreenPos();
@@ -11216,15 +11225,30 @@ void GLCanvas3D::_render_qz_quick_cards()
             const bool open = ImGui::BeginCombo("##qzpmodel", short_model.c_str(), ImGuiComboFlags_NoArrowButton);
             thin_chevron(dl, cpos, 220.0f * scale, fh);
             if (open) {
+                // one entry per PHYSICAL printer (QZmini overlays folded into their base
+                // model); picking one selects its QZmini extruder whenever it exists
                 std::vector<std::string> seen;
                 for (const Preset &pr : bundle.printers.get_presets()) {
                     if (!pr.is_visible || pr.is_default) continue;
-                    const std::string model = pr.config.opt_string("printer_model");
+                    std::string model = pr.config.opt_string("printer_model");
+                    if (model.rfind("QZmini @ ", 0) == 0) model = model.substr(9);
                     if (model.empty() || std::find(seen.begin(), seen.end(), model) != seen.end()) continue;
                     seen.push_back(model);
-                    const bool selected = model == cur_model;
-                    if (ImGui::Selectable(model.c_str(), selected) && !selected)
-                        select_printer(model, cur_variant);
+                    const bool selected = model == base_model;
+                    if (ImGui::Selectable(model.c_str(), selected) && !selected) {
+                        const Preset *qp = nullptr, *sp2 = nullptr;
+                        for (const Preset &p2 : bundle.printers.get_presets()) {
+                            if (p2.is_default) continue;
+                            const std::string m2 = p2.config.opt_string("printer_model");
+                            if (m2 == std::string("QZmini @ ") + model) {
+                                if (qp == nullptr || p2.config.opt_string("printer_variant") == "4.0") qp = &p2;
+                            } else if (m2 == model) {
+                                if (sp2 == nullptr || p2.config.opt_string("printer_variant") == "0.4") sp2 = &p2;
+                            }
+                        }
+                        if (const Preset *pick = (qp != nullptr) ? qp : sp2; pick != nullptr)
+                            if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(pick->name);
+                    }
                     if (selected) ImGui::SetItemDefaultFocus();
                 }
                 ImGui::Separator();
@@ -11271,8 +11295,11 @@ void GLCanvas3D::_render_qz_quick_cards()
     s_printer_size = ImGui::GetWindowSize();
     imgui.end();
 
-    // ---------------- Process card (top of the stack) ----------------
-    imgui.set_next_window_pos(left, bottom - s_extruder_size.y - gap - s_printer_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
+    // ---------------- Process card (top of the stack / last in the row) ----------------
+    if (qz_compact)
+        imgui.set_next_window_pos(left + s_extruder_size.x + gap + s_printer_size.x + gap, bottom, ImGuiCond_Always, 0.0f, 1.0f);
+    else
+        imgui.set_next_window_pos(left, bottom - s_extruder_size.y - gap - s_printer_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
     ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, qz_card_max_h));
     imgui.begin(std::string("QZCardProcess"), s_open_process ? card_flags_open : card_flags);
     title_row(_u8L("Process").c_str(), &s_open_process);

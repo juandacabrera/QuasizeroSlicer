@@ -5662,12 +5662,11 @@ void Plater::priv::apply_free_camera_correction(bool apply/* = true*/)
 //BBS: add no slice option
 void Plater::priv::select_view_3D(const std::string& name, bool no_slice)
 {
-    // Quasizero: with a QZmini printer the sidebar must be collapsed whenever the
-    // user lands on Prepare or Preview; the native Expand Sidebar button (which
-    // relabels itself) remains the explicit way to open the Advanced panel.
+    // Quasizero: the sidebar is collapsed whenever the user lands on Prepare or
+    // Preview - regardless of the selected printer. The native Expand Sidebar
+    // button (which relabels itself) remains the explicit Advanced path.
     if (name == "3D" || name == "Preview") {
-        const DynamicPrintConfig &qzcfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
-        if (const ConfigOptionBool *qe = qzcfg.option<ConfigOptionBool>("qzmini_enable"); qe && qe->value && !q->is_sidebar_collapsed())
+        if (!q->is_sidebar_collapsed())
             q->collapse_sidebar(true);
     }
     if (name == "3D") {

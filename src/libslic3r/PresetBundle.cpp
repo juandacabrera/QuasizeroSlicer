@@ -2919,6 +2919,37 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": finished, preferred printer_model_id %1%")%preferred_selection.printer_model_id;
 
+    // Quasizero: the Quasizero vendor is always available regardless of the
+    // wizard choices - the user picks their PHYSICAL printer (official vendor)
+    // and the QZmini overlay presets must always be there to switch to.
+    {
+        for (Preset &pr : printers)  if (pr.vendor != nullptr && pr.vendor->id == "Quasizero") pr.is_visible = true;
+        for (Preset &pr : prints)    if (pr.vendor != nullptr && pr.vendor->id == "Quasizero") pr.is_visible = true;
+        for (Preset &pr : filaments) if (pr.vendor != nullptr && pr.vendor->id == "Quasizero") pr.is_visible = true;
+    }
+
+    // Quasizero: the QZmini is the default extruder - if the selected printer is
+    // a stock machine that has a QZmini sibling, start on the QZmini overlay.
+    {
+        const Preset &sel = printers.get_selected_preset();
+        const std::string model = sel.config.opt_string("printer_model");
+        const ConfigOptionBool *qe = sel.config.option<ConfigOptionBool>("qzmini_enable");
+        if ((qe == nullptr || !qe->value) && !model.empty() && model.rfind("QZmini @ ", 0) != 0) {
+            const std::string want = std::string("QZmini @ ") + model;
+            const Preset *pick = nullptr;
+            for (const Preset &pr : printers) {
+                if (pr.config.opt_string("printer_model") != want) continue;
+                if (pick == nullptr || pr.config.opt_string("printer_variant") == "4.0") pick = &pr;
+            }
+            if (pick != nullptr) {
+                printers.select_preset_by_name(pick->name, true);
+                const auto *dpp = printers.get_selected_preset().config.option<ConfigOptionString>("default_print_profile");
+                if (dpp != nullptr && !dpp->value.empty() && prints.find_preset(dpp->value, false) != nullptr)
+                    prints.select_preset_by_name(dpp->value, true);
+            }
+        }
+    }
+
     // Quasizero: QZmini printers default to the 4.0 nozzle variant (the physical
     // primary nozzle); alphabetical selection would otherwise pick "2.0 nozzle".
     {

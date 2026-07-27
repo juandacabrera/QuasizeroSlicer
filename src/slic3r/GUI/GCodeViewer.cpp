@@ -4846,7 +4846,10 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 9.0f * m_scale);                       // rounded value boxes / buttons
     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, ImVec4(0.878f,0.874f,0.866f,1.0f));     // light selection, dark text readable
 
-    const float bottom_y = (float)canvas_height - 20.0f * m_scale; // aligned with the legend bottom line
+    // in compact mode the floating cards become a row of pills on the bottom
+    // line, so the quickbar lifts above them (mirrors GLCanvas3D)
+    const bool qz_compact_bar = (float)canvas_width < 1250.0f * m_scale;
+    const float bottom_y = (float)canvas_height - (qz_compact_bar ? 64.0f : 20.0f) * m_scale;
     if ((float)canvas_width < 520.0f * m_scale) { g_qz_quickbar_active = false; g_qz_reserved_bottom = 170.0f;
         ImGui::PopStyleVar(4); ImGui::PopStyleColor(7); return; }
     g_qz_quickbar_active = true;
