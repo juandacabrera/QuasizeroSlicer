@@ -2208,6 +2208,45 @@ std::pair<PresetsConfigSubstitutions, std::string> PresetBundle::load_system_pre
     PresetsConfigSubstitutions  substitutions;
     std::string                 errors_cummulative;
     bool                        first = true;
+
+    // Quasizero: the Quasizero overlay vendor ships with the application and is
+    // ALWAYS installed - the user only ever picks their physical printer in the
+    // wizard; the QZmini replica family is synced silently from resources into
+    // the user's system dir before vendors are enumerated.
+    if (!validation_mode) {
+        try {
+            namespace qfs = boost::filesystem;
+            const qfs::path src_json = qfs::path(resources_dir()) / "profiles" / "Quasizero.json";
+            const qfs::path src_dir  = qfs::path(resources_dir()) / "profiles" / "Quasizero";
+            const qfs::path dst_json = dir / "Quasizero.json";
+            const qfs::path dst_dir  = dir / "Quasizero";
+            boost::system::error_code qec;
+            const bool have_src = qfs::exists(src_json, qec) && qfs::exists(src_dir, qec);
+            bool refresh = have_src && !qfs::exists(dst_json, qec);
+            if (have_src && !refresh) {
+                const std::time_t ts = qfs::last_write_time(src_json, qec);
+                const std::time_t td = qfs::last_write_time(dst_json, qec);
+                refresh = !qec && ts > td;
+            }
+            if (refresh) {
+                std::string qz_err;
+                qfs::create_directories(dst_dir, qec);
+                copy_file(src_json.string(), dst_json.string(), qz_err, false);
+                for (qfs::recursive_directory_iterator it(src_dir), qend; it != qend; ++it) {
+                    const qfs::path rel = qfs::relative(it->path(), src_dir, qec);
+                    const qfs::path dst = dst_dir / rel;
+                    if (qfs::is_directory(it->path()))
+                        qfs::create_directories(dst, qec);
+                    else
+                        copy_file(it->path().string(), dst.string(), qz_err, false);
+                }
+                BOOST_LOG_TRIVIAL(info) << "Quasizero vendor synced into " << dst_dir.string();
+            }
+        } catch (const std::exception &qe) {
+            BOOST_LOG_TRIVIAL(error) << "Quasizero vendor auto-install failed: " << qe.what();
+        }
+    }
+
     std::vector<std::string> vendor_names;
     // store all vendor names in vendor_names
     for (auto& dir_entry : boost::filesystem::directory_iterator(dir)) {
