@@ -4795,7 +4795,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     // syringe that drains during the simulation.
     const DynamicPrintConfig &pcfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
     const ConfigOptionBool *qz_en = pcfg.option<ConfigOptionBool>("qzmini_enable");
-    if (qz_en == nullptr || !qz_en->value) { g_qz_quickbar_active = false; g_qz_reserved_bottom = 170.0f; return; }
+    const bool qz_active = (qz_en != nullptr && qz_en->value); // quickbar shows for every printer; the syringe capsule only for QZmini
 
     ImGuiWrapper &imgui = *wxGetApp().imgui();
     DynamicPrintConfig &print_cfg = wxGetApp().preset_bundle->prints.get_edited_preset().config;
@@ -4849,7 +4849,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     // in compact mode the floating cards become a row of pills on the bottom
     // line, so the quickbar lifts above them (mirrors GLCanvas3D)
     const bool qz_compact_bar = (float)canvas_width < 1250.0f * m_scale;
-    const float bottom_y = (float)canvas_height - (qz_compact_bar ? 64.0f : 20.0f) * m_scale;
+    const float bottom_y = (float)canvas_height - (qz_compact_bar ? 74.0f : 20.0f) * m_scale;
     if ((float)canvas_width < 520.0f * m_scale) { g_qz_quickbar_active = false; g_qz_reserved_bottom = 170.0f;
         ImGui::PopStyleVar(4); ImGui::PopStyleColor(7); return; }
     g_qz_quickbar_active = true;
@@ -5045,6 +5045,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     }
 
     // ---------- Capsule 2: est time + LIVE material simulation with SVG syringe ----------
+    if (qz_active) {
     {
         float c2x, c2y;
         if (qz_stack) {
@@ -5191,6 +5192,8 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     }
     g_qz_cap2_size = ImGui::GetWindowSize();
     imgui.end();
+    } else
+        g_qz_cap2_size = ImVec2(0.0f, 0.0f);
 
     g_qz_reserved_bottom = (g_qz_cap1_size.y + qz_gap + qz_slider_h) / std::max(0.5f, m_scale) + 96.0f;
 
