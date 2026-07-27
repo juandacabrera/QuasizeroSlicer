@@ -11089,6 +11089,24 @@ void GLCanvas3D::_render_qz_quick_cards()
         }
     };
 
+    // after a machine switch, pull the material into the machine's family
+    // (QZmini machine -> its biomaterial; stock machine -> its stock filament)
+    auto qz_sync_filament = []() {
+        wxGetApp().CallAfter([]() {
+            PresetBundle &pb = *wxGetApp().preset_bundle;
+            const Preset &pp = pb.printers.get_edited_preset();
+            const ConfigOptionBool *qe2 = pp.config.option<ConfigOptionBool>("qzmini_enable");
+            const auto *dfp = pp.config.option<ConfigOptionStrings>("default_filament_profile");
+            if (dfp == nullptr || dfp->values.empty()) return;
+            const Preset &cf = pb.filaments.get_edited_preset();
+            const bool cf_qz      = cf.vendor != nullptr && cf.vendor->id == "Quasizero";
+            const bool machine_qz = qe2 != nullptr && qe2->value;
+            if (machine_qz != cf_qz)
+                if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
+                    ft->select_preset(dfp->values.front());
+        });
+    };
+
     auto thin_chevron = [&](ImDrawList *dl, const ImVec2 &cpos, float width, float fh) {
         const float ccx = cpos.x + width - 13.0f * scale;
         const float ccy = cpos.y + fh * 0.5f - 1.5f * scale;
@@ -11149,14 +11167,14 @@ void GLCanvas3D::_render_qz_quick_cards()
             if (open) {
                 if (qz_pick != nullptr) {
                     if (ImGui::Selectable("QZmini", is_qz_printer) && !is_qz_printer)
-                        if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(qz_pick->name);
+                        if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) { t->select_preset(qz_pick->name); qz_sync_filament(); }
                     if (is_qz_printer) ImGui::SetItemDefaultFocus();
                 } else {
                     ImGui::Selectable("QZmini", false, ImGuiSelectableFlags_Disabled); // not available for this printer
                 }
                 if (stock_pick != nullptr) {
                     if (ImGui::Selectable(_u8L("Original").c_str(), !is_qz_printer) && is_qz_printer)
-                        if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(stock_pick->name);
+                        if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) { t->select_preset(stock_pick->name); qz_sync_filament(); }
                     if (!is_qz_printer) ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndCombo();
@@ -11272,7 +11290,7 @@ void GLCanvas3D::_render_qz_quick_cards()
                             }
                         }
                         if (const Preset *pick = (qp != nullptr) ? qp : sp2; pick != nullptr)
-                            if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(pick->name);
+                            if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) { t->select_preset(pick->name); qz_sync_filament(); }
                     }
                     if (selected) ImGui::SetItemDefaultFocus();
                 }

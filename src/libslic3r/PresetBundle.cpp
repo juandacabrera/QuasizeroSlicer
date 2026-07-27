@@ -2967,6 +2967,23 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
         for (Preset &pr : filaments) if (pr.vendor != nullptr && pr.vendor->id == "Quasizero") pr.is_visible = true;
     }
 
+    // Quasizero: keep the selected material in the machine's family - a QZmini
+    // machine defaults to its biomaterial, a stock machine to its stock filament.
+    auto qz_sync_default_filament = [this]() {
+        const Preset &pp = printers.get_selected_preset();
+        const ConfigOptionBool *qe2 = pp.config.option<ConfigOptionBool>("qzmini_enable");
+        const auto *dfp = pp.config.option<ConfigOptionStrings>("default_filament_profile");
+        if (dfp == nullptr || dfp->values.empty()) return;
+        const Preset &cf = filaments.get_selected_preset();
+        const bool cf_qz      = cf.vendor != nullptr && cf.vendor->id == "Quasizero";
+        const bool machine_qz = qe2 != nullptr && qe2->value;
+        if (machine_qz != cf_qz && filaments.find_preset(dfp->values.front(), false) != nullptr) {
+            filaments.select_preset_by_name(dfp->values.front(), true);
+            if (!this->filament_presets.empty())
+                this->filament_presets.front() = filaments.get_selected_preset_name();
+        }
+    };
+
     // Quasizero: the QZmini is the default extruder - if the selected printer is
     // a stock machine that has a QZmini sibling, start on the QZmini overlay.
     {
@@ -2987,6 +3004,7 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
                     prints.select_preset_by_name(dpp->value, true);
             }
         }
+        qz_sync_default_filament();
     }
 
     // Quasizero: QZmini printers default to the 4.0 nozzle variant (the physical
@@ -3005,6 +3023,7 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
                     prints.select_preset_by_name(dpp->value, true);
             }
         }
+        qz_sync_default_filament();
     }
 }
 

@@ -5134,6 +5134,8 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
             for (const auto &preset : fils.get_presets()) {
                 if (!preset.is_visible || preset.is_default) continue;
                 if (!preset.is_compatible) continue;
+                // biomaterial identity: Quasizero materials and the user's own presets
+                if (preset.is_system && (preset.vendor == nullptr || preset.vendor->id != "Quasizero")) continue;
                 const bool selected = preset.name == mat_name;
                 if (ImGui::Selectable(preset.name.c_str(), selected) && !selected) {
                     if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
