@@ -5668,6 +5668,29 @@ void Plater::priv::select_view_3D(const std::string& name, bool no_slice)
     if (name == "3D" || name == "Preview") {
         if (!q->is_sidebar_collapsed())
             q->collapse_sidebar(true);
+
+        // Quasizero: material-family guard. The wizard (and other reload paths)
+        // can apply a stock FDM filament AFTER our startup hooks; a QZmini
+        // machine must never sit on a stock filament (it corrupts the E->ml
+        // volumetric model). User-created presets are always respected.
+        PresetBundle &qpb = *wxGetApp().preset_bundle;
+        const Preset &qpp = qpb.printers.get_edited_preset();
+        const ConfigOptionBool *qqe = qpp.config.option<ConfigOptionBool>("qzmini_enable");
+        const auto *qdfp = qpp.config.option<ConfigOptionStrings>("default_filament_profile");
+        if (qqe != nullptr && qqe->value && qdfp != nullptr && !qdfp->values.empty()) {
+            auto family_ok = [](const Preset *pr) {
+                if (pr == nullptr) return false;
+                if (!pr->is_system) return true; // user presets are fine
+                return pr->vendor != nullptr && pr->vendor->id == "Quasizero";
+            };
+            const bool edited_ok = family_ok(&qpb.filaments.get_edited_preset());
+            bool slot_ok = true;
+            if (!qpb.filament_presets.empty())
+                slot_ok = family_ok(qpb.filaments.find_preset(qpb.filament_presets.front(), false));
+            if (!edited_ok || !slot_ok)
+                if (Tab *qft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
+                    qft->select_preset(qdfp->values.front());
+        }
     }
     if (name == "3D") {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << "select view3D";

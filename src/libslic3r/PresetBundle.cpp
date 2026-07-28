@@ -520,6 +520,30 @@ PresetsConfigSubstitutions PresetBundle::load_presets(AppConfig &config, Forward
 
     //BBS: add config related logs
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" enter, substitution_rule %1%, preferred printer_model_id %2%")%substitution_rule%preferred_selection.printer_model_id;
+    // Quasizero: the overlay vendor is registered in AppConfig on every load -
+    // the wizard rebuilds the vendors map from its own picks and would otherwise
+    // wipe Quasizero, leaving its presets invisible in all vendor-driven UI.
+    {
+        namespace qfs = boost::filesystem;
+        boost::system::error_code qec;
+        const qfs::path qz_machine_dir = qfs::path(resources_dir()) / "profiles" / "Quasizero" / "machine";
+        if (qfs::exists(qz_machine_dir, qec)) {
+            for (qfs::directory_iterator it(qz_machine_dir, qec), qend; it != qend; ++it) {
+                std::string stem = it->path().stem().string(); // e.g. "QZmini @ Bambu Lab A1 mini 4.0 nozzle"
+                const std::string tag = " nozzle";
+                if (stem.size() <= tag.size() || stem.compare(stem.size() - tag.size(), tag.size(), tag) != 0)
+                    continue; // model files carry no variant suffix
+                stem.erase(stem.size() - tag.size());
+                const size_t sp = stem.find_last_of(' ');
+                if (sp == std::string::npos) continue;
+                const std::string variant = stem.substr(sp + 1);
+                const std::string model   = stem.substr(0, sp);
+                if (!config.get_variant("Quasizero", model, variant))
+                    config.set_variant("Quasizero", model, variant, true);
+            }
+        }
+    }
+
     //BBS: change system config to json
     std::tie(substitutions, errors_cummulative) = this->load_system_presets_from_json(substitution_rule);
 
