@@ -4936,6 +4936,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
                                     "internal_solid_infill_speed", "top_surface_speed", "gap_infill_speed" })
                 np.set_key_value(sk, new ConfigOptionFloat(s_speed));
             np.set_key_value("initial_layer_speed", new ConfigOptionFloat(std::max(1.0, s_speed * 0.75)));
+            np.set_key_value("skirt_speed", new ConfigOptionFloat(std::max(1.0, s_speed * 0.75))); // priming ring stays gentle
             if (Tab *pt = wxGetApp().get_tab(Preset::TYPE_PRINT)) pt->load_config(np);
             DynamicPrintConfig nf; nf.set_key_value("filament_flow_ratio", new ConfigOptionFloats{ s_flow });
             if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) ft->load_config(nf);

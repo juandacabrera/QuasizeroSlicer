@@ -58,5 +58,6 @@
   "QZmini @ Artillery Sidewinder X2 2.0 nozzle",
   "QZmini @ Bambu Lab A1 mini 2.0 nozzle",
   "QZmini @ Bambu Lab P1S 2.0 nozzle"
- ]
+ ],
+ "skirt_speed": "15"
 }
