@@ -116,7 +116,7 @@
   "3.2"
  ],
  "retraction_length": [
-  "0"
+  "0.5"
  ],
  "retract_length_toolchange": [
   "0"
@@ -128,7 +128,7 @@
   "0"
  ],
  "z_hop": [
-  "0"
+  "2"
  ],
  "single_extruder_multi_material": "0",
  "change_filament_gcode": "",
@@ -158,5 +158,11 @@
  "qzmini_prime_after_refill_ml": "1",
  "qzmini_refill_enable": "1",
  "qzmini_plunger_reset_feedrate": "1800",
- "qzmini_prime_feedrate": "600"
+ "qzmini_prime_feedrate": "600",
+ "z_hop_types": [
+  "Normal Lift"
+ ],
+ "retraction_minimum_travel": [
+  "2"
+ ]
 }

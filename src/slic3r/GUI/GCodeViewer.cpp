@@ -4923,9 +4923,19 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
         ImGui::EndGroup();
         if (apply_now) {
             DynamicPrintConfig np;
+            // LAYER HEIGHT drives both regular and first layer
             np.set_key_value("layer_height", new ConfigOptionFloat(s_layer));
-            np.set_key_value("line_width", new ConfigOptionFloatOrPercent(s_width,false));
-            np.set_key_value("outer_wall_speed", new ConfigOptionFloat(s_speed));
+            np.set_key_value("initial_layer_print_height", new ConfigOptionFloat(s_layer));
+            // LINE WIDTH drives the whole width family
+            for (const char *wk : { "line_width", "outer_wall_line_width", "inner_wall_line_width",
+                                    "top_surface_line_width", "sparse_infill_line_width",
+                                    "internal_solid_infill_line_width", "initial_layer_line_width" })
+                np.set_key_value(wk, new ConfigOptionFloatOrPercent(s_width, false));
+            // SPEED drives the whole speed family (first layer at 75%)
+            for (const char *sk : { "outer_wall_speed", "inner_wall_speed", "sparse_infill_speed",
+                                    "internal_solid_infill_speed", "top_surface_speed", "gap_infill_speed" })
+                np.set_key_value(sk, new ConfigOptionFloat(s_speed));
+            np.set_key_value("initial_layer_speed", new ConfigOptionFloat(std::max(1.0, s_speed * 0.75)));
             if (Tab *pt = wxGetApp().get_tab(Preset::TYPE_PRINT)) pt->load_config(np);
             DynamicPrintConfig nf; nf.set_key_value("filament_flow_ratio", new ConfigOptionFloats{ s_flow });
             if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) ft->load_config(nf);

@@ -3761,8 +3761,18 @@ void GCode::process_layers(
             qz.reset(new QzRefillProcessor(p, o));
         }
         std::string out = qz->process(std::move(in));
-        if (qz->failed())
-            throw Slic3r::RuntimeError(qz->error());
+        if (qz->failed()) {
+            std::string qz_msg = qz->error();
+            const double qz_fd = config.filament_diameter.get_at(0);
+            if (qz_fd < 5.0) {
+                char qz_buf[160];
+                ::snprintf(qz_buf, sizeof(qz_buf),
+                    "\n\nHint: the selected material has a stock FDM filament diameter (%.2f mm), which breaks the "
+                    "QZmini volumetric model. Select a QZmini biomaterial preset and reslice.", qz_fd);
+                qz_msg += qz_buf;
+            }
+            throw Slic3r::RuntimeError(qz_msg);
+        }
         return out;
     });
 
@@ -3906,8 +3916,18 @@ void GCode::process_layers(
             qz.reset(new QzRefillProcessor(p, o));
         }
         std::string out = qz->process(std::move(in));
-        if (qz->failed())
-            throw Slic3r::RuntimeError(qz->error());
+        if (qz->failed()) {
+            std::string qz_msg = qz->error();
+            const double qz_fd = config.filament_diameter.get_at(0);
+            if (qz_fd < 5.0) {
+                char qz_buf[160];
+                ::snprintf(qz_buf, sizeof(qz_buf),
+                    "\n\nHint: the selected material has a stock FDM filament diameter (%.2f mm), which breaks the "
+                    "QZmini volumetric model. Select a QZmini biomaterial preset and reslice.", qz_fd);
+                qz_msg += qz_buf;
+            }
+            throw Slic3r::RuntimeError(qz_msg);
+        }
         return out;
     });
 
