@@ -126,6 +126,12 @@ float DetectSilho(vec2 fragCoord)
 
 out vec4 out_color;
 
+vec3 qz_aces_(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+vec4 qz_finish(vec4 c) {
+    vec3 l = pow(max(c.rgb, vec3(0.0)), vec3(2.2)) * 1.30;
+    return vec4(pow(qz_aces_(l), vec3(1.0 / 2.2)), c.a);
+}
+
 void main()
 {
     if (any(lessThan(clipping_planes_dots, ZERO)))
@@ -178,12 +184,12 @@ void main()
            s = max(s, DetectSilho(fragCoord.xy + vec2(i, 0)));
            s = max(s, DetectSilho(fragCoord.xy + vec2(0, i)));
         }   
-        out_color = vec4(mix(color.rgb, getBackfaceColor(color.rgb), s), color.a);
+        out_color = qz_finish(vec4(mix(color.rgb, getBackfaceColor(color.rgb), s), color.a));
     }
 #ifdef ENABLE_ENVIRONMENT_MAP
     else if (use_environment_tex)
-        out_color = vec4(0.45 * texture(environment_tex, normalize(eye_normal).xy * 0.5 + 0.5).xyz + 0.8 * color.rgb * intensity.x, color.a);
+        out_color = qz_finish(vec4(0.45 * texture(environment_tex, normalize(eye_normal).xy * 0.5 + 0.5).xyz + 0.8 * color.rgb * intensity.x, color.a));
 #endif
     else
-        out_color = vec4(vec3(intensity.y) + color.rgb * intensity.x, color.a);
+        out_color = qz_finish(vec4(vec3(intensity.y) + color.rgb * intensity.x, color.a));
 }
