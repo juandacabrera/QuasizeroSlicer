@@ -164,5 +164,20 @@
  ],
  "retraction_minimum_travel": [
   "2"
+ ],
+ "qzmini_ssa_enable": [
+  "0"
+ ],
+ "qzmini_ssa_max_length": [
+  "2"
+ ],
+ "qzmini_ssa_dwell_ms": [
+  "300"
+ ],
+ "qzmini_ssa_extra_prime_e": [
+  "0.3"
+ ],
+ "qzmini_ssa_depart_speed": [
+  "10"
  ]
 }

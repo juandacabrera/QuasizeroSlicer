@@ -1373,6 +1373,7 @@ static std::vector<std::string> s_Preset_printer_options {
     // Quasizero QZmini
     "qzmini_enable", "qzmini_barrel_inner_diameter", "qzmini_nominal_syringe_capacity_ml",
     "qzmini_usable_syringe_capacity_ml", "qzmini_usable_plunger_stroke_mm", "qzmini_plunger_mm_per_e_unit",
+    "qzmini_ssa_enable", "qzmini_ssa_max_length", "qzmini_ssa_dwell_ms", "qzmini_ssa_extra_prime_e", "qzmini_ssa_depart_speed",
     "qzmini_refill_enable", "qzmini_refill_threshold_ml", "qzmini_park_x", "qzmini_park_y", "qzmini_park_z_lift",
     "qzmini_plunger_reset_enable", "qzmini_plunger_reset_feedrate", "qzmini_prime_after_refill_enable",
     "qzmini_prime_after_refill_ml", "qzmini_prime_feedrate", "qzmini_pause_strategy", "qzmini_pause_custom_gcode",

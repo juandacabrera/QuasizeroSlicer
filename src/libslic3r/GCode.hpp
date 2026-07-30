@@ -12,6 +12,7 @@
 #include "GCode/CoolingBuffer.hpp"
 #include "GCode/FanMover.hpp"
 #include "QuasiZero/QzRefillPlanner.hpp"
+#include "QuasiZero/QzShortSegmentAnchor.hpp"
 #include "GCode/RetractWhenCrossingPerimeters.hpp"
 #include "GCode/SpiralVase.hpp"
 #include "GCode/ToolOrdering.hpp"
@@ -647,6 +648,7 @@ private:
     std::unique_ptr<FanMover> m_fan_mover;
     // Quasizero QZmini refill transformation (created lazily per export)
     std::unique_ptr<QuasiZero::QzRefillProcessor> m_qz_refill;
+    std::unique_ptr<QuasiZero::QzShortSegmentAnchor> m_qz_ssa;
 
     // BBS
     Print* m_curr_print = nullptr;

@@ -2480,6 +2480,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
 
     m_fan_mover.release();
     m_qz_refill.reset();
+    m_qz_ssa.reset();
     
     m_writer.set_is_bbl_machine(is_bbl_printers);
 
@@ -3722,7 +3723,20 @@ void GCode::process_layers(
         );
     
     const auto qz_refill = tbb::make_filter<std::string, std::string>(slic3r_tbb_filtermode::serial_in_order,
-            [&qz = this->m_qz_refill, &config = this->config()](std::string in) -> std::string {
+            [&qz = this->m_qz_refill, &ssa = this->m_qz_ssa, &config = this->config()](std::string in) -> std::string {
+        // Short-Segment Anchoring runs for any QZmini machine, refill or not
+        if (config.qzmini_enable.value && config.qzmini_ssa_enable.value) {
+            if (ssa.get() == nullptr) {
+                QuasiZero::QzSsaOptions so;
+                so.max_length_mm      = config.qzmini_ssa_max_length.value;
+                so.dwell_ms           = config.qzmini_ssa_dwell_ms.value;
+                so.extra_prime_e      = config.qzmini_ssa_extra_prime_e.value;
+                so.depart_speed_mms   = config.qzmini_ssa_depart_speed.value;
+                so.initial_e_relative = config.use_relative_e_distances.value;
+                ssa = std::make_unique<QuasiZero::QzShortSegmentAnchor>(so);
+            }
+            in = ssa->process(std::move(in));
+        }
         if (!config.qzmini_enable.value || !config.qzmini_refill_enable.value)
             return in;
         if (qz.get() == nullptr) {
@@ -3877,7 +3891,20 @@ void GCode::process_layers(
     );
     
     const auto qz_refill = tbb::make_filter<std::string, std::string>(slic3r_tbb_filtermode::serial_in_order,
-            [&qz = this->m_qz_refill, &config = this->config()](std::string in) -> std::string {
+            [&qz = this->m_qz_refill, &ssa = this->m_qz_ssa, &config = this->config()](std::string in) -> std::string {
+        // Short-Segment Anchoring runs for any QZmini machine, refill or not
+        if (config.qzmini_enable.value && config.qzmini_ssa_enable.value) {
+            if (ssa.get() == nullptr) {
+                QuasiZero::QzSsaOptions so;
+                so.max_length_mm      = config.qzmini_ssa_max_length.value;
+                so.dwell_ms           = config.qzmini_ssa_dwell_ms.value;
+                so.extra_prime_e      = config.qzmini_ssa_extra_prime_e.value;
+                so.depart_speed_mms   = config.qzmini_ssa_depart_speed.value;
+                so.initial_e_relative = config.use_relative_e_distances.value;
+                ssa = std::make_unique<QuasiZero::QzShortSegmentAnchor>(so);
+            }
+            in = ssa->process(std::move(in));
+        }
         if (!config.qzmini_enable.value || !config.qzmini_refill_enable.value)
             return in;
         if (qz.get() == nullptr) {

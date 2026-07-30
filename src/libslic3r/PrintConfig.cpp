@@ -4533,6 +4533,55 @@ void PrintConfigDef::init_fff_params()
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionFloat(0.277));
 
+    def = this->add("qzmini_ssa_enable", coBool);
+    def->label = L("Anchor short segments");
+    def->category = L("QZmini");
+    def->tooltip = L("Paste islands shorter than the configured length get an extra prime before, a dwell "
+                     "after (so the paste releases the nozzle instead of dragging along) and a slow first "
+                     "travel out of the island.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("qzmini_ssa_max_length", coFloat);
+    def->label = L("Short segment length");
+    def->category = L("QZmini");
+    def->tooltip = L("Extrusion islands with a total XY length up to this value are treated as short segments.");
+    def->sidetext = "mm";
+    def->min = 0.1;
+    def->max = 50;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(2.0));
+
+    def = this->add("qzmini_ssa_dwell_ms", coInt);
+    def->label = L("Anchor dwell");
+    def->category = L("QZmini");
+    def->tooltip = L("Pause inserted after a short segment so the paste lets go of the nozzle.");
+    def->sidetext = "ms";
+    def->min = 0;
+    def->max = 5000;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionInt(300));
+
+    def = this->add("qzmini_ssa_extra_prime_e", coFloat);
+    def->label = L("Anchor extra prime");
+    def->category = L("QZmini");
+    def->tooltip = L("Extra E units primed right before a short segment to compensate the preceding retraction.");
+    def->sidetext = "E";
+    def->min = 0;
+    def->max = 10;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.3));
+
+    def = this->add("qzmini_ssa_depart_speed", coFloat);
+    def->label = L("Anchor depart speed");
+    def->category = L("QZmini");
+    def->tooltip = L("Speed cap for the first travel move leaving a short segment.");
+    def->sidetext = "mm/s";
+    def->min = 1;
+    def->max = 300;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(10.0));
+
     def = this->add("qzmini_refill_enable", coBool);
     def->label = L("Auto-pause for refill");
     def->category = L("QZmini");

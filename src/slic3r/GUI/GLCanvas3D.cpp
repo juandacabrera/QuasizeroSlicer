@@ -11379,6 +11379,32 @@ void GLCanvas3D::_render_qz_quick_cards()
         int_row(_u8L("Skirt loops").c_str(), "##qzsk", "skirt_loops", 0, 10);
         bool_row(_u8L("Spiral vase").c_str(), "##qzsv", "spiral_mode");
         bool_row(_u8L("Support").c_str(),     "##qzsu", "enable_support");
+
+        section(_u8L("PASTE").c_str());
+        {   // Short-Segment Anchoring quick access (machine-scoped, like all qzmini_* keys)
+            Tab *prt_tab = wxGetApp().get_tab(Preset::TYPE_PRINTER);
+            const DynamicPrintConfig &prc2 = bundle.printers.get_edited_preset().config;
+            bool en = false;  if (const ConfigOption *o = prc2.option("qzmini_ssa_enable"))     en  = o->getBool();
+            double len = 2.0; if (const ConfigOption *o = prc2.option("qzmini_ssa_max_length")) len = o->getFloat();
+            row_label(_u8L("Anchor short segs").c_str());
+            bool v = en;
+            if (ImGui::Checkbox("##qzssaen", &v) && v != en && prt_tab != nullptr) {
+                DynamicPrintConfig nf;
+                nf.set_key_value("qzmini_ssa_enable", new ConfigOptionBool(v));
+                prt_tab->load_config(nf);
+            }
+            row_label(_u8L("Short seg (mm)").c_str());
+            float lf = (float)len;
+            ImGui::InputFloat("##qzssalen", &lf, 0.5f, 0.5f, "%.1f");
+            if ((double)lf != len && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                lf = std::min(50.0f, std::max(0.1f, lf));
+                if ((double)lf != len && prt_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("qzmini_ssa_max_length", new ConfigOptionFloat((double)lf));
+                    prt_tab->load_config(nf);
+                }
+            }
+        }
     }
     imgui.end();
 
