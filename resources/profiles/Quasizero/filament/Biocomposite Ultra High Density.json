@@ -96,7 +96,7 @@
   "0"
  ],
  "filament_max_volumetric_speed": [
-  "260"
+  "180"
  ],
  "filament_retraction_length": [
   "0"
@@ -119,6 +119,6 @@
   "#1E1915"
  ],
  "filament_notes": [
-  "Quasizero Biocomposite Ultra High Density. Hardware-calibrated on QZmini @ Bambu Lab A1 mini (torque-speed test): good prints at 3-4 mm/s with flow 375% (144-192 mm3/s); under-extrusion begins near 429 mm3/s. Flow ratio 3.75 is a MATERIAL property - do not raise it with speed. Max volumetric speed 260 keeps the plunger inside the validated torque region with margin; raise to ~330 only if the 6 mm/s @375% ladder test prints clean."
+  "Quasizero Biocomposite Ultra High Density. Hardware-calibrated on QZmini @ Bambu Lab A1 mini via torque-speed ladder: flow ratio 3.75 (material property - never raised with speed). Validated print point: 3 mm/s, 4.91 mm width, 3 mm layer (~166 mm3/s commanded). 4 mm/s printed but marginal; 4.5 mm/s @375% under-delivers (thin bead); tearing from ~276 mm3/s. Max volumetric speed 180 keeps every future slice inside the validated region with ~10% headroom. Hardware validated at the 3 mm/s point."
  ]
 }
