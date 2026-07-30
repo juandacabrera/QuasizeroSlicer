@@ -21,7 +21,7 @@
   "0"
  ],
  "filament_flow_ratio": [
-  "7.2"
+  "9.6"
  ],
  "enable_pressure_advance": [
   "0"
@@ -119,6 +119,6 @@
   "#29211C"
  ],
  "filament_notes": [
-  "Quasizero Biocomposite High Density. PROVISIONAL calibration from a single skirt test: commanded 12 mm width at flow 300% produced a ~5 mm line at 2.3 mm Z offset -> flow ratio 7.2 makes a commanded 5 mm line print true at flow 100%. Requires re-calibration after the Z offset change to 3 mm. Not hardware validated beyond the skirt test."
+  "Quasizero Biocomposite High Density. PROVISIONAL calibration from a single skirt test: commanded 12 mm width at flow 400% produced a ~5 mm line at 2.3 mm Z offset -> 12x3x4.0 = 144 mm3/mm commanded vs ~11.5 mm3/mm deposited => flow ratio 144/(5x3) = 9.6 makes a commanded 5 mm line print true at flow 100%. Cross-checked against the ~300 mm3/s viewer readout at 2 mm/s. Requires re-calibration after the Z offset change to 3 mm. Not hardware validated beyond the skirt test."
  ]
 }
