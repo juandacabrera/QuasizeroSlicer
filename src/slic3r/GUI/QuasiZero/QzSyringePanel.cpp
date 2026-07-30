@@ -80,9 +80,9 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
                                      std::pair{BTN_NORMAL, (int)StateColor::Normal}));
         return b;
     };
-    m_btn_up   = make_jog("monitor_extruder_up");   // retract plunger
-    m_btn_down = make_jog("monitor_extruder_down"); // extrude
-    m_btn_play = make_jog("media_stop");            // stop
+    m_btn_up   = make_jog("qz_chev_up_1");   // retract plunger
+    m_btn_down = make_jog("qz_chev_down_1"); // extrude
+    m_btn_play = make_jog("qz_stop_idle");   // stop
     m_btn_play->Enable(false); // idle: greyed out, like a disabled Unload
 
     auto *row = new wxBoxSizer(wxHORIZONTAL);
@@ -149,26 +149,41 @@ static void qz_set_active(::Button *b, bool active)
 
 void QzSyringePanel::start_jog(int dir)
 {
+    // pressing the active direction again raises the force level (1 -> 2 -> 3 -> 1):
+    // same pulse cadence, lower plunger speed = more torque for dense pastes
+    if (m_dir == dir) m_level = (m_level % 3) + 1;
+    else              m_level = 1;
     m_dir = dir;
+    if (m_btn_up)   m_btn_up  ->SetIcon(wxString::Format("qz_chev_up_%d",   dir < 0 ? m_level : 1));
+    if (m_btn_down) m_btn_down->SetIcon(wxString::Format("qz_chev_down_%d", dir > 0 ? m_level : 1));
     qz_set_active(m_btn_up,   dir < 0);
     qz_set_active(m_btn_down, dir > 0);
-    if (m_btn_play) { m_btn_play->Enable(true); m_btn_play->Refresh(); }
-    if (on_manual_extrude) on_manual_extrude(dir * m_step_e, m_feedrate); // immediate step
+    if (m_btn_play) { m_btn_play->SetIcon("qz_stop_active"); m_btn_play->Enable(true); m_btn_play->Refresh(); }
+    // L1: native jog feel; L2: half speed, double force; L3: quarter speed, max force
+    const double lvl_e[3] = { m_step_e, m_step_e * 0.5, m_step_e * 0.25 };
+    const int    lvl_f[3] = { m_feedrate, m_feedrate / 2, m_feedrate / 4 };
+    if (on_manual_extrude) on_manual_extrude(dir * lvl_e[m_level - 1], lvl_f[m_level - 1]); // immediate step
     if (!m_timer.IsRunning()) m_timer.Start(m_tick_ms);
 }
 
 void QzSyringePanel::stop_jog()
 {
     m_dir = 0;
+    m_level = 1;
     if (m_timer.IsRunning()) m_timer.Stop();
+    if (m_btn_up)   m_btn_up  ->SetIcon("qz_chev_up_1");
+    if (m_btn_down) m_btn_down->SetIcon("qz_chev_down_1");
     qz_set_active(m_btn_up, false);
     qz_set_active(m_btn_down, false);
-    if (m_btn_play) { m_btn_play->Enable(false); m_btn_play->Refresh(); }
+    if (m_btn_play) { m_btn_play->SetIcon("qz_stop_idle"); m_btn_play->Enable(false); m_btn_play->Refresh(); }
 }
 
 void QzSyringePanel::on_tick(wxTimerEvent &)
 {
-    if (m_dir != 0 && on_manual_extrude) on_manual_extrude(m_dir * m_step_e, m_feedrate);
+    if (m_dir == 0 || !on_manual_extrude) return;
+    const double lvl_e[3] = { m_step_e, m_step_e * 0.5, m_step_e * 0.25 };
+    const int    lvl_f[3] = { m_feedrate, m_feedrate / 2, m_feedrate / 4 };
+    on_manual_extrude(m_dir * lvl_e[m_level - 1], lvl_f[m_level - 1]);
 }
 
 void QzSyringePanel::set_remaining_fraction(double f)

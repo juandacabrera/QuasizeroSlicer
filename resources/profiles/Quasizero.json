@@ -23,6 +23,10 @@
    "sub_path": "process/QZmini 3 mm - Smooth Biomaterial.json"
   },
   {
+   "name": "QZmini 3 mm - Ultra High Density",
+   "sub_path": "process/QZmini 3 mm - Ultra High Density.json"
+  },
+  {
    "name": "QZmini 1.5 mm - Smooth Biomaterial",
    "sub_path": "process/QZmini 1.5 mm - Smooth Biomaterial.json"
   }
@@ -35,6 +39,10 @@
   {
    "name": "Biocomposite High Density",
    "sub_path": "filament/Biocomposite High Density.json"
+  },
+  {
+   "name": "Biocomposite Ultra High Density",
+   "sub_path": "filament/Biocomposite Ultra High Density.json"
   }
  ],
  "machine_list": [

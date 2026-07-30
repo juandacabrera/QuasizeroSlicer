@@ -5152,6 +5152,17 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
                 if (ImGui::Selectable(preset.name.c_str(), selected) && !selected) {
                     if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
                         ft->select_preset(preset.name);
+                    // materials with a dedicated hardware-calibrated process pull it in
+                    static const std::pair<const char *, const char *> qz_mat_process[] = {
+                        { "Biocomposite Ultra High Density", "QZmini 3 mm - Ultra High Density" },
+                    };
+                    for (const auto &mp : qz_mat_process)
+                        if (preset.name.find(mp.first) != std::string::npos) {
+                            if (Tab *pt2 = wxGetApp().get_tab(Preset::TYPE_PRINT);
+                                pt2 != nullptr && wxGetApp().preset_bundle->prints.find_preset(mp.second, false) != nullptr)
+                                pt2->select_preset(mp.second);
+                            break;
+                        }
                 }
                 if (selected) ImGui::SetItemDefaultFocus();
             }

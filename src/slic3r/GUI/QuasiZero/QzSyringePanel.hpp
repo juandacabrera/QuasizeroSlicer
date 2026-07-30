@@ -37,6 +37,8 @@ private:
     wxTimer  m_timer;
     int      m_dir = 0;            // -1 up/retract, +1 down/extrude, 0 idle
     double   m_step_e     = 4.0;   // firm step per tick (E units)
+    int      m_level      = 1;     // 1..3: each press of the active direction adds force
+                                   // (slower plunger = more torque on the speed-torque curve)
     int      m_feedrate   = 600;   // mm/min, firm (near native jog feel)
     int      m_tick_ms    = 900;   // wider spacing -> shallow queue -> responsive stop
 

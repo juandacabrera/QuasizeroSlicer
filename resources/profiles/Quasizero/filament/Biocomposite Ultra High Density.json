@@ -1,0 +1,124 @@
+{
+ "type": "filament",
+ "filament_id": "QZF03",
+ "setting_id": "QZFS03",
+ "name": "Biocomposite Ultra High Density",
+ "from": "system",
+ "instantiation": "true",
+ "filament_vendor": [
+  "Quasizero"
+ ],
+ "filament_type": [
+  "PLA"
+ ],
+ "filament_diameter": [
+  "18.43"
+ ],
+ "filament_density": [
+  "1.50"
+ ],
+ "filament_cost": [
+  "0"
+ ],
+ "filament_flow_ratio": [
+  "3.75"
+ ],
+ "enable_pressure_advance": [
+  "0"
+ ],
+ "pressure_advance": [
+  "0.02"
+ ],
+ "nozzle_temperature": [
+  "0"
+ ],
+ "nozzle_temperature_initial_layer": [
+  "0"
+ ],
+ "nozzle_temperature_range_low": [
+  "0"
+ ],
+ "nozzle_temperature_range_high": [
+  "50"
+ ],
+ "cool_plate_temp": [
+  "1"
+ ],
+ "cool_plate_temp_initial_layer": [
+  "1"
+ ],
+ "eng_plate_temp": [
+  "1"
+ ],
+ "eng_plate_temp_initial_layer": [
+  "1"
+ ],
+ "hot_plate_temp": [
+  "1"
+ ],
+ "hot_plate_temp_initial_layer": [
+  "1"
+ ],
+ "textured_plate_temp": [
+  "1"
+ ],
+ "textured_plate_temp_initial_layer": [
+  "1"
+ ],
+ "supertack_plate_temp": [
+  "1"
+ ],
+ "supertack_plate_temp_initial_layer": [
+  "1"
+ ],
+ "fan_min_speed": [
+  "0"
+ ],
+ "fan_max_speed": [
+  "0"
+ ],
+ "overhang_fan_speed": [
+  "0"
+ ],
+ "additional_cooling_fan_speed": [
+  "0"
+ ],
+ "full_fan_speed_layer": [
+  "0"
+ ],
+ "slow_down_layer_time": [
+  "0"
+ ],
+ "slow_down_min_speed": [
+  "20"
+ ],
+ "reduce_fan_stop_start_freq": [
+  "0"
+ ],
+ "filament_max_volumetric_speed": [
+  "260"
+ ],
+ "filament_retraction_length": [
+  "0"
+ ],
+ "filament_start_gcode": [
+  "; QZ biomaterial: cold extrusion, no filament-specific thermal ops\n"
+ ],
+ "filament_end_gcode": [
+  "; QZ biomaterial end\n"
+ ],
+ "compatible_printers": [
+  "QZmini @ Artillery Sidewinder X2 4.0 nozzle",
+  "QZmini @ Artillery Sidewinder X2 2.0 nozzle",
+  "QZmini @ Bambu Lab A1 mini 4.0 nozzle",
+  "QZmini @ Bambu Lab A1 mini 2.0 nozzle",
+  "QZmini @ Bambu Lab P1S 4.0 nozzle",
+  "QZmini @ Bambu Lab P1S 2.0 nozzle"
+ ],
+ "default_filament_colour": [
+  "#1E1915"
+ ],
+ "filament_notes": [
+  "Quasizero Biocomposite Ultra High Density. Hardware-calibrated on QZmini @ Bambu Lab A1 mini (torque-speed test): good prints at 3-4 mm/s with flow 375% (144-192 mm3/s); under-extrusion begins near 429 mm3/s. Flow ratio 3.75 is a MATERIAL property - do not raise it with speed. Max volumetric speed 260 keeps the plunger inside the validated torque region with margin; raise to ~330 only if the 6 mm/s @375% ladder test prints clean."
+ ]
+}
