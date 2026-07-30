@@ -2319,7 +2319,7 @@ void PrintConfigDef::init_fff_params()
                      "The recommended value range is between 0.95 and 1.05. "
                      "You may be able to tune this value to get a nice flat surface if there is slight overflow or underflow.");
     def->min = 0;
-    def->max = 2;
+    def->max = 50; // Quasizero: paste biomaterials calibrate far above molten-plastic ratios
     def->mode = comAdvanced;
     def->nullable = true;
     def->set_default_value(new ConfigOptionFloatsNullable { 1. });

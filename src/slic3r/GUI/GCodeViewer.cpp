@@ -4906,7 +4906,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
     field(_u8L("LAYER HEIGHT").c_str(),"##qzlh",&s_layer,"mm",0.3,10.0);   vsep();
     field(_u8L("LINE WIDTH").c_str(),"##qzlw",&s_width,"mm",0.4,12.0);     vsep();
     field(_u8L("SPEED").c_str(),"##qzsp",&s_speed,"mm/s",1.0,300.0);       vsep();
-    field(_u8L("FLOW").c_str(),"##qzfl",&s_flow,"%",0.1,4.0,100.0,"%.0f"); // shown as percent, stored as ratio
+    field(_u8L("FLOW").c_str(),"##qzfl",&s_flow,"%",0.1,50.0,100.0,"%.0f"); // shown as percent, stored as ratio (paste calibration can go far past 400%)
     if (s_dirty) {
         ImGui::SameLine(0,22.0f*m_scale);
         ImGui::BeginGroup();
@@ -4935,9 +4935,9 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
             for (const char *sk : { "outer_wall_speed", "inner_wall_speed", "sparse_infill_speed",
                                     "internal_solid_infill_speed", "top_surface_speed", "gap_infill_speed" })
                 np.set_key_value(sk, new ConfigOptionFloat(s_speed));
-            np.set_key_value("initial_layer_speed", new ConfigOptionFloat(std::max(1.0, s_speed * 0.75)));
-            np.set_key_value("initial_layer_infill_speed", new ConfigOptionFloat(std::max(1.0, s_speed * 0.75))); // first-layer infill follows too
-            np.set_key_value("skirt_speed", new ConfigOptionFloat(std::max(1.0, s_speed * 0.75))); // priming ring stays gentle
+            np.set_key_value("initial_layer_speed", new ConfigOptionFloat(std::max(1.0, s_speed)));
+            np.set_key_value("initial_layer_infill_speed", new ConfigOptionFloat(std::max(1.0, s_speed)));
+            np.set_key_value("skirt_speed", new ConfigOptionFloat(std::max(1.0, s_speed))); // whole first layer + skirt run at the quickbar value
             if (Tab *pt = wxGetApp().get_tab(Preset::TYPE_PRINT)) pt->load_config(np);
             DynamicPrintConfig nf; nf.set_key_value("filament_flow_ratio", new ConfigOptionFloats{ s_flow });
             if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) ft->load_config(nf);

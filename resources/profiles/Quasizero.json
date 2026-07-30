@@ -31,6 +31,10 @@
   {
    "name": "Biocomposite Sawdust",
    "sub_path": "filament/Biocomposite Sawdust.json"
+  },
+  {
+   "name": "Biocomposite High Density",
+   "sub_path": "filament/Biocomposite High Density.json"
   }
  ],
  "machine_list": [
