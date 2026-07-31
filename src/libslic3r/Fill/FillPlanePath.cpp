@@ -315,3 +315,42 @@ void FillOctagramSpiral::generate(coord_t min_x, coord_t min_y, coord_t max_x, c
 }
 
 } // namespace Slic3r
+
+namespace Slic3r {
+
+void FillQZSpiral::_fill_surface_single(
+    const FillParams                &params,
+    unsigned int                     thickness_layers,
+    const std::pair<float, Point>   &direction,
+    ExPolygon                        expolygon,
+    Polylines                       &polylines_out)
+{
+    const float dens = std::max(0.05f, std::min(1.f, params.density));
+    ExPolygons rings;
+    if (dens >= 0.999f)
+        rings.emplace_back(std::move(expolygon));
+    else {
+        // largest erosion that still leaves material == local inscribed radius
+        const BoundingBox bb = get_extents(expolygon);
+        coord_t lo = 0, hi = coord_t(std::max(bb.size()(0), bb.size()(1)) / 2 + scale_(1.));
+        for (int it = 0; it < 14; ++it) {
+            const coord_t mid = (lo + hi) / 2;
+            if (offset_ex(expolygon, -float(mid)).empty()) hi = mid; else lo = mid;
+        }
+        const float core_r = float((1. - double(dens)) * double(lo));
+        ExPolygons core = core_r > float(SCALED_EPSILON) ? offset_ex(expolygon, -core_r) : ExPolygons{};
+        rings = core.empty() ? ExPolygons{ expolygon } : diff_ex(ExPolygons{ expolygon }, core);
+    }
+    FillParams solid = params;
+    solid.density = 1.0f; // the spiral itself is solid: pitch == line spacing
+    const size_t first = polylines_out.size();
+    for (ExPolygon &ring : rings)
+        FillPlanePath::_fill_surface_single(solid, thickness_layers, direction, std::move(ring), polylines_out);
+    // discard stray sub-2 mm scraps the clip may leave on odd geometries
+    polylines_out.erase(
+        std::remove_if(polylines_out.begin() + first, polylines_out.end(),
+                       [](const Polyline &pl) { return pl.length() < scale_(2.0); }),
+        polylines_out.end());
+}
+
+} // namespace Slic3r

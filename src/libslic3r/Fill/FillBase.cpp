@@ -59,6 +59,7 @@ Fill* Fill::new_from_type(const InfillPattern type)
     case ipCubic:               return new FillCubic();
     case ipQuarterCubic:        return new FillQuarterCubic();
     case ipArchimedeanChords:   return new FillArchimedeanChords();
+    case ipQZContinuousSpiral:  return new FillQZSpiral();
     case ipHilbertCurve:        return new FillHilbertCurve();
     case ipOctagramSpiral:      return new FillOctagramSpiral();
     case ipAdaptiveCubic:       return new FillAdaptive::Filler();

@@ -2248,9 +2248,13 @@ std::pair<PresetsConfigSubstitutions, std::string> PresetBundle::load_system_pre
             const bool have_src = qfs::exists(src_json, qec) && qfs::exists(src_dir, qec);
             bool refresh = have_src && !qfs::exists(dst_json, qec);
             if (have_src && !refresh) {
-                const std::time_t ts = qfs::last_write_time(src_json, qec);
-                const std::time_t td = qfs::last_write_time(dst_json, qec);
-                refresh = !qec && ts > td;
+                // content compare (mtime proved unreliable across installers):
+                // any change in the shipped vendor index forces a resync
+                auto read_all = [](const qfs::path &fp) -> std::string {
+                    boost::nowide::ifstream f(fp.string(), std::ios::binary);
+                    return std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+                };
+                refresh = read_all(src_json) != read_all(dst_json);
             }
             if (refresh) {
                 std::string qz_err;

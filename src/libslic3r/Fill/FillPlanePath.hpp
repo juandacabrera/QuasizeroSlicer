@@ -66,6 +66,26 @@ protected:
     void generate(coord_t min_x, coord_t min_y, coord_t max_x, coord_t max_y, const double resolution, InfillPolylineOutput &output) override;
 };
 
+// Quasizero (EXPERIMENTAL): Continuous Spiral - a SOLID Archimedean spiral whose
+// pitch equals the line spacing. FillParams.density does not thin the spiral;
+// it sizes a hollow core instead: 100% fills to the center, 50% leaves an inner
+// void of half the local inscribed radius. Multi-island regions are filled
+// independently (travel-connected); sub-2 mm leftovers are discarded.
+class FillQZSpiral : public FillArchimedeanChords
+{
+public:
+    Fill* clone() const override { return new FillQZSpiral(*this); };
+    ~FillQZSpiral() override = default;
+
+protected:
+    void _fill_surface_single(
+        const FillParams                &params,
+        unsigned int                     thickness_layers,
+        const std::pair<float, Point>   &direction,
+        ExPolygon                        expolygon,
+        Polylines                       &polylines_out) override;
+};
+
 class FillHilbertCurve : public FillPlanePath
 {
 public:

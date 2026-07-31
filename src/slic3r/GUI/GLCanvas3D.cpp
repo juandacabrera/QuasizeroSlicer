@@ -11405,6 +11405,59 @@ void GLCanvas3D::_render_qz_quick_cards()
                 }
             }
         }
+
+        section(_u8L("EXPERIMENTAL").c_str());
+        {   // Continuous Spiral: solid spiral filling with hollow-core density
+            InfillPattern cur_pat = ipRectilinear;
+            if (const ConfigOptionEnum<InfillPattern> *o = pcfg.option<ConfigOptionEnum<InfillPattern>>("sparse_infill_pattern"))
+                cur_pat = o->value;
+            const bool spiral_on = (cur_pat == ipQZContinuousSpiral);
+            row_label(_u8L("Continuous Spiral").c_str());
+            bool v = spiral_on;
+            if (ImGui::Checkbox("##qzcspi", &v) && v != spiral_on && print_tab != nullptr) {
+                if (v) {
+                    wxGetApp().CallAfter([print_tab]() {
+                        wxMessageDialog dlg(wxGetApp().mainframe,
+                            _L("Continuous Spiral (EXPERIMENTAL) works when wall loops is 1, top and bottom "
+                               "shell layers are 0, supports are disabled and the sparse infill pattern is the "
+                               "QZ Continuous Spiral. The spiral is printed solid; the infill density below "
+                               "sizes the hollow core instead (100% fills to the center).\n\n"
+                               "Change these settings automatically?"),
+                            _L("Continuous Spiral"), wxYES_NO | wxICON_WARNING);
+                        if (dlg.ShowModal() == wxID_YES) {
+                            DynamicPrintConfig nf;
+                            nf.set_key_value("sparse_infill_pattern", new ConfigOptionEnum<InfillPattern>(ipQZContinuousSpiral));
+                            nf.set_key_value("wall_loops", new ConfigOptionInt(1));
+                            nf.set_key_value("top_shell_layers", new ConfigOptionInt(0));
+                            nf.set_key_value("bottom_shell_layers", new ConfigOptionInt(0));
+                            nf.set_key_value("enable_support", new ConfigOptionBool(false));
+                            nf.set_key_value("spiral_mode", new ConfigOptionBool(false));
+                            print_tab->load_config(nf);
+                        }
+                    });
+                } else {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("sparse_infill_pattern", new ConfigOptionEnum<InfillPattern>(ipConcentric));
+                    print_tab->load_config(nf);
+                }
+            }
+            // spiral density: same key as infill density, spiral semantics (core size)
+            {
+                int cur = 0;
+                if (const ConfigOptionPercent *o = pcfg.option<ConfigOptionPercent>("sparse_infill_density")) cur = (int)std::lround(o->value);
+                int dv = cur;
+                row_label(_u8L("Spiral density (%)").c_str());
+                ImGui::InputInt("##qzcspd", &dv, 5, 5);
+                if (dv != cur && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                    dv = std::min(100, std::max(5, dv));
+                    if (dv != cur && print_tab != nullptr) {
+                        DynamicPrintConfig nf;
+                        nf.set_key_value("sparse_infill_density", new ConfigOptionPercent(dv));
+                        print_tab->load_config(nf);
+                    }
+                }
+            }
+        }
     }
     imgui.end();
 
