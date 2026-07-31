@@ -2785,6 +2785,11 @@ void StatusPanel::update(MachineObject *obj)
                     MachineObject *cur = dm ? dm->get_selected_machine() : nullptr;
                     if (cur) cur->command_axis_control("E", 1.0, delta_e, feedrate); // M83 + G0 E (cold)
                 };
+                m_qz_syringe->on_send_gcode = [](const std::string &line) {
+                    auto *dm = wxGetApp().getDeviceManager();
+                    MachineObject *cur = dm ? dm->get_selected_machine() : nullptr;
+                    if (cur) cur->publish_gcode(line); // official LAN gcode-line channel
+                };
             }
             auto getf = [&pcfg](const char *k, double d){ auto *o = pcfg.option<ConfigOptionFloat>(k); return o ? o->value : d; };
             const double nominal_ml   = getf("qzmini_nominal_syringe_capacity_ml", 150.0);

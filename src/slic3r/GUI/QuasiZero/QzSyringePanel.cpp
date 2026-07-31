@@ -1,5 +1,6 @@
 // Quasizero Slicer — QZmini syringe status widget (implementation). GNU AGPLv3.
 #include "QzSyringePanel.hpp"
+#include <wx/textctrl.h>
 
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/GUI/Widgets/Button.hpp"
@@ -94,6 +95,57 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
     m_btn_up  ->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { start_jog(-1); });
     m_btn_down->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { start_jog(+1); });
     m_btn_play->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { stop_jog(); });
+
+    // ---- Live tuning (printing): M220 speed / M221 flow / M290 babystep ----
+    col->Add(mk_text(_L("Live tuning (printing)"), ::Label::Body_12, wxColour(120, 119, 117)), 0, wxTOP | wxBOTTOM, FromDIP(6));
+    auto make_txt_btn = [&](const wxString &label, int w) {
+        auto *b = new ::Button(this, label);
+        b->SetBorderWidth(2);
+        b->SetMinSize(wxSize(FromDIP(w), FromDIP(26)));
+        b->SetCornerRadius(4);
+        b->SetFont(::Label::Body_12);
+        b->SetBackgroundColor(StateColor(std::pair{BTN_PRESS, (int)StateColor::Pressed},
+                                         std::pair{BTN_NORMAL, (int)StateColor::Normal}));
+        b->SetBorderColor(StateColor(std::pair{BTN_HOVER, (int)StateColor::Hovered},
+                                     std::pair{BTN_NORMAL, (int)StateColor::Normal}));
+        return b;
+    };
+    auto tune_row = [&](const wxString &label, wxTextCtrl *&ctrl, const wxString &initial, const char *fmt) {
+        auto *r = new wxBoxSizer(wxHORIZONTAL);
+        auto *t = mk_text(label, ::Label::Body_12, wxColour(58, 56, 53));
+        t->SetMinSize(wxSize(FromDIP(58), -1));
+        r->Add(t, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
+        ctrl = new wxTextCtrl(this, wxID_ANY, initial, wxDefaultPosition, wxSize(FromDIP(52), FromDIP(26)), wxTE_PROCESS_ENTER | wxTE_CENTRE);
+        r->Add(ctrl, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
+        auto *b = make_txt_btn(_L("Set"), 44);
+        r->Add(b, 0, wxALIGN_CENTER_VERTICAL);
+        col->Add(r, 0, wxBOTTOM, FromDIP(4));
+        const std::string f(fmt);
+        auto send = [this, &ctrlref = *ctrl, f]() {
+            double v = 0.0;
+            if (!ctrlref.GetValue().ToDouble(&v)) return;
+            v = std::min(500.0, std::max(10.0, v));
+            char buf[64]; std::snprintf(buf, sizeof(buf), f.c_str(), v);
+            if (on_send_gcode) on_send_gcode(buf);
+        };
+        b->Bind(wxEVT_BUTTON, [send](wxCommandEvent &) { send(); });
+        ctrl->Bind(wxEVT_TEXT_ENTER, [send](wxCommandEvent &) { send(); });
+    };
+    tune_row(_L("Speed %"), m_speed_ctrl, "100", "M220 S%.0f\n");
+    tune_row(_L("Flow %"),  m_flow_ctrl,  "100", "M221 S%.0f\n");
+    {   // Z babystep (EXPERIMENTAL: the firmware may ignore M290)
+        auto *r = new wxBoxSizer(wxHORIZONTAL);
+        auto *t = mk_text(_L("Z offset"), ::Label::Body_12, wxColour(58, 56, 53));
+        t->SetMinSize(wxSize(FromDIP(58), -1));
+        r->Add(t, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
+        auto *bm = make_txt_btn("-0.05", 48);
+        auto *bp = make_txt_btn("+0.05", 48);
+        r->Add(bm, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
+        r->Add(bp, 0, wxALIGN_CENTER_VERTICAL);
+        col->Add(r, 0, wxBOTTOM, FromDIP(2));
+        bm->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { if (on_send_gcode) on_send_gcode("M290 Z-0.05\n"); });
+        bp->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { if (on_send_gcode) on_send_gcode("M290 Z0.05\n"); });
+    }
 
     root->Add(col, 0, wxALL, FromDIP(8));
     root->AddStretchSpacer(1);

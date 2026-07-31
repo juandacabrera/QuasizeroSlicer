@@ -26,6 +26,8 @@ public:
     // Called for each firm jog step: (delta_e_units, feedrate_mm_min).
     // Positive pushes the plunger DOWN (extrude); negative pulls it UP (retract).
     std::function<void(double /*delta_e*/, int /*feedrate*/)> on_manual_extrude;
+    // sends one raw G-code line over the official LAN channel (live tuning)
+    std::function<void(const std::string &)> on_send_gcode;
 
 private:
     ScalableBitmap m_outline;
@@ -37,6 +39,8 @@ private:
     wxTimer  m_timer;
     int      m_dir = 0;            // -1 up/retract, +1 down/extrude, 0 idle
     double   m_step_e     = 4.0;   // firm step per tick (E units)
+    class wxTextCtrl *m_speed_ctrl = nullptr;
+    class wxTextCtrl *m_flow_ctrl  = nullptr;
     int      m_level      = 1;     // 1..3: each press of the active direction adds force
                                    // (slower plunger = more torque on the speed-torque curve)
     int      m_feedrate   = 600;   // mm/min, firm (near native jog feel)
