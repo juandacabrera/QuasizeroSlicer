@@ -227,6 +227,8 @@ set(lisbslic3r_sources
     QuasiZero/QzFirmwareAdapter.hpp
     QuasiZero/QzRefillPlanner.cpp
     QuasiZero/QzRefillPlanner.hpp
+    QuasiZero/QzShortSegmentAnchor.cpp
+    QuasiZero/QzShortSegmentAnchor.hpp
     GCode/GCodeProcessor.cpp
     GCode/GCodeProcessor.hpp
     GCode.hpp
