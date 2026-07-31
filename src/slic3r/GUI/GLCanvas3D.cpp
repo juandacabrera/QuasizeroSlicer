@@ -27,6 +27,7 @@
 #include "OpenGLManager.hpp"
 #include "Plater.hpp"
 #include "MainFrame.hpp"
+#include <wx/msgdlg.h>
 #include "WipeTowerDialog.hpp"
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
