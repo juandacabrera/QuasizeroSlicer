@@ -59,5 +59,6 @@
   "QZmini @ Bambu Lab A1 mini 4.0 nozzle",
   "QZmini @ Bambu Lab P1S 4.0 nozzle"
  ],
- "skirt_speed": "3"
+ "skirt_speed": "3",
+ "reduce_infill_retraction": "0"
 }
