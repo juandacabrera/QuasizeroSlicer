@@ -11,6 +11,8 @@
 class wxStaticText;
 class Button; // global Widgets/Button.hpp
 
+class TextInput;
+
 namespace Slic3r { namespace GUI {
 
 class QzSyringePanel : public wxPanel
@@ -39,8 +41,8 @@ private:
     wxTimer  m_timer;
     int      m_dir = 0;            // -1 up/retract, +1 down/extrude, 0 idle
     double   m_step_e     = 4.0;   // firm step per tick (E units)
-    class wxTextCtrl *m_speed_ctrl = nullptr;
-    class wxTextCtrl *m_flow_ctrl  = nullptr;
+    ::TextInput *m_speed_ctrl = nullptr;
+    ::TextInput *m_flow_ctrl  = nullptr;
     int      m_level      = 1;     // 1..3: each press of the active direction adds force
                                    // (slower plunger = more torque on the speed-torque curve)
     int      m_feedrate   = 600;   // mm/min, firm (near native jog feel)

@@ -1,6 +1,7 @@
 // Quasizero Slicer — QZmini syringe status widget (implementation). GNU AGPLv3.
 #include "QzSyringePanel.hpp"
 #include <wx/textctrl.h>
+#include "slic3r/GUI/Widgets/TextInput.hpp"
 
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/GUI/Widgets/Button.hpp"
@@ -110,26 +111,33 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
                                      std::pair{BTN_NORMAL, (int)StateColor::Normal}));
         return b;
     };
-    auto tune_row = [&](const wxString &label, wxTextCtrl *&ctrl, const wxString &initial, const char *fmt) {
+    auto tune_row = [&](const wxString &label, ::TextInput *&ctrl, const wxString &initial, const char *fmt) {
         auto *r = new wxBoxSizer(wxHORIZONTAL);
         auto *t = mk_text(label, ::Label::Body_12, wxColour(58, 56, 53));
         t->SetMinSize(wxSize(FromDIP(58), -1));
         r->Add(t, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
-        ctrl = new wxTextCtrl(this, wxID_ANY, initial, wxDefaultPosition, wxSize(FromDIP(52), FromDIP(26)), wxTE_PROCESS_ENTER | wxTE_CENTRE);
+        // rounded family widget, matching the jog buttons
+        ctrl = new ::TextInput(this, initial, "", "", wxDefaultPosition, wxSize(FromDIP(54), FromDIP(26)), wxTE_PROCESS_ENTER | wxTE_CENTRE);
+        ctrl->SetCornerRadius(FromDIP(4));
+        ctrl->SetBackgroundColor(StateColor(std::pair{BTN_NORMAL, (int)StateColor::Normal}));
+        ctrl->SetBorderColor(StateColor(std::pair{BTN_HOVER, (int)StateColor::Focused},
+                                        std::pair{BTN_HOVER, (int)StateColor::Hovered},
+                                        std::pair{BTN_NORMAL, (int)StateColor::Normal}));
         r->Add(ctrl, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
         auto *b = make_txt_btn(_L("Set"), 44);
         r->Add(b, 0, wxALIGN_CENTER_VERTICAL);
         col->Add(r, 0, wxBOTTOM, FromDIP(4));
         const std::string f(fmt);
-        auto send = [this, &ctrlref = *ctrl, f]() {
+        ::TextInput *cptr = ctrl;
+        auto send = [this, cptr, f]() {
             double v = 0.0;
-            if (!ctrlref.GetValue().ToDouble(&v)) return;
+            if (!cptr->GetTextCtrl()->GetValue().ToDouble(&v)) return;
             v = std::min(500.0, std::max(10.0, v));
             char buf[64]; std::snprintf(buf, sizeof(buf), f.c_str(), v);
             if (on_send_gcode) on_send_gcode(buf);
         };
         b->Bind(wxEVT_BUTTON, [send](wxCommandEvent &) { send(); });
-        ctrl->Bind(wxEVT_TEXT_ENTER, [send](wxCommandEvent &) { send(); });
+        ctrl->GetTextCtrl()->Bind(wxEVT_TEXT_ENTER, [send](wxCommandEvent &) { send(); });
     };
     tune_row(_L("Speed %"), m_speed_ctrl, "100", "M220 S%.0f\n");
     tune_row(_L("Flow %"),  m_flow_ctrl,  "100", "M221 S%.0f\n");
@@ -150,7 +158,7 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
     root->Add(col, 0, wxALL, FromDIP(8));
     root->AddStretchSpacer(1);
     SetSizer(root);
-    SetMinSize(wxSize(FromDIP(260), FromDIP(200)));
+    SetMinSize(wxSize(FromDIP(260), FromDIP(286))); // room for the three live-tuning rows
 }
 
 void QzSyringePanel::paint_syringe(wxDC &dc, const wxSize &sz)
