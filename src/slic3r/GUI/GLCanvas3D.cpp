@@ -11101,9 +11101,13 @@ void GLCanvas3D::_render_qz_quick_cards()
             const Preset &cf = pb.filaments.get_edited_preset();
             const bool cf_qz      = cf.vendor != nullptr && cf.vendor->id == "Quasizero";
             const bool machine_qz = qe2 != nullptr && qe2->value;
-            if (machine_qz != cf_qz)
+            if (machine_qz != cf_qz) {
                 if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
                     ft->select_preset(dfp->values.front());
+                if (!pb.filament_presets.empty())
+                    pb.filament_presets.front() = pb.filaments.get_edited_preset().name;
+                wxGetApp().plater()->sidebar().update_presets(Preset::TYPE_FILAMENT);
+            }
         });
     };
 

@@ -5687,9 +5687,14 @@ void Plater::priv::select_view_3D(const std::string& name, bool no_slice)
             bool slot_ok = true;
             if (!qpb.filament_presets.empty())
                 slot_ok = family_ok(qpb.filaments.find_preset(qpb.filament_presets.front(), false));
-            if (!edited_ok || !slot_ok)
+            if (!edited_ok || !slot_ok) {
                 if (Tab *qft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
                     qft->select_preset(qdfp->values.front());
+                // keep the sidebar slot and its combo in step with the edited preset
+                if (!qpb.filament_presets.empty())
+                    qpb.filament_presets.front() = qpb.filaments.get_edited_preset().name;
+                sidebar->update_presets(Preset::TYPE_FILAMENT);
+            }
         }
     }
     if (name == "3D") {

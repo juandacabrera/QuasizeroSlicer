@@ -542,6 +542,15 @@ PresetsConfigSubstitutions PresetBundle::load_presets(AppConfig &config, Forward
                     config.set_variant("Quasizero", model, variant, true);
             }
         }
+        // filament visibility rides on AppConfig's "filaments" section, which the
+        // wizard rewrites with its own picks - re-register every shipped Quasizero
+        // biomaterial (file stem == preset name) so they never drop out
+        const qfs::path qz_fil_dir = qfs::path(resources_dir()) / "profiles" / "Quasizero" / "filament";
+        if (qfs::exists(qz_fil_dir, qec)) {
+            for (qfs::directory_iterator it(qz_fil_dir, qec), qend; it != qend; ++it)
+                if (it->path().extension() == ".json")
+                    config.set(AppConfig::SECTION_FILAMENTS, it->path().stem().string(), "true");
+        }
     }
 
     //BBS: change system config to json
