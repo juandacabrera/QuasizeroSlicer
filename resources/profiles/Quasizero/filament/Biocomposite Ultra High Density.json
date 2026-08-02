@@ -21,7 +21,7 @@
   "0"
  ],
  "filament_flow_ratio": [
-  "3.75"
+  "1"
  ],
  "enable_pressure_advance": [
   "0"
@@ -96,7 +96,7 @@
   "0"
  ],
  "filament_max_volumetric_speed": [
-  "180"
+  "66"
  ],
  "filament_retraction_length": [
   "0"
@@ -119,6 +119,6 @@
   "#1E1915"
  ],
  "filament_notes": [
-  "Quasizero Biocomposite Ultra High Density. Hardware-calibrated on QZmini @ Bambu Lab A1 mini via torque-speed ladder: flow ratio 3.75 (material property - never raised with speed). Validated print point: 3 mm/s, 4.91 mm width, 3 mm layer (~166 mm3/s commanded). 4 mm/s printed but marginal; 4.5 mm/s @375% under-delivers (thin bead); tearing from ~276 mm3/s. Max volumetric speed 180 keeps every future slice inside the validated region with ~10% headroom. Hardware validated at the 3 mm/s point."
+  "Quasizero Biocomposite Ultra High Density v2 - recalibrated after the two-profile experiment (same paste printed identically through the Sawdust profile at flow 100%). CONCLUSION: the true volumetric ratio of this paste is ~1.0; the earlier 3.75/9.6 ratios were pressure-startup crutches that overcommanded the plunger (silently stalling TMC motor absorbed the excess) and corrupted E/ml accounting. Flow stays at 100% = geometric truth. Max volumetric speed 66 mm3/s = the hardware-validated deposition point (5 x 2.75 x 4.35 mm/s = 59.8) + 10%. Startup pressure is handled by procedure, not flow: purge at manual level 3 until a steady bead, and the process runs 2 skirt loops as pressurization laps. VERIFY on first use: the first skirt loop may under-extrude while pressure builds - that is expected and no reason to raise flow."
  ]
 }

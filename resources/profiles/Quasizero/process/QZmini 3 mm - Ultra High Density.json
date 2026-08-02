@@ -49,7 +49,7 @@
  "seam_position": "aligned",
  "detect_thin_wall": "0",
  "spiral_mode": "0",
- "skirt_loops": "1",
+ "skirt_loops": "2",
  "skirt_distance": "6",
  "skirt_height": "1",
  "brim_type": "no_brim",
