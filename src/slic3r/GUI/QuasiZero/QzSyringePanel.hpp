@@ -43,6 +43,8 @@ private:
     double   m_step_e     = 4.0;   // firm step per tick (E units)
     ::TextInput *m_speed_ctrl = nullptr;
     ::TextInput *m_flow_ctrl  = nullptr;
+    class wxStaticText *m_zoff_label = nullptr;
+    double       m_z_off      = 0.0;   // accumulated live baby-step vs the sliced Z
     int      m_level      = 1;     // 1..3: each press of the active direction adds force
                                    // (slower plunger = more torque on the speed-torque curve)
     int      m_feedrate   = 600;   // mm/min, firm (near native jog feel)

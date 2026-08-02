@@ -1,6 +1,7 @@
 // Quasizero Slicer — QZmini syringe status widget (implementation). GNU AGPLv3.
 #include "QzSyringePanel.hpp"
 #include <wx/textctrl.h>
+#include <wx/wrapsizer.h>
 #include "slic3r/GUI/Widgets/TextInput.hpp"
 
 #include "slic3r/GUI/I18N.hpp"
@@ -98,7 +99,9 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
     m_btn_play->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { stop_jog(); });
 
     // ---- Live tuning (printing): M220 speed / M221 flow / M290 babystep ----
-    col->Add(mk_text(_L("Live tuning (printing)"), ::Label::Body_12, wxColour(120, 119, 117)), 0, wxTOP | wxBOTTOM, FromDIP(6));
+    // second column: sits right of the syringe info on wide panels, wraps below on narrow ones
+    auto *col2 = new wxBoxSizer(wxVERTICAL);
+    col2->Add(mk_text(_L("Live tuning (printing)"), ::Label::Body_12, wxColour(120, 119, 117)), 0, wxTOP | wxBOTTOM, FromDIP(6));
     auto make_txt_btn = [&](const wxString &label, int w) {
         auto *b = new ::Button(this, label);
         b->SetBorderWidth(2);
@@ -123,10 +126,11 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
         ctrl->SetBorderColor(StateColor(std::pair{BTN_HOVER, (int)StateColor::Focused},
                                         std::pair{BTN_HOVER, (int)StateColor::Hovered},
                                         std::pair{BTN_NORMAL, (int)StateColor::Normal}));
+        ctrl->GetTextCtrl()->SetBackgroundColour(BTN_NORMAL); // no white box inside the rounded box
         r->Add(ctrl, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
         auto *b = make_txt_btn(_L("Set"), 44);
         r->Add(b, 0, wxALIGN_CENTER_VERTICAL);
-        col->Add(r, 0, wxBOTTOM, FromDIP(4));
+        col2->Add(r, 0, wxBOTTOM, FromDIP(4));
         const std::string f(fmt);
         ::TextInput *cptr = ctrl;
         auto send = [this, cptr, f]() {
@@ -141,21 +145,34 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
     };
     tune_row(_L("Speed %"), m_speed_ctrl, "100", "M220 S%.0f\n");
     tune_row(_L("Flow %"),  m_flow_ctrl,  "100", "M221 S%.0f\n");
-    {   // Z babystep (EXPERIMENTAL: the firmware may ignore M290)
+    {   // Z babystep (EXPERIMENTAL): strict single-shot buttons + accumulated readout
         auto *r = new wxBoxSizer(wxHORIZONTAL);
-        auto *t = mk_text(_L("Z offset"), ::Label::Body_12, wxColour(58, 56, 53));
-        t->SetMinSize(wxSize(FromDIP(58), -1));
-        r->Add(t, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
+        m_zoff_label = mk_text("Z +0.00 mm", ::Label::Body_12, wxColour(58, 56, 53));
+        m_zoff_label->SetMinSize(wxSize(FromDIP(72), -1));
+        r->Add(m_zoff_label, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
         auto *bm = make_txt_btn("-0.05", 48);
         auto *bp = make_txt_btn("+0.05", 48);
         r->Add(bm, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
         r->Add(bp, 0, wxALIGN_CENTER_VERTICAL);
-        col->Add(r, 0, wxBOTTOM, FromDIP(2));
-        bm->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { if (on_send_gcode) on_send_gcode("M290 Z-0.05\n"); });
-        bp->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { if (on_send_gcode) on_send_gcode("M290 Z0.05\n"); });
+        col2->Add(r, 0, wxBOTTOM, FromDIP(2));
+        auto bump = [this](double d) {
+            // one click, one command - clamped to +-1.00 mm from the sliced Z
+            const double next = m_z_off + d;
+            if (next > 1.001 || next < -1.001) return;
+            m_z_off = next;
+            char buf[48]; std::snprintf(buf, sizeof(buf), "M290 Z%.2f\n", d);
+            if (on_send_gcode) on_send_gcode(buf);
+            if (m_zoff_label) m_zoff_label->SetLabel(wxString::Format("Z %+.2f mm", m_z_off));
+            this->SetFocus(); // release the button focus: no stuck-pressed look, no key auto-repeat
+        };
+        bm->Bind(wxEVT_BUTTON, [bump](wxCommandEvent &) { bump(-0.05); });
+        bp->Bind(wxEVT_BUTTON, [bump](wxCommandEvent &) { bump(+0.05); });
     }
 
-    root->Add(col, 0, wxALL, FromDIP(8));
+    auto *wrap = new wxWrapSizer(wxHORIZONTAL);
+    wrap->Add(col, 0, wxRIGHT, FromDIP(14));
+    wrap->Add(col2, 0);
+    root->Add(wrap, 0, wxALL, FromDIP(8));
     root->AddStretchSpacer(1);
     SetSizer(root);
     SetMinSize(wxSize(FromDIP(260), FromDIP(286))); // room for the three live-tuning rows
