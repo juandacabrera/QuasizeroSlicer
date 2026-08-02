@@ -156,9 +156,9 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
         r->Add(bp, 0, wxALIGN_CENTER_VERTICAL);
         col2->Add(r, 0, wxBOTTOM, FromDIP(2));
         auto bump = [this](double d) {
-            // one click, one command - clamped to +-1.00 mm from the sliced Z
+            // one click, one command - clamped to +-10.00 mm from the sliced Z
             const double next = m_z_off + d;
-            if (next > 1.001 || next < -1.001) return;
+            if (next > 10.001 || next < -10.001) return;
             m_z_off = next;
             char buf[48]; std::snprintf(buf, sizeof(buf), "M290 Z%.2f\n", d);
             if (on_send_gcode) on_send_gcode(buf);
