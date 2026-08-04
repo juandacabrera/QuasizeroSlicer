@@ -11491,6 +11491,94 @@ void GLCanvas3D::_render_qz_quick_cards()
     }
     imgui.end();
 
+    // ---------------- Params capsule on Prepare (and on Preview after a slicing
+    // error, when the G-code viewer has nothing to show) - the same four quick
+    // fields + Apply as the Preview quickbar, so a bad value can always be fixed
+    // and resliced without expanding the sidebar ----------------
+    const bool qz_show_params = (m_canvas_type == CanvasView3D) ||
+                                (m_canvas_type == CanvasPreview && !m_gcode_viewer.has_data());
+    if (qz_show_params && cw >= 700.0f * scale) {
+        DynamicPrintConfig &qpc = bundle.prints.get_edited_preset().config;
+        DynamicPrintConfig &qfc = bundle.filaments.get_edited_preset().config;
+        auto getfv = [](const DynamicPrintConfig &c, const char *k, double d) {
+            const ConfigOption *o = c.option(k); return o ? o->getFloat() : d; };
+        static double s_layer = 0, s_width = 0, s_speed = 0, s_flow = 0; static bool s_dirty = false;
+        const double cur_layer = getfv(qpc, "layer_height", 3.0);
+        const double cur_width = getfv(qpc, "line_width", 4.0);
+        const double cur_speed = getfv(qpc, "outer_wall_speed", 20.0);
+        double cur_flow = 1.0;
+        if (auto *fr = qfc.option<ConfigOptionFloats>("filament_flow_ratio"); fr && !fr->values.empty()) cur_flow = fr->values.front();
+        if (!s_dirty) { s_layer = cur_layer; s_width = cur_width; s_speed = cur_speed; s_flow = cur_flow; }
+
+        ImGuiWrapper &imgui2 = *wxGetApp().imgui();
+        ImFont *big = imgui2.get_large_font();
+        const ImVec4 lblc(0.55f, 0.55f, 0.54f, 1.0f);
+        const float bar_bottom = ch - (qz_compact ? 74.0f : 20.0f) * scale;
+        imgui2.set_next_window_pos(cw * 0.5f + 60.0f * scale, bar_bottom, ImGuiCond_Always, 0.5f, 1.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 18.0f * scale);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(22.0f, 14.0f) * scale);
+        imgui2.begin(std::string("QZParamsPrep"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+        float rowy = -1.0f;
+        auto pfield = [&](const char *label, const char *id, double *val, const char *unit,
+                          double vmin, double vmax, double disp = 1.0, const char *fmt = "%.2f") {
+            if (rowy < 0.0f) rowy = ImGui::GetCursorPosY(); else ImGui::SetCursorPosY(rowy);
+            ImGui::BeginGroup();
+            ImGui::GetCurrentWindow()->DC.CurrLineTextBaseOffset = 0.0f;
+            ImGui::SetWindowFontScale(0.85f);
+            ImGui::TextColored(lblc, "%s", label);
+            ImGui::SetWindowFontScale(1.0f);
+            if (big) ImGui::PushFont(big); else ImGui::SetWindowFontScale(1.5f);
+            ImGui::SetNextItemWidth(64.0f * scale);
+            float f2 = (float)(*val * disp);
+            if (ImGui::InputFloat(id, &f2, 0.0f, 0.0f, fmt)) { *val = std::min(vmax, std::max(vmin, (double)f2 / disp)); s_dirty = true; }
+            if (big) ImGui::PopFont(); else ImGui::SetWindowFontScale(1.0f);
+            ImGui::SameLine(0.0f, 0.0f);
+            ImGui::SetWindowFontScale(0.85f);
+            ImGui::TextColored(lblc, "%s", unit);
+            ImGui::SetWindowFontScale(1.0f);
+            ImGui::EndGroup();
+            ImGui::SameLine(0, 16.0f * scale);
+        };
+        pfield(_u8L("LAYER HEIGHT").c_str(), "##qzplh", &s_layer, "mm", 0.3, 10.0);
+        pfield(_u8L("LINE WIDTH").c_str(),  "##qzplw", &s_width, "mm", 0.4, 12.0);
+        pfield(_u8L("SPEED").c_str(),       "##qzpsp", &s_speed, "mm/s", 1.0, 300.0);
+        pfield(_u8L("FLOW").c_str(),        "##qzpfl", &s_flow, "%", 0.1, 50.0, 100.0, "%.0f");
+        if (s_dirty) {
+            ImGui::SameLine(0, 22.0f * scale);
+            ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.227f, 0.220f, 0.208f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.160f, 0.155f, 0.147f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.120f, 0.116f, 0.110f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text,          ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(20.0f, 7.0f) * scale);
+            if (ImGui::Button((_u8L("Apply") + "##qzprep").c_str())) {
+                // same coherent families as the Preview quickbar
+                DynamicPrintConfig np;
+                np.set_key_value("layer_height", new ConfigOptionFloat(s_layer));
+                np.set_key_value("initial_layer_print_height", new ConfigOptionFloat(s_layer));
+                for (const char *wk : { "line_width", "outer_wall_line_width", "inner_wall_line_width",
+                                        "top_surface_line_width", "sparse_infill_line_width",
+                                        "internal_solid_infill_line_width", "initial_layer_line_width" })
+                    np.set_key_value(wk, new ConfigOptionFloatOrPercent(s_width, false));
+                for (const char *sk : { "outer_wall_speed", "inner_wall_speed", "sparse_infill_speed",
+                                        "internal_solid_infill_speed", "top_surface_speed", "gap_infill_speed" })
+                    np.set_key_value(sk, new ConfigOptionFloat(s_speed));
+                np.set_key_value("initial_layer_speed", new ConfigOptionFloat(std::max(1.0, s_speed)));
+                np.set_key_value("initial_layer_infill_speed", new ConfigOptionFloat(std::max(1.0, s_speed)));
+                np.set_key_value("skirt_speed", new ConfigOptionFloat(std::max(1.0, s_speed)));
+                if (Tab *pt3 = wxGetApp().get_tab(Preset::TYPE_PRINT)) pt3->load_config(np);
+                DynamicPrintConfig nf2; nf2.set_key_value("filament_flow_ratio", new ConfigOptionFloats{ s_flow });
+                if (Tab *ft3 = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) ft3->load_config(nf2);
+                s_dirty = false;
+                wxGetApp().plater()->reslice();
+            }
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(4);
+        }
+        imgui2.end();
+        ImGui::PopStyleVar(2);
+    }
+
     ImGui::PopStyleVar(5);
     ImGui::PopStyleColor(15);
 }
