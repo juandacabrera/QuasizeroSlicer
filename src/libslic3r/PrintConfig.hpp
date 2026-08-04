@@ -1414,6 +1414,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,               qzmini_usable_syringe_capacity_ml))
     ((ConfigOptionFloat,               qzmini_usable_plunger_stroke_mm))
     ((ConfigOptionFloat,               qzmini_plunger_mm_per_e_unit))
+    ((ConfigOptionFloat,               qzmini_max_segment_mm))
     ((ConfigOptionBool,                qzmini_ssa_enable))
     ((ConfigOptionFloat,               qzmini_ssa_max_length))
     ((ConfigOptionInt,                 qzmini_ssa_dwell_ms))

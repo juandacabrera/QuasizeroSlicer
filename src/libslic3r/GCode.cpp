@@ -2481,6 +2481,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     m_fan_mover.release();
     m_qz_refill.reset();
     m_qz_ssa.reset();
+    m_qz_subdiv.reset();
     
     m_writer.set_is_bbl_machine(is_bbl_printers);
 
@@ -3723,7 +3724,14 @@ void GCode::process_layers(
         );
     
     const auto qz_refill = tbb::make_filter<std::string, std::string>(slic3r_tbb_filtermode::serial_in_order,
-            [&qz = this->m_qz_refill, &ssa = this->m_qz_ssa, &config = this->config()](std::string in) -> std::string {
+            [&qz = this->m_qz_refill, &ssa = this->m_qz_ssa, &sub = this->m_qz_subdiv, &config = this->config()](std::string in) -> std::string {
+        // segment subdivision first: downstream stages see fine-grained moves
+        if (config.qzmini_enable.value && config.qzmini_max_segment_mm.value > 0.001) {
+            if (sub.get() == nullptr)
+                sub = std::make_unique<QuasiZero::QzSegmentSubdivider>(
+                    config.qzmini_max_segment_mm.value, config.use_relative_e_distances.value);
+            in = sub->process(std::move(in));
+        }
         // Short-Segment Anchoring runs for any QZmini machine, refill or not
         if (config.qzmini_enable.value && config.qzmini_ssa_enable.value) {
             if (ssa.get() == nullptr) {
@@ -3891,7 +3899,14 @@ void GCode::process_layers(
     );
     
     const auto qz_refill = tbb::make_filter<std::string, std::string>(slic3r_tbb_filtermode::serial_in_order,
-            [&qz = this->m_qz_refill, &ssa = this->m_qz_ssa, &config = this->config()](std::string in) -> std::string {
+            [&qz = this->m_qz_refill, &ssa = this->m_qz_ssa, &sub = this->m_qz_subdiv, &config = this->config()](std::string in) -> std::string {
+        // segment subdivision first: downstream stages see fine-grained moves
+        if (config.qzmini_enable.value && config.qzmini_max_segment_mm.value > 0.001) {
+            if (sub.get() == nullptr)
+                sub = std::make_unique<QuasiZero::QzSegmentSubdivider>(
+                    config.qzmini_max_segment_mm.value, config.use_relative_e_distances.value);
+            in = sub->process(std::move(in));
+        }
         // Short-Segment Anchoring runs for any QZmini machine, refill or not
         if (config.qzmini_enable.value && config.qzmini_ssa_enable.value) {
             if (ssa.get() == nullptr) {

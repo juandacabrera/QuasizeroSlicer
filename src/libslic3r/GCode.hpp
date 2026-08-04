@@ -649,6 +649,7 @@ private:
     // Quasizero QZmini refill transformation (created lazily per export)
     std::unique_ptr<QuasiZero::QzRefillProcessor> m_qz_refill;
     std::unique_ptr<QuasiZero::QzShortSegmentAnchor> m_qz_ssa;
+    std::unique_ptr<QuasiZero::QzSegmentSubdivider> m_qz_subdiv;
 
     // BBS
     Print* m_curr_print = nullptr;

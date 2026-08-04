@@ -4585,6 +4585,18 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(10.0));
 
+    def = this->add("qzmini_max_segment_mm", coFloat);
+    def->label = L("Max segment length");
+    def->category = L("QZmini");
+    def->tooltip = L("Extrusion moves longer than this are split into collinear sub-moves with proportional E. "
+                     "Kinematically identical on its own; it provides fine-grained segments for per-segment flow "
+                     "shaping and live overrides. 0 disables splitting.");
+    def->sidetext = "mm";
+    def->min = 0;
+    def->max = 100;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.0));
+
     def = this->add("qzmini_refill_enable", coBool);
     def->label = L("Auto-pause for refill");
     def->category = L("QZmini");

@@ -59,6 +59,32 @@ private:
     int    m_count        = 0;
 };
 
+// Quasizero (foundation for per-segment flow shaping): splits every extrusion
+// move longer than max_len_mm into collinear sub-moves with exactly
+// proportional E. Kinematically a no-op on its own (the firmware already
+// interpolates E along a move; collinear junctions do not slow the planner),
+// but it gives downstream stages - and live overrides - fine-grained segments
+// to act on. Total E per move is preserved exactly in both E modes.
+class QzSegmentSubdivider
+{
+public:
+    explicit QzSegmentSubdivider(double max_len_mm, bool initial_e_relative)
+        : m_max(max_len_mm), m_e_rel(initial_e_relative) {}
+
+    std::string process(const std::string &chunk); // newline preserving
+
+private:
+    void handle_line(const std::string &line, std::string &out);
+
+    double m_max     = 0.0;
+    bool   m_e_rel   = false;
+    bool   m_xyz_rel = false;
+    bool   m_has_pos = false;
+    double m_x = 0.0, m_y = 0.0, m_z = 0.0;
+    double m_e = 0.0; // logical E (absolute mode)
+    std::string m_carry;
+};
+
 }} // namespace Slic3r::QuasiZero
 
 #endif

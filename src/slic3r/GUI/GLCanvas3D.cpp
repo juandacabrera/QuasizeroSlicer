@@ -11409,6 +11409,18 @@ void GLCanvas3D::_render_qz_quick_cards()
                     prt_tab->load_config(nf);
                 }
             }
+            double mseg = 0.0; if (const ConfigOption *o = prc2.option("qzmini_max_segment_mm")) mseg = o->getFloat();
+            row_label(_u8L("Max segment (mm)").c_str());
+            float mf = (float)mseg;
+            ImGui::InputFloat("##qzmaxseg", &mf, 0.5f, 0.5f, "%.1f");
+            if ((double)mf != mseg && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                mf = std::min(100.0f, std::max(0.0f, mf));
+                if ((double)mf != mseg && prt_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("qzmini_max_segment_mm", new ConfigOptionFloat((double)mf));
+                    prt_tab->load_config(nf);
+                }
+            }
         }
 
         section(_u8L("EXPERIMENTAL").c_str());

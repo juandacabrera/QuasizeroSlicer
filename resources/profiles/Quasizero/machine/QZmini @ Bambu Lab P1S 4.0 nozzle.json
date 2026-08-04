@@ -179,5 +179,8 @@
  ],
  "qzmini_ssa_depart_speed": [
   "10"
+ ],
+ "qzmini_max_segment_mm": [
+  "0"
  ]
 }

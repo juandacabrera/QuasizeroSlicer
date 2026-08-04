@@ -191,4 +191,107 @@ void QzShortSegmentAnchor::flush_island(std::string &out, bool anchored)
     m_buffering = false;
 }
 
+std::string QzSegmentSubdivider::process(const std::string &chunk)
+{
+    std::string out;
+    out.reserve(chunk.size() + chunk.size() / 2);
+    std::string data = m_carry + chunk;
+    m_carry.clear();
+    size_t start = 0;
+    while (start < data.size()) {
+        const size_t nl = data.find('\n', start);
+        if (nl == std::string::npos) { m_carry = data.substr(start); break; }
+        handle_line(data.substr(start, nl - start + 1), out);
+        start = nl + 1;
+    }
+    return out;
+}
+
+void QzSegmentSubdivider::handle_line(const std::string &line, std::string &out)
+{
+    if (starts_with_cmd(line, "G90")) m_xyz_rel = false;
+    else if (starts_with_cmd(line, "G91")) m_xyz_rel = true;
+    else if (starts_with_cmd(line, "M82")) m_e_rel = false;
+    else if (starts_with_cmd(line, "M83")) m_e_rel = true;
+    else if (starts_with_cmd(line, "G92")) {
+        double e = 0.0;
+        if (parse_word(line, 'E', e)) m_e = e;
+    }
+
+    const bool is_move = starts_with_cmd(line, "G1") || starts_with_cmd(line, "G0");
+    double x = 0.0, y = 0.0, z = 0.0, e = 0.0, f = 0.0;
+    const bool has_x = is_move && parse_word(line, 'X', x);
+    const bool has_y = is_move && parse_word(line, 'Y', y);
+    const bool has_z = is_move && parse_word(line, 'Z', z);
+    const bool has_e = is_move && parse_word(line, 'E', e);
+    const bool has_f = is_move && parse_word(line, 'F', f);
+
+    double de = 0.0;
+    if (has_e) de = m_e_rel ? e : e - m_e;
+
+    // only ABSOLUTE-XYZ extrusion moves with a known start point are split
+    bool split = false;
+    double nx = m_x, ny = m_y, nz = m_z, len = 0.0;
+    if (is_move && !m_xyz_rel && (has_x || has_y) && has_e && de > 1e-9 && m_has_pos && m_max > 1e-6) {
+        nx = has_x ? x : m_x;
+        ny = has_y ? y : m_y;
+        nz = has_z ? z : m_z;
+        len = std::sqrt((nx - m_x) * (nx - m_x) + (ny - m_y) * (ny - m_y));
+        split = len > m_max * 1.0001;
+    }
+
+    if (split) {
+        const int n = (int)std::ceil(len / m_max);
+        char buf[160];
+        double prev_e_abs = m_e;      // absolute-mode cumulative
+        double emitted_rel = 0.0;     // relative-mode running total
+        for (int i = 1; i <= n; ++i) {
+            const double t  = double(i) / double(n);
+            const double xi = m_x + (nx - m_x) * t;
+            const double yi = m_y + (ny - m_y) * t;
+            std::string seg = "G1";
+            std::snprintf(buf, sizeof(buf), " X%.3f Y%.3f", xi, yi); seg += buf;
+            if (has_z) { std::snprintf(buf, sizeof(buf), " Z%.3f", m_z + (nz - m_z) * t); seg += buf; }
+            if (m_e_rel) {
+                double de_i = (i == n) ? (de - emitted_rel) : de * t - emitted_rel;
+                // round the emitted value, keep the running total on the rounded value
+                std::snprintf(buf, sizeof(buf), " E%.5f", de_i); seg += buf;
+                double rounded = 0.0; std::sscanf(buf, " E%lf", &rounded);
+                emitted_rel += rounded;
+            } else {
+                const double e_i = (i == n) ? e : m_e + de * t;
+                std::snprintf(buf, sizeof(buf), " E%.5f", e_i); seg += buf;
+                prev_e_abs = e_i;
+            }
+            if (has_f && i == 1) { std::snprintf(buf, sizeof(buf), " F%.0f", f); seg += buf; }
+            if (i == n) {
+                // keep any trailing comment from the original line on the last piece
+                const size_t sc = line.find(';');
+                if (sc != std::string::npos) {
+                    std::string tail = line.substr(sc);
+                    while (!tail.empty() && (tail.back() == '\n' || tail.back() == '\r')) tail.pop_back();
+                    seg += " " + tail;
+                }
+            }
+            seg += "\n";
+            out += seg;
+        }
+        (void)prev_e_abs;
+    }
+    else
+        out += line;
+
+    if (is_move) {
+        if (!m_xyz_rel) {
+            if (has_x) m_x = x;
+            if (has_y) m_y = y;
+            if (has_z) m_z = z;
+            if (has_x || has_y) m_has_pos = true;
+        } else if (has_x || has_y) {
+            m_x += has_x ? x : 0.0; m_y += has_y ? y : 0.0; if (has_z) m_z += z;
+        }
+        if (has_e) m_e = m_e_rel ? m_e + e : e;
+    }
+}
+
 }} // namespace Slic3r::QuasiZero
