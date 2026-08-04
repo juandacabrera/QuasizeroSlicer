@@ -152,8 +152,11 @@ QzSyringePanel::QzSyringePanel(wxWindow *parent)
         r->Add(m_zoff_label, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
         auto *bm = make_txt_btn("-0.05", 48);
         auto *bp = make_txt_btn("+0.05", 48);
+        auto *bz = make_txt_btn("0", 26);
         r->Add(bm, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
-        r->Add(bp, 0, wxALIGN_CENTER_VERTICAL);
+        r->Add(bp, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(4));
+        r->Add(bz, 0, wxALIGN_CENTER_VERTICAL);
+        bz->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { reset_z_offset(); });
         col2->Add(r, 0, wxBOTTOM, FromDIP(2));
         auto bump = [this](double d) {
             // one click, one command - clamped to +-10.00 mm from the sliced Z
@@ -261,6 +264,25 @@ void QzSyringePanel::on_tick(wxTimerEvent &)
     const double lvl_e[3] = { m_step_e, m_step_e * 0.5, m_step_e * 0.25 };
     const int    lvl_f[3] = { m_feedrate, m_feedrate / 2, m_feedrate / 4 };
     on_manual_extrude(m_dir * lvl_e[m_level - 1], lvl_f[m_level - 1]);
+}
+
+void QzSyringePanel::reset_z_offset()
+{
+    if (std::abs(m_z_off) > 1e-6 && on_send_gcode) {
+        char buf[48];
+        std::snprintf(buf, sizeof(buf), "M290 Z%.2f\n", -m_z_off);
+        on_send_gcode(buf);
+    }
+    m_z_off = 0.0;
+    if (m_zoff_label) m_zoff_label->SetLabel("Z +0.00 mm");
+    this->SetFocus();
+}
+
+void QzSyringePanel::update_print_state(bool printing)
+{
+    if (m_was_printing && !printing)
+        reset_z_offset(); // job ended/cancelled: leave the firmware clean for the next one
+    m_was_printing = printing;
 }
 
 void QzSyringePanel::set_remaining_fraction(double f)

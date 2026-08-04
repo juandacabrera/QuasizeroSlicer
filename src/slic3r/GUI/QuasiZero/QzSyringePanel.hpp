@@ -45,6 +45,13 @@ private:
     ::TextInput *m_flow_ctrl  = nullptr;
     class wxStaticText *m_zoff_label = nullptr;
     double       m_z_off      = 0.0;   // accumulated live baby-step vs the sliced Z
+    bool         m_was_printing = false;
+public:
+    // auto-unwind the babystep when a print ends or is cancelled (M290 persists
+    // in firmware across jobs and would shift the next print's Z)
+    void update_print_state(bool printing);
+    void reset_z_offset();
+private:
     int      m_level      = 1;     // 1..3: each press of the active direction adds force
                                    // (slower plunger = more torque on the speed-torque curve)
     int      m_feedrate   = 600;   // mm/min, firm (near native jog feel)
