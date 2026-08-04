@@ -98,9 +98,6 @@
  "filament_max_volumetric_speed": [
   "66"
  ],
- "filament_retraction_length": [
-  "0"
- ],
  "filament_start_gcode": [
   "; QZ biomaterial: cold extrusion, no filament-specific thermal ops\n"
  ],

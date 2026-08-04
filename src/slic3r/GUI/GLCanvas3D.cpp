@@ -11409,6 +11409,19 @@ void GLCanvas3D::_render_qz_quick_cards()
                     prt_tab->load_config(nf);
                 }
             }
+            double zh = 0.0;
+            if (const ConfigOptionFloats *o = prc2.option<ConfigOptionFloats>("z_hop"); o != nullptr && !o->values.empty()) zh = o->values.front();
+            row_label(_u8L("Z hop (mm)").c_str());
+            float zf = (float)zh;
+            ImGui::InputFloat("##qzzhop", &zf, 0.5f, 0.5f, "%.1f");
+            if ((double)zf != zh && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                zf = std::min(20.0f, std::max(0.0f, zf));
+                if ((double)zf != zh && prt_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("z_hop", new ConfigOptionFloats{ (double)zf });
+                    prt_tab->load_config(nf);
+                }
+            }
             double mseg = 0.0; if (const ConfigOption *o = prc2.option("qzmini_max_segment_mm")) mseg = o->getFloat();
             row_label(_u8L("Max segment (mm)").c_str());
             float mf = (float)mseg;
