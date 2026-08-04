@@ -2791,8 +2791,9 @@ void StatusPanel::update(MachineObject *obj)
                     if (cur) cur->publish_gcode(line); // official LAN gcode-line channel
                 };
             }
-            // per-update: auto-unwind the live Z babystep when a job ends/cancels
-            m_qz_syringe->update_print_state(obj != nullptr && obj->is_in_printing());
+            // per-update: auto-unwind the live Z babystep only when the job truly
+            // ends - a refill/user PAUSE keeps the offset so resume lands right
+            m_qz_syringe->update_print_state(obj != nullptr && (obj->is_in_printing() || obj->is_in_printing_pause()));
             auto getf = [&pcfg](const char *k, double d){ auto *o = pcfg.option<ConfigOptionFloat>(k); return o ? o->value : d; };
             const double nominal_ml   = getf("qzmini_nominal_syringe_capacity_ml", 150.0);
             const double threshold_ml = getf("qzmini_refill_threshold_ml", 120.0);
