@@ -10869,23 +10869,60 @@ static bool qz_process_custom_gcode(const std::string &body, std::string &out_pa
         const ConfigOptionBool *qe = full.option<ConfigOptionBool>("qzmini_enable");
         if (qe == nullptr || !qe->value) { err = _u8L("Select a QZmini printer first - the editor wraps your G-code with its start/end sequences."); return false; }
 
-        // quick scan: max Z + extrusion sanity
-        double max_z = 0.0, first_z = -1.0; size_t emoves = 0;
+        // The preview derives line type, bead geometry, layers and the player
+        // from slicer metadata comments the authored body does not carry. Scan
+        // the body and annotate it: role = Custom, bead width/height from the
+        // live process (the quickbar values), and a LAYER_CHANGE block on every
+        // extrusion-Z transition - mid-air Z jumps included (non-planar bodies
+        // are first-class here; only the BEAD height comes from the process).
+        const double qz_lh = std::max(0.1, full.opt_float("layer_height"));
+        double qz_lw = 4.0;
+        if (const ConfigOptionFloatOrPercent *lwo = full.option<ConfigOptionFloatOrPercent>("line_width")) {
+            double noz = 4.0;
+            if (const ConfigOptionFloats *nd = full.option<ConfigOptionFloats>("nozzle_diameter"); nd && !nd->values.empty()) noz = nd->values.front();
+            qz_lw = lwo->percent ? noz * lwo->value * 0.01 : lwo->value;
+            if (qz_lw <= 0.01) qz_lw = noz;
+        }
+        std::string abody;
+        abody.reserve(body.size() + body.size() / 4);
+        {
+            char mb[96];
+            std::snprintf(mb, sizeof(mb), "; FEATURE: Custom\n;TYPE:Custom\n;WIDTH:%.3f\n", qz_lw);
+            abody += mb;
+        }
+        double max_z = 0.0, first_z = -1.0, cur_z = -1.0, last_layer_z = -1e9; size_t emoves = 0;
         {
             size_t pos = 0;
             while (pos < body.size()) {
                 size_t nl = body.find('\n', pos);
-                if (nl == std::string::npos) nl = body.size();
+                const bool last = (nl == std::string::npos);
+                if (last) nl = body.size();
                 const std::string line = body.substr(pos, nl - pos);
-                if (line.rfind("G1", 0) == 0 || line.rfind("G0", 0) == 0) {
+                const bool is_move = line.rfind("G1", 0) == 0 || line.rfind("G0", 0) == 0;
+                bool is_extru = false;
+                if (is_move) {
                     const size_t zp = line.find('Z');
                     if (zp != std::string::npos) {
-                        const double z = std::atof(line.c_str() + zp + 1);
-                        if (z > max_z) max_z = z;
-                        if (first_z < 0.0) first_z = z;
+                        cur_z = std::atof(line.c_str() + zp + 1);
+                        if (cur_z > max_z) max_z = cur_z;
+                        if (first_z < 0.0) first_z = cur_z;
                     }
-                    if (line.find('E') != std::string::npos) ++emoves;
+                    const size_t ep = line.find('E');
+                    if (ep != std::string::npos && std::atof(line.c_str() + ep + 1) > 1e-9 &&
+                        (line.find('X') != std::string::npos || line.find('Y') != std::string::npos)) {
+                        is_extru = true;
+                        ++emoves;
+                    }
                 }
+                if (is_extru && cur_z >= 0.0 && std::abs(cur_z - last_layer_z) > 1e-6) {
+                    char lb[128];
+                    std::snprintf(lb, sizeof(lb), ";LAYER_CHANGE\n;Z:%.3f\n;HEIGHT:%.3f\n", cur_z, qz_lh);
+                    abody += lb;
+                    last_layer_z = cur_z;
+                }
+                abody += line;
+                abody += "\n";
+                if (last) break;
                 pos = nl + 1;
             }
         }
@@ -10902,8 +10939,7 @@ static bool qz_process_custom_gcode(const std::string &body, std::string &out_pa
         g  = "; Quasizero Slicer - custom G-code job (G-code Editor)\n";
         g += pp.process(full.opt_string("machine_start_gcode"), 0);
         g += "\n; QZ CUSTOM BODY BEGIN\n";
-        g += body;
-        if (!body.empty() && body.back() != '\n') g += "\n";
+        g += abody;
         g += "; QZ CUSTOM BODY END\n";
         g += pp.process(full.opt_string("machine_end_gcode"), 0);
         g += "\n";
@@ -11660,7 +11696,7 @@ void GLCanvas3D::_render_qz_quick_cards()
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.160f, 0.155f, 0.147f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.120f, 0.116f, 0.110f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_Text,          ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-            const bool do_process = ImGui::Button((_u8L("Process") + " \xe2\x86\x92 Preview##qzged").c_str());
+            const bool do_process = ImGui::Button((_u8L("Process") + " -> Preview##qzged").c_str());
             ImGui::PopStyleColor(4);
             ImGui::SameLine(0.0f, 8.0f * scale);
             ImGui::SetWindowFontScale(0.85f);
