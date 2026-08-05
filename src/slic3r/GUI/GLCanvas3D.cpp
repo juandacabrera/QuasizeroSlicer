@@ -11517,6 +11517,10 @@ void GLCanvas3D::_render_qz_quick_cards()
         imgui2.set_next_window_pos(cw * 0.5f + 60.0f * scale, bar_bottom, ImGuiCond_Always, 0.5f, 1.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 18.0f * scale);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(22.0f, 14.0f) * scale);
+        // value boxes blend into the white capsule, like the Preview quickbar
+        ImGui::PushStyleColor(ImGuiCol_FrameBg,        ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.955f, 0.953f, 0.949f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive,  ImVec4(0.930f, 0.928f, 0.924f, 1.0f));
         imgui2.begin(std::string("QZParamsPrep"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
         float rowy = -1.0f;
@@ -11576,6 +11580,7 @@ void GLCanvas3D::_render_qz_quick_cards()
             ImGui::PopStyleColor(4);
         }
         imgui2.end();
+        ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
     }
 
