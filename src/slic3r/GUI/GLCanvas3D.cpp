@@ -23,11 +23,18 @@
 #include "GLTexture.hpp"
 #include "ParamsDialog.hpp"
 #include "ParamsPanel.hpp"
+#include "libslic3r/PlaceholderParser.hpp"
+#include "libslic3r/QuasiZero/QzRefillPlanner.hpp"
+#include "libslic3r/QuasiZero/QzShortSegmentAnchor.hpp"
+#include "libslic3r/QuasiZero/QzFirmwareAdapter.hpp"
+#include <boost/nowide/fstream.hpp>
 #include "GUI_Preview.hpp"
 #include "OpenGLManager.hpp"
 #include "Plater.hpp"
 #include "MainFrame.hpp"
 #include <wx/msgdlg.h>
+#include <wx/clipbrd.h>
+#include <wx/dataobj.h>
 #include "WipeTowerDialog.hpp"
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
@@ -10839,6 +10846,131 @@ ModelInstance *get_model_instance(const GLVolume &gl_volume, const ModelObject &
 }
 
 
+// Quasizero G-code Editor: wraps a pasted custom body (e.g. Grasshopper paths)
+// with the SELECTED machine's start/end G-code (placeholders resolved against
+// the live config) and runs the QZ pipeline (segment subdivision, short-segment
+// anchoring, Refill Assist) - then hands the result to the existing
+// load-gcode preview machinery.
+static int qz_gcode_text_cb(ImGuiInputTextCallbackData *data)
+{
+    if (data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
+        auto *str = (std::string *) data->UserData;
+        str->resize(data->BufTextLen);
+        data->Buf = (char *) str->c_str();
+    }
+    return 0;
+}
+
+static bool qz_process_custom_gcode(const std::string &body, std::string &out_path, std::string &err)
+{
+    try {
+        PresetBundle &pb = *wxGetApp().preset_bundle;
+        DynamicPrintConfig full = pb.full_config();
+        const ConfigOptionBool *qe = full.option<ConfigOptionBool>("qzmini_enable");
+        if (qe == nullptr || !qe->value) { err = _u8L("Select a QZmini printer first - the editor wraps your G-code with its start/end sequences."); return false; }
+
+        // quick scan: max Z + extrusion sanity
+        double max_z = 0.0, first_z = -1.0; size_t emoves = 0;
+        {
+            size_t pos = 0;
+            while (pos < body.size()) {
+                size_t nl = body.find('\n', pos);
+                if (nl == std::string::npos) nl = body.size();
+                const std::string line = body.substr(pos, nl - pos);
+                if (line.rfind("G1", 0) == 0 || line.rfind("G0", 0) == 0) {
+                    const size_t zp = line.find('Z');
+                    if (zp != std::string::npos) {
+                        const double z = std::atof(line.c_str() + zp + 1);
+                        if (z > max_z) max_z = z;
+                        if (first_z < 0.0) first_z = z;
+                    }
+                    if (line.find('E') != std::string::npos) ++emoves;
+                }
+                pos = nl + 1;
+            }
+        }
+        if (emoves == 0) { err = _u8L("No extrusion moves (G1 with E) found in the pasted G-code."); return false; }
+
+        PlaceholderParser pp;
+        pp.apply_config(full);
+        pp.set("max_layer_z",       new ConfigOptionFloat(max_z));
+        pp.set("layer_z",           new ConfigOptionFloat(first_z > 0.0 ? first_z : max_z));
+        pp.set("layer_num",         new ConfigOptionInt(0));
+        pp.set("total_layer_count", new ConfigOptionInt(1));
+
+        std::string g;
+        g  = "; Quasizero Slicer - custom G-code job (G-code Editor)\n";
+        g += pp.process(full.opt_string("machine_start_gcode"), 0);
+        g += "\n; QZ CUSTOM BODY BEGIN\n";
+        g += body;
+        if (!body.empty() && body.back() != '\n') g += "\n";
+        g += "; QZ CUSTOM BODY END\n";
+        g += pp.process(full.opt_string("machine_end_gcode"), 0);
+        g += "\n";
+
+        const bool e_rel = full.opt_bool("use_relative_e_distances");
+        if (full.opt_float("qzmini_max_segment_mm") > 0.001) {
+            QuasiZero::QzSegmentSubdivider sub(full.opt_float("qzmini_max_segment_mm"), e_rel);
+            g = sub.process(g);
+        }
+        if (full.opt_bool("qzmini_ssa_enable")) {
+            QuasiZero::QzSsaOptions so;
+            so.max_length_mm      = full.opt_float("qzmini_ssa_max_length");
+            so.dwell_ms           = full.opt_int("qzmini_ssa_dwell_ms");
+            so.extra_prime_e      = full.opt_float("qzmini_ssa_extra_prime_e");
+            so.depart_speed_mms   = full.opt_float("qzmini_ssa_depart_speed");
+            so.initial_e_relative = e_rel;
+            QuasiZero::QzShortSegmentAnchor ssa(so);
+            g = ssa.process(g);
+        }
+        if (full.opt_bool("qzmini_refill_enable")) {
+            QuasiZero::QzVolumetricParams vp;
+            vp.barrel_inner_diameter_mm    = full.opt_float("qzmini_barrel_inner_diameter");
+            vp.nominal_syringe_capacity_ml = full.opt_float("qzmini_nominal_syringe_capacity_ml");
+            vp.usable_syringe_capacity_ml  = full.opt_float("qzmini_usable_syringe_capacity_ml");
+            vp.usable_plunger_stroke_mm    = full.opt_float("qzmini_usable_plunger_stroke_mm");
+            vp.plunger_mm_per_e_unit       = full.opt_float("qzmini_plunger_mm_per_e_unit");
+            QuasiZero::QzRefillOptions ro;
+            ro.refill_threshold_ml    = full.opt_float("qzmini_refill_threshold_ml");
+            ro.usable_capacity_ml     = full.opt_float("qzmini_usable_syringe_capacity_ml");
+            ro.park_x                 = full.opt_float("qzmini_park_x");
+            ro.park_y                 = full.opt_float("qzmini_park_y");
+            ro.park_z_lift            = full.opt_float("qzmini_park_z_lift");
+            ro.plunger_reset          = full.opt_bool("qzmini_plunger_reset_enable");
+            ro.plunger_reset_feedrate = full.opt_float("qzmini_plunger_reset_feedrate");
+            ro.prime_after_refill     = full.opt_bool("qzmini_prime_after_refill_enable");
+            ro.prime_ml               = full.opt_float("qzmini_prime_after_refill_ml");
+            ro.prime_feedrate         = full.opt_float("qzmini_prime_feedrate");
+            ro.emit_preview_tag       = full.opt_bool("qzmini_refill_show_in_preview");
+            ro.travel_feedrate_mm_min = full.opt_float("travel_speed") * 60.0;
+            ro.initial_e_relative     = e_rel;
+            switch (full.option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value) {
+            case gcfKlipper:        ro.family = QuasiZero::QzFirmwareFamily::Klipper; break;
+            case gcfRepRapFirmware: ro.family = QuasiZero::QzFirmwareFamily::RepRapFirmware; break;
+            case gcfMarlinLegacy:
+            case gcfMarlinFirmware: ro.family = QuasiZero::QzFirmwareFamily::Marlin; break;
+            default:                ro.family = QuasiZero::QzFirmwareFamily::Unknown; break;
+            }
+            ro.pause_gcode = QuasiZero::qz_pause_command(ro.family,
+                                                         full.opt_string("qzmini_pause_strategy"),
+                                                         full.opt_string("machine_pause_gcode"),
+                                                         full.opt_string("qzmini_pause_custom_gcode"));
+            QuasiZero::QzRefillProcessor rp(vp, ro);
+            g = rp.process(g);
+            if (rp.failed()) { err = rp.error(); return false; }
+        }
+
+        out_path = (boost::filesystem::path(Slic3r::data_dir()) / "qz_custom_gcode.gcode").string();
+        boost::nowide::ofstream f(out_path, std::ios::binary);
+        f << g;
+        f.close();
+        return true;
+    } catch (const std::exception &e) {
+        err = e.what();
+        return false;
+    }
+}
+
 // Quasizero: floating quick-access cards (Process + Printer), bottom-left, folded
 // by default - the fast path that replaces the hidden wx sidebar for QZmini users.
 void GLCanvas3D::_render_qz_quick_cards()
@@ -11490,6 +11622,75 @@ void GLCanvas3D::_render_qz_quick_cards()
         }
     }
     imgui.end();
+
+    // ---------------- G-code Editor card: bottom-right on Prepare - paste a
+    // custom body (Grasshopper paths...), Process wraps it with the selected
+    // machine's start/end + QZ pipeline and opens it in the Preview ----------------
+    if (m_canvas_type == CanvasView3D) {
+        static bool        s_ed_open = false;
+        static std::string s_ed_src;
+        static std::string s_ed_status;
+        static bool        s_ed_error = false;
+        imgui.set_next_window_pos(cw - 10.0f * scale, ch - 20.0f * scale, ImGuiCond_Always, 1.0f, 1.0f);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, ch * 0.75f));
+        imgui.begin(std::string("QZGcodeEditor"), s_ed_open ? card_flags_open : card_flags);
+        title_row(_u8L("G-code Editor").c_str(), &s_ed_open, "process");
+        if (s_ed_open) {
+            ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+            if (s_ed_src.capacity() < 4096) s_ed_src.reserve(4096);
+            ImGui::InputTextMultiline("##qzgsrc", (char *) s_ed_src.c_str(), s_ed_src.capacity() + 1,
+                                      ImVec2(420.0f * scale, 240.0f * scale),
+                                      ImGuiInputTextFlags_CallbackResize | ImGuiInputTextFlags_AllowTabInput,
+                                      qz_gcode_text_cb, &s_ed_src);
+            const size_t nlines = (size_t) std::count(s_ed_src.begin(), s_ed_src.end(), '\n') + (s_ed_src.empty() ? 0 : 1);
+            if (ImGui::Button((_u8L("Paste") + "##qzged").c_str())) {
+                if (wxTheClipboard->Open()) {
+                    if (wxTheClipboard->IsSupported(wxDF_TEXT)) {
+                        wxTextDataObject td;
+                        wxTheClipboard->GetData(td);
+                        s_ed_src += td.GetText().ToUTF8().data();
+                    }
+                    wxTheClipboard->Close();
+                }
+            }
+            ImGui::SameLine(0.0f, 6.0f * scale);
+            if (ImGui::Button((_u8L("Clear") + "##qzged").c_str())) { s_ed_src.clear(); s_ed_status.clear(); }
+            ImGui::SameLine(0.0f, 6.0f * scale);
+            ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.227f, 0.220f, 0.208f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.160f, 0.155f, 0.147f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.120f, 0.116f, 0.110f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text,          ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+            const bool do_process = ImGui::Button((_u8L("Process") + " \xe2\x86\x92 Preview##qzged").c_str());
+            ImGui::PopStyleColor(4);
+            ImGui::SameLine(0.0f, 8.0f * scale);
+            ImGui::SetWindowFontScale(0.85f);
+            ImGui::TextColored(lbl_col, "%d %s", (int) nlines, _u8L("lines").c_str());
+            ImGui::SetWindowFontScale(1.0f);
+            if (do_process && !s_ed_src.empty()) {
+                std::string path, perr;
+                if (qz_process_custom_gcode(s_ed_src, path, perr)) {
+                    s_ed_status = _u8L("Processed - opening preview");
+                    s_ed_error  = false;
+                    wxGetApp().CallAfter([path]() {
+                        wxGetApp().plater()->load_gcode(wxString::FromUTF8(path.c_str()));
+                    });
+                } else {
+                    s_ed_status = perr;
+                    s_ed_error  = true;
+                }
+            }
+            if (!s_ed_status.empty()) {
+                ImGui::PushTextWrapPos(420.0f * scale);
+                ImGui::TextColored(s_ed_error ? ImVec4(0.75f, 0.20f, 0.15f, 1.0f) : ImVec4(0.35f, 0.35f, 0.34f, 1.0f),
+                                   "%s", s_ed_status.c_str());
+                ImGui::PopTextWrapPos();
+            }
+            ImGui::SetWindowFontScale(0.85f);
+            ImGui::TextColored(lbl_col, "%s", _u8L("Start/end G-code, refill and paste anchoring of the selected printer are applied on Process.").c_str());
+            ImGui::SetWindowFontScale(1.0f);
+        }
+        imgui.end();
+    }
 
     // ---------------- Params capsule on Prepare (and on Preview after a slicing
     // error, when the G-code viewer has nothing to show) - the same four quick
