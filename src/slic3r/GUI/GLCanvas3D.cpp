@@ -24,6 +24,7 @@
 #include "ParamsDialog.hpp"
 #include "ParamsPanel.hpp"
 #include "libslic3r/PlaceholderParser.hpp"
+#include "libslic3r/LocalesUtils.hpp"
 #include "libslic3r/QuasiZero/QzRefillPlanner.hpp"
 #include "libslic3r/QuasiZero/QzShortSegmentAnchor.hpp"
 #include "libslic3r/QuasiZero/QzFirmwareAdapter.hpp"
@@ -10891,12 +10892,14 @@ static bool qz_process_custom_gcode(const std::string &body, std::string &out_pa
         std::string abody;
         abody.reserve(body.size() + body.size() / 4);
         {
-            char mb[128];
-            if (user_width)
-                std::snprintf(mb, sizeof(mb), "; FEATURE: Custom\n;TYPE:Custom\n");
-            else
-                std::snprintf(mb, sizeof(mb), "; FEATURE: Custom\n;TYPE:Custom\n;WIDTH:%.3f\n; LINE_WIDTH: %.3f\n", qz_lw, qz_lw);
-            abody += mb;
+            // role must NOT be Custom: libvgcode Layers::update() only assigns a Z to
+            // layers whose extrusions have a real role - Custom layers stay at Z=0 and
+            // the view-range filter then culls everything above the first layer
+            abody += "; FEATURE: Outer wall\n;TYPE:Outer wall\n";
+            if (!user_width) {
+                const std::string w = Slic3r::float_to_string_decimal_point(qz_lw, 3);
+                abody += ";WIDTH:" + w + "\n; LINE_WIDTH: " + w + "\n";
+            }
         }
         double max_z = 0.0, first_z = -1.0, cur_z = -1.0, last_layer_z = -1e9; size_t emoves = 0;
         std::string first_line_seen;
@@ -10919,32 +10922,32 @@ static bool qz_process_custom_gcode(const std::string &body, std::string &out_pa
                 if (is_move) {
                     const size_t zp = line.find('Z');
                     if (zp != std::string::npos) {
-                        cur_z = std::atof(line.c_str() + zp + 1);
+                        cur_z = Slic3r::string_to_double_decimal_point(std::string_view(line).substr(zp + 1));
                         if (cur_z > max_z) max_z = cur_z;
                         if (first_z < 0.0) first_z = cur_z;
                     }
                     const size_t ep = line.find('E');
-                    if (ep != std::string::npos && std::atof(line.c_str() + ep + 1) > 1e-9 &&
+                    if (ep != std::string::npos && Slic3r::string_to_double_decimal_point(std::string_view(line).substr(ep + 1)) > 1e-9 &&
                         (line.find('X') != std::string::npos || line.find('Y') != std::string::npos)) {
                         is_extru = true;
                         ++emoves;
                     }
                 }
                 if (!user_layers && is_extru && cur_z >= 0.0 && std::abs(cur_z - last_layer_z) > 1e-6) {
-                    char lb[256];
-                    if (user_height)
-                        std::snprintf(lb, sizeof(lb), ";LAYER_CHANGE\n; CHANGE_LAYER\n;Z:%.3f\n; Z_HEIGHT: %.3f\n", cur_z, cur_z);
-                    else
-                        std::snprintf(lb, sizeof(lb), ";LAYER_CHANGE\n; CHANGE_LAYER\n;Z:%.3f\n; Z_HEIGHT: %.3f\n;HEIGHT:%.3f\n; LAYER_HEIGHT: %.3f\n", cur_z, cur_z, qz_lh, qz_lh);
-                    abody += lb;
+                    const std::string zs = Slic3r::float_to_string_decimal_point(cur_z, 3);
+                    abody += ";LAYER_CHANGE\n; CHANGE_LAYER\n;Z:" + zs + "\n; Z_HEIGHT: " + zs + "\n";
+                    if (!user_height) {
+                        const std::string hs = Slic3r::float_to_string_decimal_point(qz_lh, 3);
+                        abody += ";HEIGHT:" + hs + "\n; LAYER_HEIGHT: " + hs + "\n";
+                    }
                     last_layer_z = cur_z;
                 }
                 abody += line;
                 abody += "\n";
                 if (line.rfind(";WIDTH:", 0) == 0) {
-                    char tb[64]; std::snprintf(tb, sizeof(tb), "; LINE_WIDTH: %.3f\n", std::atof(line.c_str() + 7)); abody += tb;
+                    abody += "; LINE_WIDTH: " + Slic3r::float_to_string_decimal_point(Slic3r::string_to_double_decimal_point(std::string_view(line).substr(7)), 3) + "\n";
                 } else if (line.rfind(";HEIGHT:", 0) == 0) {
-                    char tb[64]; std::snprintf(tb, sizeof(tb), "; LAYER_HEIGHT: %.3f\n", std::atof(line.c_str() + 8)); abody += tb;
+                    abody += "; LAYER_HEIGHT: " + Slic3r::float_to_string_decimal_point(Slic3r::string_to_double_decimal_point(std::string_view(line).substr(8)), 3) + "\n";
                 } else if (line.rfind(";TYPE:", 0) == 0) {
                     abody += "; FEATURE: " + line.substr(6) + "\n";
                 } else if (line.rfind(";LAYER_CHANGE", 0) == 0) {
