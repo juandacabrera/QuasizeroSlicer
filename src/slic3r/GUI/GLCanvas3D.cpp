@@ -10979,11 +10979,9 @@ static bool qz_process_custom_gcode(const std::string &body, std::string &out_pa
         // config block: gives the viewer the real (virtual) filament diameter and
         // material data, so ml stats, flow and computed widths use QZ geometry
         g += "; CONFIG_BLOCK_START\n";
-        for (const char *k : { "filament_diameter", "filament_density", "filament_cost", "filament_colour",
-                               "filament_type", "filament_flow_ratio", "filament_max_volumetric_speed",
-                               "nozzle_diameter", "layer_height", "printable_height" }) {
-            if (full.has(k))
-                g += std::string("; ") + k + " = " + full.opt_serialize(k) + "\n";
+        // full dump, like a real sliced file: the loader rejects blocks with < 80 keys
+        for (const std::string &k : full.keys()) {
+            try { g += "; " + k + " = " + full.opt_serialize(k) + "\n"; } catch (...) {}
         }
         g += "; CONFIG_BLOCK_END\n";
         g += "\n";
