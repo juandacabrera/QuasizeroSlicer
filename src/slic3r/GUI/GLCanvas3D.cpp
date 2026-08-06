@@ -10891,13 +10891,21 @@ static bool qz_process_custom_gcode(const std::string &body, std::string &out_pa
             abody += mb;
         }
         double max_z = 0.0, first_z = -1.0, cur_z = -1.0, last_layer_z = -1e9; size_t emoves = 0;
+        std::string first_line_seen;
         {
             size_t pos = 0;
             while (pos < body.size()) {
                 size_t nl = body.find('\n', pos);
                 const bool last = (nl == std::string::npos);
                 if (last) nl = body.size();
-                const std::string line = body.substr(pos, nl - pos);
+                std::string line = body.substr(pos, nl - pos);
+                // tolerate CR endings, leading whitespace/BOM and lowercase g
+                while (!line.empty() && (line.back() == '\r' || line.back() == ' ' || line.back() == '\t')) line.pop_back();
+                size_t b0 = 0;
+                while (b0 < line.size() && (line[b0] == ' ' || line[b0] == '\t' || (unsigned char) line[b0] >= 0x80)) ++b0;
+                if (b0 > 0) line.erase(0, b0);
+                if (!line.empty() && line[0] == 'g') line[0] = 'G';
+                if (first_line_seen.empty() && !line.empty()) first_line_seen = line.substr(0, 48);
                 const bool is_move = line.rfind("G1", 0) == 0 || line.rfind("G0", 0) == 0;
                 bool is_extru = false;
                 if (is_move) {
@@ -10926,7 +10934,11 @@ static bool qz_process_custom_gcode(const std::string &body, std::string &out_pa
                 pos = nl + 1;
             }
         }
-        if (emoves == 0) { err = _u8L("No extrusion moves (G1 with E) found in the pasted G-code."); return false; }
+        if (emoves == 0) {
+            err = _u8L("No extrusion moves (G1 with E) found in the pasted G-code.") +
+                  std::string(" | first line read: \"") + first_line_seen + "\"";
+            return false;
+        }
 
         PlaceholderParser pp;
         pp.apply_config(full);
