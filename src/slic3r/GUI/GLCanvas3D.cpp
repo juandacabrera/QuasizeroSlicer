@@ -10883,11 +10883,19 @@ static bool qz_process_custom_gcode(const std::string &body, std::string &out_pa
             qz_lw = lwo->percent ? noz * lwo->value * 0.01 : lwo->value;
             if (qz_lw <= 0.01) qz_lw = noz;
         }
+        // authored metadata wins: if the body carries its own slicer comments,
+        // do not override them with quickbar values (quickbar = fallback only)
+        const bool user_width  = body.find(";WIDTH:")  != std::string::npos;
+        const bool user_height = body.find(";HEIGHT:") != std::string::npos;
+        const bool user_layers = body.find(";LAYER_CHANGE") != std::string::npos;
         std::string abody;
         abody.reserve(body.size() + body.size() / 4);
         {
             char mb[96];
-            std::snprintf(mb, sizeof(mb), "; FEATURE: Custom\n;TYPE:Custom\n;WIDTH:%.3f\n", qz_lw);
+            if (user_width)
+                std::snprintf(mb, sizeof(mb), "; FEATURE: Custom\n;TYPE:Custom\n");
+            else
+                std::snprintf(mb, sizeof(mb), "; FEATURE: Custom\n;TYPE:Custom\n;WIDTH:%.3f\n", qz_lw);
             abody += mb;
         }
         double max_z = 0.0, first_z = -1.0, cur_z = -1.0, last_layer_z = -1e9; size_t emoves = 0;
@@ -10922,9 +10930,12 @@ static bool qz_process_custom_gcode(const std::string &body, std::string &out_pa
                         ++emoves;
                     }
                 }
-                if (is_extru && cur_z >= 0.0 && std::abs(cur_z - last_layer_z) > 1e-6) {
+                if (!user_layers && is_extru && cur_z >= 0.0 && std::abs(cur_z - last_layer_z) > 1e-6) {
                     char lb[128];
-                    std::snprintf(lb, sizeof(lb), ";LAYER_CHANGE\n;Z:%.3f\n;HEIGHT:%.3f\n", cur_z, qz_lh);
+                    if (user_height)
+                        std::snprintf(lb, sizeof(lb), ";LAYER_CHANGE\n;Z:%.3f\n", cur_z);
+                    else
+                        std::snprintf(lb, sizeof(lb), ";LAYER_CHANGE\n;Z:%.3f\n;HEIGHT:%.3f\n", cur_z, qz_lh);
                     abody += lb;
                     last_layer_z = cur_z;
                 }
