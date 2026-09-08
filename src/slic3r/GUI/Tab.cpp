@@ -3937,6 +3937,15 @@ void TabFilament::build()
         };
 
         // Orca: New section to focus on flow rate and PA to declutter general section
+        // Quasizero: paste stability parameters (used by the Stability view of the preview)
+        optgroup = page->new_optgroup(L("QZmini paste stability"), L"param_settings");
+        optgroup->append_single_option_line("qzmini_paste_yield_stress");
+        optgroup->append_single_option_line("qzmini_paste_structuration_rate");
+        optgroup->append_single_option_line("qzmini_paste_elastic_modulus");
+        optgroup->append_single_option_line("qzmini_paste_stiffening_rate");
+        optgroup->append_single_option_line("qzmini_paste_poisson");
+        optgroup->append_single_option_line("qzmini_paste_yield_factor");
+
         optgroup = page->new_optgroup(L("Flow ratio and Pressure Advance"), L"param_flow_ratio_and_pressure_advance");
         optgroup->append_single_option_line("pellet_flow_coefficient", "printer_basic_information_advanced#pellet-modded-printer");
         optgroup->append_single_option_line("filament_flow_ratio", "material_flow_ratio_and_pressure_advance#flow-ratio", 0);
@@ -4605,6 +4614,10 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line("qzmini_prime_feedrate");
         optgroup->append_single_option_line("qzmini_pause_strategy");
         optgroup->append_single_option_line("qzmini_refill_show_in_preview");
+        optgroup = page->new_optgroup(L("Paste stability simulation"), L"param_settings");
+        optgroup->append_single_option_line("qzmini_stability_enable");
+        optgroup->append_single_option_line("qzmini_stability_safety_factor");
+        optgroup->append_single_option_line("qzmini_stability_base_confinement");
 
         optgroup = page->new_optgroup(L("QZmini custom pause G-code"), L"param_gcode", 0);
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {

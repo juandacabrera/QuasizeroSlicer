@@ -17,6 +17,24 @@
  "filament_density": [
   "1.40"
  ],
+ "qzmini_paste_yield_stress": [
+  "1200"
+ ],
+ "qzmini_paste_structuration_rate": [
+  "3.0"
+ ],
+ "qzmini_paste_elastic_modulus": [
+  "40"
+ ],
+ "qzmini_paste_stiffening_rate": [
+  "0.30"
+ ],
+ "qzmini_paste_poisson": [
+  "0.30"
+ ],
+ "qzmini_paste_yield_factor": [
+  "1.732"
+ ],
  "filament_cost": [
   "0"
  ],

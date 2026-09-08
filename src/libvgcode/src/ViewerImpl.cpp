@@ -1518,6 +1518,13 @@ Color ViewerImpl::get_vertex_color(const PathVertex& v) const
     {
         return m_jerk_range.get_color_at(v.jerk);
     }
+    // Quasizero
+    case EViewType::Stability:
+    {
+        if (v.is_travel() || v.stability < 0.0f)
+            return get_option_color(move_type_to_option(v.type));
+        return m_stability_range.get_color_at(std::min(v.stability, 1.0f));
+    }
     case EViewType::VolumetricFlowRate:
     {
         return v.is_travel() ? get_option_color(move_type_to_option(v.type)) : m_volumetric_rate_range.get_color_at(v.volumetric_rate());
@@ -1613,6 +1620,8 @@ const ColorRange& ViewerImpl::get_color_range(EViewType type) const
     case EViewType::Acceleration:             { return m_acceleration_range; }
     // ORCA: Add Jerk visualization support
     case EViewType::Jerk:                     { return m_jerk_range; }
+    // Quasizero
+    case EViewType::Stability:                { return m_stability_range; }
     case EViewType::VolumetricFlowRate:       { return m_volumetric_rate_range; }
     case EViewType::ActualVolumetricFlowRate: { return m_actual_volumetric_rate_range; }
     case EViewType::LayerTimeLinear:          { return m_layer_time_range[0]; }
@@ -1637,6 +1646,8 @@ void ViewerImpl::set_color_range_palette(EViewType type, const Palette& palette)
     case EViewType::Acceleration:             { m_acceleration_range.set_palette(palette);     break; }
     // ORCA: Add Jerk visualization support
     case EViewType::Jerk:                     { m_jerk_range.set_palette(palette);             break; }
+    // Quasizero
+    case EViewType::Stability:                { m_stability_range.set_palette(palette);        break; }
     case EViewType::VolumetricFlowRate:       { m_volumetric_rate_range.set_palette(palette); break; }
     case EViewType::ActualVolumetricFlowRate: { m_actual_volumetric_rate_range.set_palette(palette); break; }
     case EViewType::LayerTimeLinear:          { m_layer_time_range[0].set_palette(palette);   break; }
@@ -1680,6 +1691,7 @@ size_t ViewerImpl::get_used_cpu_memory() const
     ret += m_acceleration_range.size_in_bytes_cpu();
     // ORCA: Add Jerk visualization support
     ret += m_jerk_range.size_in_bytes_cpu();
+    ret += m_stability_range.size_in_bytes_cpu();
     ret += m_volumetric_rate_range.size_in_bytes_cpu();
     ret += m_actual_volumetric_rate_range.size_in_bytes_cpu();
     for (size_t i = 0; i < COLOR_RANGE_TYPES_COUNT; ++i) {
@@ -1836,6 +1848,10 @@ void ViewerImpl::update_color_ranges()
     m_acceleration_range.reset();
     // ORCA: Add Jerk visualization support
     m_jerk_range.reset();
+    // Quasizero: semantic scale, always 0 -> 1 (collapse); data above 1 is clamped
+    m_stability_range.reset();
+    m_stability_range.update(0.0f);
+    m_stability_range.update(1.0f);
     m_volumetric_rate_range.reset();
     m_actual_volumetric_rate_range.reset();
     m_layer_time_range[0].reset(); // ColorRange::EType::Linear

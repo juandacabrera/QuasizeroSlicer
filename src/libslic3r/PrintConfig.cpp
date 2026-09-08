@@ -2870,6 +2870,64 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloats { 0. });
 
+    // ===================== Quasizero paste stability parameters =====================
+    def = this->add("qzmini_paste_yield_stress", coFloats);
+    def->label = L("Yield stress at deposition");
+    def->category = L("QZmini");
+    def->tooltip = L("Static yield stress of the paste right after extrusion. 0 = material not characterised "
+                     "(stability simulation off for this material). Measure it with the cylinder collapse test.");
+    def->sidetext = "Pa";
+    def->min = 0;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloats { 0. });
+
+    def = this->add("qzmini_paste_structuration_rate", coFloats);
+    def->label = L("Structuration rate");
+    def->category = L("QZmini");
+    def->tooltip = L("Linear growth of the yield stress with the age of the layer (thixotropy, drying, setting). "
+                     "Identified from two collapse tests at different speeds.");
+    def->sidetext = "Pa/min";
+    def->min = 0;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloats { 0. });
+
+    def = this->add("qzmini_paste_elastic_modulus", coFloats);
+    def->label = L("Elastic modulus at deposition");
+    def->category = L("QZmini");
+    def->tooltip = L("Young's modulus of the fresh paste (large-strain, compression test). Governs buckling of thin walls.");
+    def->sidetext = "kPa";
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloats { 30. });
+
+    def = this->add("qzmini_paste_stiffening_rate", coFloats);
+    def->label = L("Stiffening rate");
+    def->category = L("QZmini");
+    def->tooltip = L("Linear growth of the elastic modulus with layer age.");
+    def->sidetext = "kPa/min";
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloats { 0. });
+
+    def = this->add("qzmini_paste_poisson", coFloats);
+    def->label = L("Poisson ratio");
+    def->category = L("QZmini");
+    def->tooltip = L("Fresh paste Poisson ratio (0.3-0.45). Low sensitivity.");
+    def->min = 0;
+    def->max = 0.49;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloats { 0.3 });
+
+    def = this->add("qzmini_paste_yield_factor", coFloats);
+    def->label = L("Yield criterion factor");
+    def->category = L("QZmini");
+    def->tooltip = L("Compressive strength = factor x yield stress. 1.732 (sqrt 3) for von Mises, 2 for Tresca.");
+    def->min = 1;
+    def->max = 3;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloats { 1.732 });
+    // ===================== end Quasizero paste stability =====================
+
     def = this->add("filament_type", coStrings);
     def->label = L("Type");
     def->tooltip = L("The material type of filament.");
@@ -4710,6 +4768,32 @@ void PrintConfigDef::init_fff_params()
     def->category = L("QZmini");
     def->tooltip = L("Mark each refill event in the sliced toolpath preview.");
     def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("qzmini_stability_enable", coBool);
+    def->label = L("Stability simulation");
+    def->category = L("QZmini");
+    def->tooltip = L("Evaluate the paste's ability to carry its own weight while printing (plastic collapse "
+                     "with time-dependent strength, buckling indicators) and expose it as the Stability view "
+                     "of the preview. Needs the paste parameters of the material preset.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("qzmini_stability_safety_factor", coFloat);
+    def->label = L("Stability safety factor");
+    def->category = L("QZmini");
+    def->tooltip = L("Utilization above 1/factor is flagged. The recommended layer time keeps the whole print below it.");
+    def->min = 1;
+    def->max = 5;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(1.5));
+
+    def = this->add("qzmini_stability_base_confinement", coBool);
+    def->label = L("Bed confinement of the first layers");
+    def->category = L("QZmini");
+    def->tooltip = L("Layers stuck to the bed cannot spread laterally and carry more (Suiker 2018). Moves the "
+                     "critical layer above the base, as observed in collapse tests. Disable for a conservative estimate.");
+    def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(true));
     // ===================== end Quasizero QZmini =====================
 

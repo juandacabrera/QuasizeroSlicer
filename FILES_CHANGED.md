@@ -8,6 +8,10 @@ A	LICENSES_AND_ATTRIBUTION.md
 A	PROFILE_PARAMETERS.md
 A	QZMINI_CALIBRATION.md
 A	QZMINI_REFILL_ASSIST.md
+A	QZMINI_STABILITY.md
+A	src/libslic3r/QuasiZero/QzStabilityModel.cpp
+A	src/libslic3r/QuasiZero/QzStabilityModel.hpp
+A	tests/qzmini/test_qz_stability.cpp
 A	SUPPORTED_PRINTERS.md
 A	doc/quasizero/IMPLEMENTATION_PLAN.md
 M	localization/i18n/OrcaSlicer.pot

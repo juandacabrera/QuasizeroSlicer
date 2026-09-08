@@ -55,6 +55,8 @@ See `TEST_REPORT.md` for evidence and `SUPPORTED_PRINTERS.md` for per-printer de
 
 ## Known limitations
 
+- **Paste stability simulation (Stability view + card) is a Level 0/1 model, not hardware-validated.** Material values shipped in the presets are hypotheses; calibrate with the cylinder/wall collapse tests in `QZMINI_STABILITY.md` before trusting a prediction.
+
 - No physical hardware validation has been performed yet on any printer.
 - Bambu Lab network sending is untouched upstream functionality; QZmini Bambu profiles are
   slice/export-only. No authentication bypass or proprietary re-enablement is included or planned.

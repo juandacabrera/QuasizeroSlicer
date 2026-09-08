@@ -11,6 +11,7 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 
 #include "LibVGCode/LibVGCodeWrapper.hpp"
+#include "libslic3r/QuasiZero/QzStabilityModel.hpp"
 // needed for tech VGCODE_ENABLE_COG_AND_TOOL_MARKERS
 #include <libvgcode/include/Types.hpp>
 
@@ -247,6 +248,22 @@ mutable bool m_no_render_path { false };
     bool m_loaded_as_preview{ false };
 
 public:
+    // Quasizero: paste stability evaluation of the loaded G-code (see QzStabilityModel)
+    struct QzStability {
+        bool   enabled = false;        // printer option on
+        bool   characterised = false;  // material has a yield stress
+        QuasiZero::QzPasteMaterial   material;
+        QuasiZero::QzStabilityOptions options;
+        QuasiZero::QzStabilityResult  result;
+        std::vector<int>              layer_index_of_id;   // result.moves layer_id -> record index
+        std::vector<float>            per_move;            // utilization per result move (< 0 = n/a)
+        std::vector<double>           layer_top_z;         // [mm] per record, for slider lookups
+    };
+private:
+    QzStability m_qz_stability;
+    void qz_evaluate_stability(const GCodeProcessorResult& gcode_result);
+
+public:
     GCodeViewer();
     ~GCodeViewer();
 
@@ -279,6 +296,10 @@ public:
     // void _render_calibration_thumbnail_framebuffer(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, const ThumbnailsParams& thumbnail_params, PartPlateList& partplate_list, OpenGLManager& opengl_manager);
     // void render_calibration_thumbnail(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, const ThumbnailsParams& thumbnail_params, PartPlateList& partplate_list, OpenGLManager& opengl_manager);
     bool has_data() const { return !m_viewer.get_extrusion_roles().empty(); }
+    // Quasizero
+    const QzStability& qz_stability() const { return m_qz_stability; }
+    // top layer currently shown by the vertical slider, as an index into the stability records (-1 = none)
+    int qz_stability_layer_at_view_top() const;
 
     bool can_export_toolpaths() const;
     std::vector<int> get_plater_extruder();

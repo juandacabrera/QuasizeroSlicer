@@ -11702,7 +11702,87 @@ void GLCanvas3D::_render_qz_quick_cards()
             }
         }
     }
+    const ImVec2 qz_process_size = ImGui::GetWindowSize();
     imgui.end();
+
+    // ---------------- Stability card (Preview, above Process): paste buildability
+    // of the loaded job - collapse prediction, critical layer, recommended layer
+    // time; live numbers follow the vertical layer slider ----------------
+    if (m_canvas_type == CanvasPreview && m_gcode_viewer.has_data()) {
+        static bool s_open_stab = true;
+        const GCodeViewer::QzStability &st = m_gcode_viewer.qz_stability();
+        if (qz_compact)
+            imgui.set_next_window_pos(left + s_printer_size.x + gap + qz_process_size.x + gap, bottom, ImGuiCond_Always, 0.0f, 1.0f);
+        else
+            imgui.set_next_window_pos(left, bottom - s_printer_size.y - gap - qz_process_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, qz_card_max_h));
+        imgui.begin(std::string("QZCardStability"), s_open_stab ? card_flags_open : card_flags);
+        title_row(_u8L("Stability").c_str(), &s_open_stab, "process");
+        if (s_open_stab) {
+            ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+            const ImVec4 ok_col(0.30f, 0.55f, 0.30f, 1.0f), warn_col(0.80f, 0.55f, 0.10f, 1.0f), bad_col(0.75f, 0.20f, 0.15f, 1.0f);
+            auto kv = [&](const char *label, const std::string &value, const ImVec4 *vcol = nullptr) {
+                ImGui::SetWindowFontScale(0.85f);
+                ImGui::TextColored(lbl_col, "%s", label);
+                ImGui::SetWindowFontScale(1.0f);
+                ImGui::SameLine(150.0f * scale);
+                if (vcol) ImGui::TextColored(*vcol, "%s", value.c_str()); else ImGui::TextUnformatted(value.c_str());
+            };
+            auto fmt = [](const char *f, double v) { char b[64]; std::snprintf(b, sizeof(b), f, v); return std::string(b); };
+            if (!st.enabled) {
+                ImGui::SetWindowFontScale(0.85f);
+                ImGui::TextColored(lbl_col, "%s", _u8L("Stability simulation is off (Printer > QZmini).").c_str());
+                ImGui::SetWindowFontScale(1.0f);
+            } else if (!st.characterised) {
+                ImGui::PushTextWrapPos(300.0f * scale);
+                ImGui::SetWindowFontScale(0.85f);
+                ImGui::TextColored(lbl_col, "%s", _u8L("Material not characterised: set the paste yield stress in the material preset (Material > QZmini paste stability).").c_str());
+                ImGui::SetWindowFontScale(1.0f);
+                ImGui::PopTextWrapPos();
+            } else if (!st.result.valid) {
+                ImGui::SetWindowFontScale(0.85f);
+                ImGui::TextColored(lbl_col, "%s", _u8L("No extrusion layers to evaluate.").c_str());
+                ImGui::SetWindowFontScale(1.0f);
+            } else {
+                const auto &r = st.result;
+                const double sf_target = 1.0 / std::max(1.0, st.options.safety_factor);
+                // whole print verdict
+                if (r.collapse_after_layer >= 0) {
+                    kv(_u8L("Verdict").c_str(), _u8L("Collapse predicted"), &bad_col);
+                    kv(_u8L("Collapse at").c_str(), fmt("%.0f mm", r.collapse_height * 1000.0) + "  (" + _u8L("layer") + " " + std::to_string(r.collapse_after_layer + 1) + ", " + fmt("%.0f min", r.collapse_time / 60.0) + ")");
+                    kv(_u8L("Critical layer").c_str(), std::to_string(r.critical_layer + 1) + "  (" + fmt("z = %.0f mm", (st.layer_top_z.empty() ? 0.0 : st.layer_top_z[std::min<size_t>(r.critical_layer, st.layer_top_z.size() - 1)])) + ")");
+                } else if (r.max_utilization > sf_target) {
+                    kv(_u8L("Verdict").c_str(), _u8L("Prints, below the safety margin"), &warn_col);
+                    kv(_u8L("Peak load/strength").c_str(), fmt("%.0f %%", 100.0 * r.max_utilization) + "  (" + _u8L("layer") + " " + std::to_string(r.critical_layer + 1) + ")", &warn_col);
+                } else {
+                    kv(_u8L("Verdict").c_str(), _u8L("Stable"), &ok_col);
+                    kv(_u8L("Peak load/strength").c_str(), fmt("%.0f %%", 100.0 * r.max_utilization) + "  (" + _u8L("layer") + " " + std::to_string(r.critical_layer + 1) + ")", &ok_col);
+                }
+                // live: state at the layer the vertical slider shows
+                const int li = m_gcode_viewer.qz_stability_layer_at_view_top();
+                if (li >= 0 && (size_t)li < r.history.size() && !r.history[li].empty()) {
+                    float mu = 0.0f; int mj = 0;
+                    for (size_t j = 0; j < r.history[li].size(); ++j) if (r.history[li][j] > mu) { mu = r.history[li][j]; mj = (int)j; }
+                    const ImVec4 &c = mu >= 1.0f ? bad_col : (mu > sf_target ? warn_col : ok_col);
+                    kv((_u8L("At layer") + " " + std::to_string(li + 1)).c_str(), fmt("%.0f %%", 100.0 * mu) + "  " + _u8L("on layer") + " " + std::to_string(mj + 1), &c);
+                }
+                ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+                // material / process numbers
+                kv(_u8L("Vertical speed").c_str(), fmt("%.2f mm/min", r.build_rate * 60000.0));
+                kv(_u8L("Critical speed").c_str(), r.critical_build_rate > 0.0 ? fmt("%.2f mm/min", r.critical_build_rate * 60000.0) : std::string("-"));
+                kv(_u8L("Max height (plastic)").c_str(), r.max_height_plastic < 0.0 ? _u8L("unbounded") : fmt("%.0f mm", r.max_height_plastic * 1000.0));
+                kv(_u8L("Buckling, free wall").c_str(), r.buckling_height_wall_cured > 0.0 ? fmt("%.0f mm", std::min(r.buckling_height_wall_cured, 9.999) * 1000.0) + " (" + fmt("%.0f mm", r.mean_thickness * 1000.0) + " " + _u8L("bead") + ")" : std::string("-"));
+                if (r.min_time_scale > 1.0)
+                    kv(_u8L("Recommended layer time").c_str(), fmt("x %.2f", r.min_time_scale) + "  " + _u8L("of current"), &warn_col);
+                else if (r.min_time_scale < 0.0)
+                    kv(_u8L("Recommended layer time").c_str(), _u8L("no speed makes it safe"), &bad_col);
+                ImGui::SetWindowFontScale(0.85f);
+                ImGui::TextColored(lbl_col, "%s", _u8L("Level 0 model: yield + structuration, bed confinement. Calibrate the material with the collapse tests.").c_str());
+                ImGui::SetWindowFontScale(1.0f);
+            }
+        }
+        imgui.end();
+    }
 
     // ---------------- G-code Editor card: bottom-right on Prepare - paste a
     // custom body (Grasshopper paths...), Process wraps it with the selected

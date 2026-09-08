@@ -295,6 +295,8 @@ private:
     ColorRange m_acceleration_range;
     // ORCA: Add Jerk visualization support
     ColorRange m_jerk_range;
+    // Quasizero: stability utilization, fixed 0..1 anchors (1 = collapse)
+    ColorRange m_stability_range;
     ColorRange m_volumetric_rate_range;
     ColorRange m_actual_volumetric_rate_range;
     std::array<ColorRange, COLOR_RANGE_TYPES_COUNT> m_layer_time_range{

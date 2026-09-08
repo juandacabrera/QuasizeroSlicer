@@ -175,6 +175,8 @@ public:
     // EViewType::Acceleration
     // ORCA: Add Jerk visualization support
     // EViewType::Jerk
+    // Quasizero
+    // EViewType::Stability
     // EViewType::VolumetricFlowRate
     // EViewType::ActualVolumetricFlowRate
     // EViewType::LayerTimeLinear

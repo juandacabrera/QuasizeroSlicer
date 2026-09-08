@@ -7,9 +7,14 @@ add_executable(qz_tests
     ../../src/libslic3r/QuasiZero/QzGcodeStateMachine.cpp
     ../../src/libslic3r/QuasiZero/QzFirmwareAdapter.cpp
     ../../src/libslic3r/QuasiZero/QzRefillPlanner.cpp
+    ../../src/libslic3r/QuasiZero/QzShortSegmentAnchor.cpp
+    ../../src/libslic3r/QuasiZero/QzStabilityModel.cpp
     test_qz_volumetric.cpp
     test_qz_state_machine.cpp
     test_qz_refill_planner.cpp
+    test_qz_ssa.cpp
+    test_qz_subdivider.cpp
+    test_qz_stability.cpp
     standalone/main.cpp
 )
 target_include_directories(qz_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../src)

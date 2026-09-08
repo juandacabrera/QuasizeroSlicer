@@ -114,6 +114,8 @@ static std::string get_view_type_string(libvgcode::EViewType view_type)
 // ORCA: Add Pressure Advance visualization support
     else if (view_type == libvgcode::EViewType::PressureAdvance)
         return _u8L("Pressure Advance");
+    else if (view_type == libvgcode::EViewType::Stability)
+        return _u8L("Stability"); // Quasizero
     return "";
 }
 
@@ -426,6 +428,10 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
                 break;
             case libvgcode::EViewType::PressureAdvance:
                 sprintf(detail_buf, "%s%.4f", _u8L("PA: ").c_str(), vertex.pressure_advance);
+                break;
+            case libvgcode::EViewType::Stability: // Quasizero
+                if (vertex.stability >= 0.0f) sprintf(detail_buf, "%s%.0f %%", _u8L("Load/strength: ").c_str(), 100.0f * vertex.stability);
+                else detail_buf[0] = '\0';
                 break;
             default:
                 detail_buf[0] = '\0';
@@ -1116,6 +1122,7 @@ void GCodeViewer::update_by_mode(ConfigOptionMode mode)
     view_type_items.push_back(libvgcode::EViewType::Temperature);
 // ORCA: Add Pressure Advance visualization support
     view_type_items.push_back(libvgcode::EViewType::PressureAdvance);
+    view_type_items.push_back(libvgcode::EViewType::Stability); // Quasizero
     //if (mode == ConfigOptionMode::comDevelop) {
     //    view_type_items.push_back(EViewType::Tool);
     //}
@@ -1197,8 +1204,13 @@ void GCodeViewer::load_as_gcode(const GCodeProcessorResult& gcode_result, const 
         return;
     }
 
+    // Quasizero: evaluate the paste stability of this job before converting, so the
+    // Stability view can colour every extrusion by its layer's peak utilization
+    qz_evaluate_stability(gcode_result);
+
     // convert data from PrusaSlicer format to libvgcode format
-    libvgcode::GCodeInputData data = libvgcode::convert(gcode_result, str_tool_colors, str_color_print_colors, m_viewer);
+    libvgcode::GCodeInputData data = libvgcode::convert(gcode_result, str_tool_colors, str_color_print_colors, m_viewer,
+                                                        m_qz_stability.per_move.empty() ? nullptr : &m_qz_stability.per_move);
 
 //#define ENABLE_DATA_EXPORT 1
 //#if ENABLE_DATA_EXPORT
@@ -3745,6 +3757,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     case libvgcode::EViewType::Temperature:    { imgui.title(_u8L("Temperature (°C)")); break; }
 // ORCA: Add Pressure Advance visualization support
     case libvgcode::EViewType::PressureAdvance:{ imgui.title(_u8L("Pressure Advance")); break; }
+    case libvgcode::EViewType::Stability:      { imgui.title(_u8L("Stability (load / strength, 1 = collapse)")); break; } // Quasizero
     case libvgcode::EViewType::VolumetricFlowRate:
         { imgui.title(_u8L("Volumetric flow rate (mm³/s)")); break; }
     case libvgcode::EViewType::ActualVolumetricFlowRate:
@@ -4018,6 +4031,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
     case libvgcode::EViewType::Temperature:              { append_range(m_viewer.get_color_range(libvgcode::EViewType::Temperature), 0); break; }
 // ORCA: Add Pressure Advance visualization support
     case libvgcode::EViewType::PressureAdvance:          { append_range(m_viewer.get_color_range(libvgcode::EViewType::PressureAdvance), 3); break; }
+    case libvgcode::EViewType::Stability:                { append_range(m_viewer.get_color_range(libvgcode::EViewType::Stability), 2); break; } // Quasizero
     case libvgcode::EViewType::LayerTimeLinear:          { append_range(m_viewer.get_color_range(libvgcode::EViewType::LayerTimeLinear), true); break; }
     case libvgcode::EViewType::LayerTimeLogarithmic:     { append_range(m_viewer.get_color_range(libvgcode::EViewType::LayerTimeLogarithmic), true); break; }
     case libvgcode::EViewType::VolumetricFlowRate:       { append_range(m_viewer.get_color_range(libvgcode::EViewType::VolumetricFlowRate), 2); break; }
@@ -5252,6 +5266,86 @@ void GCodeViewer::render_slider(int canvas_width, int canvas_height) {
     if (!g_qz_quickbar_active)
         m_moves_slider->render(canvas_width, canvas_height); // Quasizero: quick bar embeds the moves control
     m_layers_slider->render(canvas_width, canvas_height);
+}
+
+
+// ------------------------------------------------------------------------------------
+// Quasizero: paste stability evaluation (QuasiZero/QzStabilityModel)
+// ------------------------------------------------------------------------------------
+void GCodeViewer::qz_evaluate_stability(const GCodeProcessorResult& gcode_result)
+{
+    m_qz_stability = QzStability();
+    const PresetBundle* bundle = wxGetApp().preset_bundle;
+    if (bundle == nullptr) return;
+    const DynamicPrintConfig& pc = bundle->printers.get_edited_preset().config;
+    const DynamicPrintConfig& fc = bundle->filaments.get_edited_preset().config;
+    auto pbool  = [&pc](const char* k, bool d) { const ConfigOption* o = pc.option(k); return o ? o->getBool() : d; };
+    auto pfloat = [&pc](const char* k, double d) { const ConfigOption* o = pc.option(k); return o ? o->getFloat() : d; };
+    auto ffirst = [&fc](const char* k, double d) {
+        const ConfigOptionFloats* o = fc.option<ConfigOptionFloats>(k);
+        return (o != nullptr && !o->values.empty()) ? o->values.front() : d; };
+
+    m_qz_stability.enabled = pbool("qzmini_enable", false) && pbool("qzmini_stability_enable", true);
+    QuasiZero::QzPasteMaterial& m = m_qz_stability.material;
+    m.rho   = ffirst("filament_density", 0.0) * 1000.0;                  // g/cm3 -> kg/m3
+    m.tau0  = ffirst("qzmini_paste_yield_stress", 0.0);                  // Pa
+    m.athix = ffirst("qzmini_paste_structuration_rate", 0.0) / 60.0;     // Pa/min -> Pa/s
+    m.E0    = ffirst("qzmini_paste_elastic_modulus", 30.0) * 1000.0;     // kPa -> Pa
+    const double E0_kPa = std::max(1e-9, ffirst("qzmini_paste_elastic_modulus", 30.0));
+    m.xiE   = (ffirst("qzmini_paste_stiffening_rate", 0.0) / 60.0) / E0_kPa; // kPa/min -> 1/s
+    m.nu    = std::min(0.49, std::max(0.0, ffirst("qzmini_paste_poisson", 0.3)));
+    m.kp    = ffirst("qzmini_paste_yield_factor", 1.732);
+    m_qz_stability.characterised = m.characterised();
+    m_qz_stability.options.safety_factor    = pfloat("qzmini_stability_safety_factor", 1.5);
+    m_qz_stability.options.base_confinement = pbool("qzmini_stability_base_confinement", true);
+    if (!m_qz_stability.enabled || !m_qz_stability.characterised) return;
+
+    // layer records straight from the processed moves: real process time per layer
+    // (pauses, refills and dwells included), bead height/width from the metadata
+    const std::vector<GCodeProcessorResult::MoveVertex>& moves = gcode_result.moves;
+    std::vector<QuasiZero::QzMoveSample> samples;
+    samples.reserve(moves.size());
+    const size_t tmode = static_cast<size_t>(PrintEstimatedStatistics::ETimeMode::Normal);
+    for (const GCodeProcessorResult::MoveVertex& mv : moves) {
+        QuasiZero::QzMoveSample sm;
+        sm.z_top     = mv.position.z();
+        sm.height    = mv.height;
+        sm.width     = mv.width;
+        sm.dt        = mv.time[tmode];
+        sm.layer_id  = mv.layer_id;
+        sm.extrusion = (mv.type == EMoveType::Extrude) && mv.height > 0.0f && mv.width > 0.0f;
+        samples.push_back(sm);
+    }
+    std::vector<QuasiZero::QzLayerRecord> layers = QuasiZero::qz_layers_from_moves(samples, m_qz_stability.layer_index_of_id);
+    if (layers.empty()) return;
+    m_qz_stability.result = QuasiZero::qz_evaluate_stability(m, layers, m_qz_stability.options);
+    if (!m_qz_stability.result.valid) return;
+    m_qz_stability.layer_top_z.resize(layers.size());
+    for (size_t i = 0; i < layers.size(); ++i)
+        m_qz_stability.layer_top_z[i] = (layers[i].z_bottom + layers[i].height) * 1000.0;
+    m_qz_stability.per_move.assign(moves.size(), -1.0f);
+    for (size_t i = 0; i < moves.size(); ++i) {
+        if (!samples[i].extrusion) continue;
+        const unsigned id = moves[i].layer_id;
+        if (id < m_qz_stability.layer_index_of_id.size()) {
+            const int li = m_qz_stability.layer_index_of_id[id];
+            if (li >= 0 && (size_t)li < m_qz_stability.result.peak_utilization.size())
+                m_qz_stability.per_move[i] = m_qz_stability.result.peak_utilization[li];
+        }
+    }
+}
+
+int GCodeViewer::qz_stability_layer_at_view_top() const
+{
+    if (!m_qz_stability.result.valid || m_qz_stability.layer_top_z.empty()) return -1;
+    const libvgcode::Interval& rng = m_viewer.get_layers_view_range();
+    const float z = m_viewer.get_layer_z(rng[1]);
+    int best = -1; double bd = 1e30;
+    for (size_t i = 0; i < m_qz_stability.layer_top_z.size(); ++i) {
+        const double d = std::fabs(m_qz_stability.layer_top_z[i] - (double)z);
+        if (d < bd) { bd = d; best = (int)i; }
+    }
+    return best;
 }
 
 } // namespace GUI
