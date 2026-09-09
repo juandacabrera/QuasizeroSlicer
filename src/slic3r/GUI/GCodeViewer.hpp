@@ -13,6 +13,7 @@
 #include "LibVGCode/LibVGCodeWrapper.hpp"
 #include "libslic3r/QuasiZero/QzStabilityModel.hpp"
 #include "libslic3r/QuasiZero/QzStackSim.hpp"
+#include "libslic3r/QuasiZero/QzSkeleton.hpp"
 // needed for tech VGCODE_ENABLE_COG_AND_TOOL_MARKERS
 #include <libvgcode/include/Types.hpp>
 
@@ -268,6 +269,11 @@ public:
         QuasiZero::QzStackSim                 sim;
         QuasiZero::QzSimFrame                 sim_frame;     // state of the last rendered frame
         std::vector<int>                      seg_of_vertex; // libvgcode vertex id -> sim segment (-1 = none)
+        // PR 2 (E5): beads as polylines of shared nodes; the deformation is applied to the
+        // nodes and the tubes are re-skinned continuously (no per-move blocks)
+        QuasiZero::QzSkeleton                 skeleton;
+        std::vector<QuasiZero::QzSkelNodePose> pose;         // scratch, per node
+        std::vector<QuasiZero::QzTubeGeometry> tube_geos;    // scratch, per colour bin
         bool                                  deform_view = false;
         size_t                                deform_cache_vertex = size_t(-1);
         double                                deform_cache_time = -1.0;

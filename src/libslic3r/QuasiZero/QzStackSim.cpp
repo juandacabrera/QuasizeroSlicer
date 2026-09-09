@@ -396,10 +396,18 @@ void QzStackSim::build_landing(QzSimFrame &fr) const
         land_prev = fr.land;
         for (int si : m_layer_segs[j]) {
             const QzSimSegment &s = m_segs[si];
-            const uint32_t hsh = hash_u32((uint32_t) si * 2654435761u ^ m_opt.seed);
-            const float jx = ((float) (hsh & 0xFFFF) / 65535.0f - 0.5f) * (float) m_opt.drop_jitter * s.w;
-            const float jy = ((float) ((hsh >> 16) & 0xFFFF) / 65535.0f - 0.5f) * (float) m_opt.drop_jitter * s.w;
-            QzSimPoint a{ s.x0 + jx, s.y0 + jy, 0.0f }, b{ s.x1 + jx, s.y1 + jy, 0.0f };
+            // jitter keyed by the endpoint itself (not the segment) so the shared endpoint of
+            // two consecutive strands lands in the same place and the bead stays continuous
+            auto jitter = [&](float x, float y, float &jx, float &jy) {
+                const uint32_t hsh = hash_u32(((uint32_t) (int32_t) std::lround(x * 10.0f) * 73856093u) ^
+                                              ((uint32_t) (int32_t) std::lround(y * 10.0f) * 19349663u) ^
+                                              ((uint32_t) s.layer * 83492791u) ^ m_opt.seed);
+                jx = ((float) (hsh & 0xFFFF) / 65535.0f - 0.5f) * (float) m_opt.drop_jitter * s.w;
+                jy = ((float) ((hsh >> 16) & 0xFFFF) / 65535.0f - 0.5f) * (float) m_opt.drop_jitter * s.w;
+            };
+            float jax, jay, jbx, jby;
+            jitter(s.x0, s.y0, jax, jay); jitter(s.x1, s.y1, jbx, jby);
+            QzSimPoint a{ s.x0 + jax, s.y0 + jay, 0.0f }, b{ s.x1 + jbx, s.y1 + jby, 0.0f };
             const float hf = s.h / (float) m_opt.drop_flatten;
             a.z = std::min(s.z, land_at(land_prev, a.x, a.y) + hf);
             b.z = std::min(s.z, land_at(land_prev, b.x, b.y) + hf);

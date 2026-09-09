@@ -5489,8 +5489,9 @@ void GCodeViewer::qz_build_sim()
         segs.push_back(s);
     }
     if (segs.empty()) { st.seg_of_vertex.clear(); return; }
+    st.skeleton.build(segs);
     st.sim.build(st.material, st.layers, st.geom, std::move(segs), st.result, st.lambda_by_top, st.options, QuasiZero::QzSimOptions());
-    if (!st.sim.valid()) st.seg_of_vertex.clear();
+    if (!st.sim.valid()) { st.seg_of_vertex.clear(); st.skeleton = QuasiZero::QzSkeleton(); }
 }
 
 void GCodeViewer::qz_rebuild_deformed_mesh()
@@ -5528,65 +5529,36 @@ void GCodeViewer::qz_rebuild_deformed_mesh()
         const libvgcode::Color c = range.get_color_at((float(b) + 0.5f) / float(QZ_DEFORM_BINS));
         m_qz_deform_colors[b] = ColorRGBA(float(c[0]) / 255.0f, float(c[1]) / 255.0f, float(c[2]) / 255.0f, 1.0f);
     }
-    std::array<GLModel::Geometry, QZ_DEFORM_BINS> geos;
-    for (auto& g : geos) g.format = { GLModel::Geometry::EPrimitiveType::Triangles, GLModel::Geometry::EVertexLayout::P3N3 };
-
-    // tube around the segment axis (octagonal, square for very large jobs), ends extended by
-    // half a width so consecutive strands join, closed caps; the toolpath point is the bead top
+    // visible segments: from the first extrusion of the layers range to the player position
     const size_t start = std::max<size_t>(full[0], 1);
-    size_t nseg = 0;
-    for (size_t i = start; i <= vis[1]; ++i) if (st.seg_of_vertex[i] >= 0) ++nseg;
-    const int sides = nseg > 40000 ? 4 : 8;
-    std::vector<Vec3f> ring(sides), rn(sides);
-    auto add_tube = [&](GLModel::Geometry& g, const Vec3f& a, const Vec3f& b, float w, float h) {
-        Vec3f d = b - a; const float len = d.norm();
-        if (len < 1e-4f || w < 1e-4f || h < 1e-4f) return;
-        d /= len;
-        Vec3f side = d.cross(Vec3f::UnitZ()); if (side.norm() < 1e-4f) side = Vec3f::UnitX(); side.normalize();
-        Vec3f nrm = side.cross(d); nrm.normalize();
-        const Vec3f a2 = a - d * (0.5f * w), b2 = b + d * (0.5f * w);
-        const Vec3f ca = a2 - nrm * (0.5f * h), cb = b2 - nrm * (0.5f * h);
-        for (int s = 0; s < sides; ++s) {
-            const float ang = 2.0f * float(M_PI) * (float(s) + 0.5f) / float(sides);
-            ring[s] = side * (0.5f * w * std::cos(ang)) + nrm * (0.5f * h * std::sin(ang));
-            rn[s]   = (side * (std::cos(ang) / (0.5f * w)) + nrm * (std::sin(ang) / (0.5f * h))).normalized();
-        }
-        // Eigen expressions convert implicitly to both Vec3f and Vec2f, which makes the
-        // add_vertex overloads ambiguous: pass concrete Vec3f values only
-        const Vec3f nd = -d;
-        const unsigned int base = (unsigned int) g.vertices_count();
-        for (int s = 0; s < sides; ++s) {
-            const Vec3f pa = ca + ring[s], pb = cb + ring[s];
-            g.add_vertex(pa, rn[s]); g.add_vertex(pb, rn[s]);
-        }
-        for (int s = 0; s < sides; ++s) {
-            const unsigned int i0 = base + 2 * s, i1 = base + 2 * ((s + 1) % sides);
-            g.add_triangle(i0, i0 + 1, i1 + 1); g.add_triangle(i0, i1 + 1, i1);
-        }
-        const unsigned int ca_id = (unsigned int) g.vertices_count(); g.add_vertex(ca, nd);
-        for (int s = 0; s < sides; ++s) { const Vec3f p = ca + ring[s]; g.add_vertex(p, nd); }
-        for (int s = 0; s < sides; ++s) g.add_triangle(ca_id, ca_id + 1 + s, ca_id + 1 + (s + 1) % sides);      // CCW seen from outside (-d)
-        const unsigned int cb_id = (unsigned int) g.vertices_count(); g.add_vertex(cb, d);
-        for (int s = 0; s < sides; ++s) { const Vec3f p = cb + ring[s]; g.add_vertex(p, d); }
-        for (int s = 0; s < sides; ++s) g.add_triangle(cb_id, cb_id + 1 + (s + 1) % sides, cb_id + 1 + s);      // CCW seen from outside (+d)
-    };
-    for (size_t i = start; i <= vis[1]; ++i) {
-        const int sg = st.seg_of_vertex[i];
-        if (sg < 0) continue;
-        const QuasiZero::QzSimSegment& s = st.sim.segment(sg);
-        if (s.layer > st.sim_frame.top) continue;
-        QuasiZero::QzSimPoint pa, pb; float ws, hs; bool fallen;
-        st.sim.deform(st.sim_frame, sg, pa, pb, ws, hs, fallen);
-        const float u = st.sim.ratio(st.sim_frame, sg);
-        const size_t bin = std::min(QZ_DEFORM_BINS - 1, (size_t) std::max(0.0f, std::min(u, 0.9999f) * (float) QZ_DEFORM_BINS));
-        add_tube(geos[bin], Vec3f(pa.x, pa.y, pa.z), Vec3f(pb.x, pb.y, pb.z), s.w * ws, s.h * hs);
+    int seg_lo = -1, seg_hi = -1;
+    for (size_t i = start; i <= vis[1]; ++i) if (st.seg_of_vertex[i] >= 0) { seg_lo = st.seg_of_vertex[i]; break; }
+    for (size_t i = vis[1] + 1; i-- > start;) if (st.seg_of_vertex[i] >= 0) { seg_hi = st.seg_of_vertex[i]; break; }
+    if (seg_lo < 0 || seg_hi < seg_lo) {
+        for (GLModel& gm : m_qz_deform_models) gm.reset();
+        return;
     }
+    // poses of the skeleton nodes (shared between consecutive segments) and continuous tubes
+    QuasiZero::qz_pose_from_sim(st.sim, st.sim_frame, st.skeleton, seg_lo, seg_hi, st.pose);
+    QuasiZero::QzTubeOptions topt;
+    topt.sides = (seg_hi - seg_lo > 40000) ? 4 : 8;
+    topt.bins  = (int) QZ_DEFORM_BINS;
+    QuasiZero::QzTubeMesher::mesh(st.skeleton, st.pose, topt, st.tube_geos);
     for (size_t b = 0; b < QZ_DEFORM_BINS; ++b) {
         m_qz_deform_models[b].reset();
-        if (geos[b].vertices_count() > 0) {
-            m_qz_deform_models[b].init_from(std::move(geos[b]));
-            m_qz_deform_models[b].set_color(m_qz_deform_colors[b]);
+        if (b >= st.tube_geos.size()) continue;
+        QuasiZero::QzTubeGeometry& tg = st.tube_geos[b];
+        if (tg.vertices_count() == 0 || tg.indices.empty()) continue;
+        GLModel::Geometry g;
+        g.format = { GLModel::Geometry::EPrimitiveType::Triangles, GLModel::Geometry::EVertexLayout::P3N3 };
+        g.vertices.resize(tg.positions.size() * 2);
+        for (size_t v = 0; v < tg.vertices_count(); ++v) {
+            g.vertices[6 * v + 0] = tg.positions[3 * v + 0]; g.vertices[6 * v + 1] = tg.positions[3 * v + 1]; g.vertices[6 * v + 2] = tg.positions[3 * v + 2];
+            g.vertices[6 * v + 3] = tg.normals[3 * v + 0];   g.vertices[6 * v + 4] = tg.normals[3 * v + 1];   g.vertices[6 * v + 5] = tg.normals[3 * v + 2];
         }
+        g.indices.assign(tg.indices.begin(), tg.indices.end());
+        m_qz_deform_models[b].init_from(std::move(g));
+        m_qz_deform_models[b].set_color(m_qz_deform_colors[b]);
     }
 }
 

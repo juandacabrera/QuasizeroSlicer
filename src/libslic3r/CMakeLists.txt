@@ -233,6 +233,8 @@ set(lisbslic3r_sources
     QuasiZero/QzStabilityModel.hpp
     QuasiZero/QzStackSim.cpp
     QuasiZero/QzStackSim.hpp
+    QuasiZero/QzSkeleton.cpp
+    QuasiZero/QzSkeleton.hpp
     GCode/GCodeProcessor.cpp
     GCode/GCodeProcessor.hpp
     GCode.hpp
