@@ -5519,17 +5519,23 @@ void GCodeViewer::qz_rebuild_deformed_mesh()
             ring[s] = side * (0.5f * w * std::cos(ang)) + nrm * (0.5f * h * std::sin(ang));
             rn[s]   = (side * (std::cos(ang) / (0.5f * w)) + nrm * (std::sin(ang) / (0.5f * h))).normalized();
         }
+        // Eigen expressions convert implicitly to both Vec3f and Vec2f, which makes the
+        // add_vertex overloads ambiguous: pass concrete Vec3f values only
+        const Vec3f nd = -d;
         const unsigned int base = (unsigned int) g.vertices_count();
-        for (int s = 0; s < sides; ++s) { g.add_vertex(ca + ring[s], rn[s]); g.add_vertex(cb + ring[s], rn[s]); }
+        for (int s = 0; s < sides; ++s) {
+            const Vec3f pa = ca + ring[s], pb = cb + ring[s];
+            g.add_vertex(pa, rn[s]); g.add_vertex(pb, rn[s]);
+        }
         for (int s = 0; s < sides; ++s) {
             const unsigned int i0 = base + 2 * s, i1 = base + 2 * ((s + 1) % sides);
             g.add_triangle(i0, i0 + 1, i1 + 1); g.add_triangle(i0, i1 + 1, i1);
         }
-        const unsigned int ca_id = (unsigned int) g.vertices_count(); g.add_vertex(ca, -d);
-        for (int s = 0; s < sides; ++s) g.add_vertex(ca + ring[s], -d);
+        const unsigned int ca_id = (unsigned int) g.vertices_count(); g.add_vertex(ca, nd);
+        for (int s = 0; s < sides; ++s) { const Vec3f p = ca + ring[s]; g.add_vertex(p, nd); }
         for (int s = 0; s < sides; ++s) g.add_triangle(ca_id, ca_id + 1 + s, ca_id + 1 + (s + 1) % sides);      // CCW seen from outside (-d)
         const unsigned int cb_id = (unsigned int) g.vertices_count(); g.add_vertex(cb, d);
-        for (int s = 0; s < sides; ++s) g.add_vertex(cb + ring[s], d);
+        for (int s = 0; s < sides; ++s) { const Vec3f p = cb + ring[s]; g.add_vertex(p, d); }
         for (int s = 0; s < sides; ++s) g.add_triangle(cb_id, cb_id + 1 + (s + 1) % sides, cb_id + 1 + s);      // CCW seen from outside (+d)
     };
     for (size_t i = start; i <= vis[1]; ++i) {
