@@ -82,6 +82,11 @@ struct QzStabilityResult
 QzStabilityResult qz_evaluate_stability(const QzPasteMaterial &mat, const std::vector<QzLayerRecord> &layers,
                                         const QzStabilityOptions &opt);
 
+// Per-layer utilization field as it stands right after step k, with memory: for every
+// layer j <= k the peak of U_j over the steps j..k (monotone in k; at the last step it
+// equals `peak_utilization`). This is what a display of "the state at layer k" shows.
+std::vector<float> qz_utilization_upto(const QzStabilityResult &res, int k);
+
 // --- closed forms and helpers ----------------------------------------------------------
 double qz_max_height_plastic_linear(const QzPasteMaterial &mat, double build_rate_m_s);   // [m], <0 unbounded
 double qz_critical_build_rate(const QzPasteMaterial &mat);                                 // [m/s]

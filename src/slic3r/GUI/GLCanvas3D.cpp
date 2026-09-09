@@ -11797,14 +11797,15 @@ void GLCanvas3D::_render_qz_quick_cards()
                             if (fs.fallen_count > 0)
                                 kv(_u8L("Falling").c_str(), std::to_string(fs.fallen_count) + " " + _u8L("strands on the pile"), &bad_col);
                         } else {
-                            const ImVec4 &uc = fs.max_util > sf_target ? warn_col : ok_col;
+                            const ImVec4 &uc = fs.max_ratio >= 1.0 ? bad_col : (fs.max_ratio > sf_target ? warn_col : ok_col);
                             kv(_u8L("Now").c_str(), fmt("%.1f mm", fs.height_deformed) + " " + _u8L("tall") + ", " + _u8L("sway") + " " + fmt("%.1f mm", fs.sway), &ok_col);
-                            kv(_u8L("Local load").c_str(), fmt("%.0f %%", 100.0 * fs.max_util) + "  " + _u8L("max, this instant"), &uc);
+                            // the same field the strands are coloured with: peak load/strength seen so far
+                            kv(_u8L("Colour, max").c_str(), fmt("%.0f %%", 100.0 * fs.max_ratio) + "  " + _u8L("load/strength so far"), &uc);
                         }
                     }
                     ImGui::SetWindowFontScale(0.85f);
                     ImGui::PushTextWrapPos(330.0f * scale);
-                    ImGui::TextColored(lbl_col, "%s", _u8L("Kinematic view driven by the model on a plan grid: each strand carries the column above it, squash is remembered and accumulates, the stack folds at the hinge and later strands fall on the pile. Not a nonlinear FEM.").c_str());
+                    ImGui::TextColored(lbl_col, "%s", _u8L("Kinematic view driven by the model on a plan grid: every layer printed so far stays visible, each strand carries the column above it and keeps the peak load/strength it has seen (colour and squash), the stack folds at the hinge and later strands fall on the pile. Not a nonlinear FEM.").c_str());
                     ImGui::PopTextWrapPos();
                     ImGui::SetWindowFontScale(1.0f);
                 } else {

@@ -242,6 +242,12 @@ public:
     //
     void set_layers_view_range(Interval::value_type min, Interval::value_type max);
     //
+    // Quasizero: replace the stability value of every vertex (one entry per vertex, in
+    // vertex order; < 0 = not applicable) and schedule a colours update. Used to show the
+    // load/strength field as it stands at the layer selected by the vertical slider.
+    //
+    void set_vertices_stability(const std::vector<float>& values);
+    //
     // Return the current visible range.
     // Three ranges are defined: full, enabled and visible.
     // For all of them the range endpoints represent:

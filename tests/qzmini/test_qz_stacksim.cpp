@@ -152,3 +152,23 @@ QZ_TEST(stacksim_after_collapse_strands_fall_on_the_pile)
     QzSimPoint a3, b3; sim.deform(fr2, si, a3, b3, ws, hs, fallen);
     QZ_CHECK_NEAR(a3.x, a.x, 1e-6); QZ_CHECK_NEAR(a3.z, a.z, 1e-6);
 }
+
+QZ_TEST(stacksim_ratio_remembers_peak_and_matches_layer_field)
+{
+    Job j = make_ring_job(60, 125.0);
+    QzStackSim sim; sim.build(j.mat, j.L, j.G, j.segs, j.res, j.lam, QzStabilityOptions{}, QzSimOptions{});
+    QzSimFrame fr;
+    float last = 0.0f;
+    for (int top = 0; top < 50; ++top) {
+        sim.frame(top, j.L[top].t_end, fr);
+        const float r0 = sim.ratio(fr, 0);                    // a strand of layer 0
+        QZ_CHECK(r0 >= sim.util(fr, 0) - 1e-6f);              // never below the instantaneous value
+        QZ_CHECK(r0 >= last - 1e-6f);                         // never resets as the print moves on
+        QZ_CHECK(fr.max_ratio >= fr.max_util - 1e-6);
+        // uniform ring: the per-cell field equals the per-layer field with memory
+        const std::vector<float> f = qz_utilization_upto(j.res, top);
+        QZ_CHECK_NEAR(r0, f[0], 0.05 * std::max(0.05, (double) f[0]));
+        last = r0;
+    }
+    QZ_CHECK(last > 0.5f);
+}

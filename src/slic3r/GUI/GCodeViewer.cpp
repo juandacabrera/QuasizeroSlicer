@@ -430,7 +430,7 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
                 sprintf(detail_buf, "%s%.4f", _u8L("PA: ").c_str(), vertex.pressure_advance);
                 break;
             case libvgcode::EViewType::Stability: // Quasizero
-                if (vertex.stability >= 0.0f) sprintf(detail_buf, "%s%.0f %%", _u8L("Load/strength: ").c_str(), 100.0f * vertex.stability);
+                if (vertex.stability >= 0.0f) sprintf(detail_buf, "%s%.0f %%", _u8L("Load/strength, this bead: ").c_str(), 100.0f * vertex.stability);
                 else detail_buf[0] = '\0';
                 break;
             default:
@@ -1307,8 +1307,11 @@ void GCodeViewer::load_as_gcode(const GCodeProcessorResult& gcode_result, const 
     // send data to the viewer
     m_viewer.reset_default_extrusion_roles_colors();
     m_viewer.load(std::move(data));
-    // Quasizero: the stack simulation reads its segments back from the viewer vertices
+    // Quasizero: the stack simulation reads its segments back from the viewer vertices,
+    // and the Stability colours are set for the layer the viewer opens at
     qz_build_sim();
+    m_qz_stability.colors_layer = -1;
+    qz_refresh_stability_colors();
 
 // #if !VGCODE_ENABLE_COG_AND_TOOL_MARKERS
 //     const size_t vertices_count = m_viewer.get_vertices_count();
@@ -1911,6 +1914,7 @@ void GCodeViewer::set_layers_z_range(const std::array<unsigned int, 2>& layers_z
 {
     m_viewer.set_layers_view_range(static_cast<uint32_t>(layers_z_range[0]), static_cast<uint32_t>(layers_z_range[1]));
     update_moves_slider(true);
+    qz_refresh_stability_colors(); // Quasizero: colours follow the layer shown (results[k])
 }
 
 class ToolpathsObjExporter
@@ -5425,6 +5429,31 @@ int GCodeViewer::qz_stability_layer_at_view_top() const
     return best;
 }
 
+void GCodeViewer::qz_refresh_stability_colors()
+{
+    QzStability& st = m_qz_stability;
+    if (!st.result.valid || st.per_move.empty()) return;
+    const size_t n = m_viewer.get_vertices_count();
+    if (n == 0) return;
+    // k = record of the top layer of the vertical slider (the last one while loading)
+    int k = qz_stability_layer_at_view_top();
+    if (k < 0) k = (int) st.result.history.size() - 1;
+    if (k == st.colors_layer) return;
+    const std::vector<float> field = QuasiZero::qz_utilization_upto(st.result, k);
+    if (field.empty()) return;
+    std::vector<float> values(n, -1.0f);
+    for (size_t i = 0; i < n; ++i) {
+        const libvgcode::PathVertex& v = m_viewer.get_vertex_at(i);
+        if (!v.is_extrusion() || v.layer_id >= st.layer_index_of_id.size()) continue;
+        const int li = st.layer_index_of_id[v.layer_id];
+        if (li < 0) continue;
+        // layers above k are outside the view range; give them their whole-print peak so a
+        // later widening of the range without a refresh still shows something sensible
+        values[i] = ((size_t) li < field.size()) ? field[li] : st.result.peak_utilization[li];
+    }
+    m_viewer.set_vertices_stability(values);
+    st.colors_layer = k;
+}
 
 void GCodeViewer::qz_build_sim()
 {
@@ -5469,7 +5498,9 @@ void GCodeViewer::qz_rebuild_deformed_mesh()
     QzStability& st = m_qz_stability;
     if (!st.sim.valid()) return;
     const libvgcode::Interval& vis = m_viewer.get_view_visible_range();
-    const libvgcode::Interval& ena = m_viewer.get_view_enabled_range();   // what libvgcode draws: [enabled start .. visible end]
+    // everything printed so far: from the first vertex of the layers range to the player
+    // position, whatever the "top layer only" preference does to the nominal toolpaths
+    const libvgcode::Interval& full = m_viewer.get_view_full_range();
     const size_t nverts = m_viewer.get_vertices_count();
     if (nverts == 0 || vis[1] >= nverts || st.seg_of_vertex.size() != nverts) return;
     // top layer = record of the last visible extrusion vertex
@@ -5490,7 +5521,8 @@ void GCodeViewer::qz_rebuild_deformed_mesh()
         return;
     }
 
-    // colours: the Stability legend palette, binned by the CURRENT local load of each strand
+    // colours: the Stability legend palette, binned by the load/strength each strand REMEMBERS
+    // up to this instant (never resets as the print moves on; same field as the squash)
     const libvgcode::ColorRange& range = m_viewer.get_color_range(libvgcode::EViewType::Stability);
     for (size_t b = 0; b < QZ_DEFORM_BINS; ++b) {
         const libvgcode::Color c = range.get_color_at((float(b) + 0.5f) / float(QZ_DEFORM_BINS));
@@ -5501,7 +5533,7 @@ void GCodeViewer::qz_rebuild_deformed_mesh()
 
     // tube around the segment axis (octagonal, square for very large jobs), ends extended by
     // half a width so consecutive strands join, closed caps; the toolpath point is the bead top
-    const size_t start = std::max<size_t>(ena[0], 1);
+    const size_t start = std::max<size_t>(full[0], 1);
     size_t nseg = 0;
     for (size_t i = start; i <= vis[1]; ++i) if (st.seg_of_vertex[i] >= 0) ++nseg;
     const int sides = nseg > 40000 ? 4 : 8;
@@ -5545,7 +5577,7 @@ void GCodeViewer::qz_rebuild_deformed_mesh()
         if (s.layer > st.sim_frame.top) continue;
         QuasiZero::QzSimPoint pa, pb; float ws, hs; bool fallen;
         st.sim.deform(st.sim_frame, sg, pa, pb, ws, hs, fallen);
-        const float u = st.sim.util(st.sim_frame, sg);
+        const float u = st.sim.ratio(st.sim_frame, sg);
         const size_t bin = std::min(QZ_DEFORM_BINS - 1, (size_t) std::max(0.0f, std::min(u, 0.9999f) * (float) QZ_DEFORM_BINS));
         add_tube(geos[bin], Vec3f(pa.x, pa.y, pa.z), Vec3f(pb.x, pb.y, pb.z), s.w * ws, s.h * hs);
     }

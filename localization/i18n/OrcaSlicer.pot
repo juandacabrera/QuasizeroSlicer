@@ -20463,7 +20463,7 @@ msgid "Stability"
 msgstr ""
 
 #. Quasizero QZmini stability
-msgid "Load/strength: "
+msgid "Load/strength, this bead: "
 msgstr ""
 
 #. Quasizero QZmini stability
@@ -20601,18 +20601,19 @@ msgid "sway"
 msgstr ""
 
 #. Quasizero QZmini stability
-msgid "Local load"
+msgid "Colour, max"
 msgstr ""
 
 #. Quasizero QZmini stability
-msgid "max, this instant"
+msgid "load/strength so far"
 msgstr ""
 
 #. Quasizero QZmini stability
 msgid ""
-"Kinematic view driven by the model on a plan grid: each strand carries the "
-"column above it, squash is remembered and accumulates, the stack folds at "
-"the hinge and later strands fall on the pile. Not a nonlinear FEM."
+"Kinematic view driven by the model on a plan grid: every layer printed so "
+"far stays visible, each strand carries the column above it and keeps the "
+"peak load/strength it has seen (colour and squash), the stack folds at the "
+"hinge and later strands fall on the pile. Not a nonlinear FEM."
 msgstr ""
 
 #. Quasizero QZmini stability

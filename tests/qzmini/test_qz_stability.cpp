@@ -208,3 +208,31 @@ QZ_TEST(deform_state_bulges_at_critical_band_and_folds_after_collapse)
     QZ_CHECK_NEAR(oy, G[0].cy, 1e-9);
     QZ_CHECK(oz <= L[0].z_bottom + L[0].height + 1e-9);
 }
+
+QZ_TEST(stability_utilization_upto_is_monotone_and_ends_at_peak)
+{
+    // fast-curing material: U of a layer dips between load increments, so the field "as it
+    // stands at step k" must carry the memory of the peak, not the instantaneous value
+    QzPasteMaterial m; m.rho = 1500.0; m.tau0 = 400.0; m.athix = 2.0; m.E0 = 3e4;
+    const auto L = uniform_layers(30, 3.0, 60.0, 4.0, 5, 600.0); // a 10-min pause every 5 layers
+    const auto r = qz_evaluate_stability(m, L, QzStabilityOptions{});
+    QZ_CHECK(r.valid && r.history.size() == 30);
+    std::vector<float> prev;
+    for (int k = 0; k < 30; ++k) {
+        const std::vector<float> f = qz_utilization_upto(r, k);
+        QZ_CHECK(f.size() == (size_t) k + 1);
+        for (size_t j = 0; j < prev.size(); ++j) QZ_CHECK(f[j] >= prev[j] - 1e-7f);     // memory
+        for (size_t j = 0; j < f.size(); ++j) QZ_CHECK(f[j] >= r.history[k][j] - 1e-7f); // >= instantaneous
+        prev = f;
+    }
+    for (size_t j = 0; j < prev.size(); ++j) QZ_CHECK_NEAR(prev[j], r.peak_utilization[j], 1e-6);
+    // and the memory actually matters here: some layer dips after a pause
+    bool dips = false;
+    for (int k = 1; k < 30 && !dips; ++k)
+        for (size_t j = 0; j < r.history[k - 1].size(); ++j)
+            if (r.history[k][j] < r.history[k - 1][j] - 1e-6f) { dips = true; break; }
+    QZ_CHECK(dips);
+    // out-of-range k is clamped, invalid result gives nothing
+    QZ_CHECK(qz_utilization_upto(r, 999).size() == 30);
+    QZ_CHECK(qz_utilization_upto(QzStabilityResult{}, 3).empty());
+}

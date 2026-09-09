@@ -257,7 +257,8 @@ public:
         QuasiZero::QzStabilityOptions options;
         QuasiZero::QzStabilityResult  result;
         std::vector<int>              layer_index_of_id;   // result.moves layer_id -> record index
-        std::vector<float>            per_move;            // utilization per result move (< 0 = n/a)
+        std::vector<float>            per_move;            // utilization per result move at load (< 0 = n/a)
+        int                           colors_layer = -1;   // record index the Stability colours currently show
         std::vector<double>           layer_top_z;         // [mm] per record, for slider lookups
         // Level 1.5: deformation kinematics (per-layer geometry feeds the grid simulation)
         std::vector<QuasiZero::QzLayerRecord> layers;
@@ -278,6 +279,10 @@ private:
     std::array<ColorRGBA, QZ_DEFORM_BINS> m_qz_deform_colors;
     void qz_evaluate_stability(const GCodeProcessorResult& gcode_result);
     void qz_build_sim();   // after m_viewer.load(): segments straight from the libvgcode vertices
+    // Stability view colours = the load/strength field as it stands at the top layer of the
+    // vertical slider (with memory), so the static view and the play show results[k], not
+    // the whole-print peak. Cheap (O(vertices)); called on every layers-range change.
+    void qz_refresh_stability_colors();
     bool qz_deform_active() const { return m_qz_stability.deform_view && m_qz_stability.sim.valid(); }
     void qz_rebuild_deformed_mesh();
     void qz_render_deformed();

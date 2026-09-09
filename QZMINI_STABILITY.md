@@ -83,8 +83,15 @@ model (and in the tests) as the analytical reference.
   the same layer lie side by side; no strand lands above the nozzle. The heap grows under
   the toolpath and spreads slowly along it. It is a height-field sketch — it does not
   conserve volume and has no angle of repose.
-- **Colour.** The deformed beads are coloured by their *current* local load/strength
-  (Stability palette), not by the layer peak that the Stability toolpath view shows.
+- **Colour.** The deformed beads are coloured by the local load/strength they *remember*
+  up to the play instant (Stability palette) — the same per-cell field that drives the
+  squash, so colour and geometry agree; it is ≥ the instantaneous value and never resets.
+  For the per-cell field the memory is exact once a cell has reached its peak; before
+  that it is the instantaneous value (a small dip is possible between load increments
+  for fast-curing materials — the per-layer field of the Stability view is exact).
+- **Range.** With *Show deformation* on, every layer of the layers range up to the player
+  position is drawn (the "sequential slider applies only to top layer" preference does
+  not hide the layers below), coloured as above.
 - **Rendering.** Octagonal tubes (square beyond 40 000 visible strands) rebuilt whenever the
   player position or time changes; the nominal toolpaths are rendered masked so libvgcode
   keeps its deferred updates.
@@ -95,8 +102,14 @@ times, hinge crush +45 %, dropped strands flattened ×1.35 with ±0.125 bead wid
 
 ## 2. Where it shows
 
-- **Preview → view type "Stability"**: extrusions coloured by peak load/strength
-  (legend fixed 0–1). Hover tooltip shows the value.
+- **Preview → view type "Stability"**: extrusions coloured by load/strength **as it stands
+  at the layer selected by the vertical slider** (top of the range = k), with memory: every
+  layer j ≤ k shows the peak it has seen up to step k, so the colour of a layer never
+  fades when the print moves on and the play shows the field building up from the bed.
+  At the last layer this equals the whole-print peak. Legend fixed 0–1; the status bar
+  shows the value of the bead under the horizontal slider ("Load/strength, this bead"),
+  which for the layer being deposited is ~0 — the card's "At layer k: x % on layer j" is
+  the maximum over the stack.
 - **Stability card** (left stack, above Process): verdict (Stable / below margin /
   Collapse predicted at height, layer, minute), critical layer, live load at the layer
   the vertical slider shows, vertical speed vs critical speed, max plastic height,

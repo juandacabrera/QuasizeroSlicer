@@ -24078,8 +24078,8 @@ msgid "Stability"
 msgstr "Estabilidad"
 
 #. Quasizero QZmini stability
-msgid "Load/strength: "
-msgstr "Carga/resistencia: "
+msgid "Load/strength, this bead: "
+msgstr "Carga/resistencia, este cordón: "
 
 #. Quasizero QZmini stability
 msgid "Stability (load / strength, 1 = collapse)"
@@ -24218,23 +24218,25 @@ msgid "sway"
 msgstr "balanceo"
 
 #. Quasizero QZmini stability
-msgid "Local load"
-msgstr "Carga local"
+msgid "Colour, max"
+msgstr "Color, máx."
 
 #. Quasizero QZmini stability
-msgid "max, this instant"
-msgstr "máx., en este instante"
+msgid "load/strength so far"
+msgstr "carga/resistencia hasta ahora"
 
 #. Quasizero QZmini stability
 msgid ""
-"Kinematic view driven by the model on a plan grid: each strand carries the "
-"column above it, squash is remembered and accumulates, the stack folds at "
-"the hinge and later strands fall on the pile. Not a nonlinear FEM."
+"Kinematic view driven by the model on a plan grid: every layer printed so "
+"far stays visible, each strand carries the column above it and keeps the "
+"peak load/strength it has seen (colour and squash), the stack folds at the "
+"hinge and later strands fall on the pile. Not a nonlinear FEM."
 msgstr ""
-"Vista cinemática guiada por el modelo sobre una malla en planta: cada "
-"cordón soporta la columna que tiene encima, el aplastamiento se recuerda y "
-"se acumula, la pila se pliega por la rótula y los cordones posteriores "
-"caen sobre el montón. No es un FEM no lineal."
+"Vista cinemática guiada por el modelo sobre una malla en planta: todas las "
+"capas impresas hasta ahora siguen visibles, cada cordón soporta la columna "
+"que tiene encima y conserva la carga/resistencia máxima que ha visto "
+"(color y aplastamiento), la pila se pliega por la rótula y los cordones "
+"posteriores caen sobre el montón. No es un FEM no lineal."
 
 #. Quasizero QZmini stability
 msgid ""

@@ -81,6 +81,8 @@ public:
     const Interval& get_layers_view_range() const { return m_layers.get_view_range(); }
     void set_layers_view_range(const Interval& range) { set_layers_view_range(range[0], range[1]); }
     void set_layers_view_range(Interval::value_type min, Interval::value_type max);
+    // Quasizero: see Viewer::set_vertices_stability
+    void set_vertices_stability(const std::vector<float>& values);
 
     bool is_top_layer_only_view_range() const { return m_settings.top_layer_only_view_range; }
     void toggle_top_layer_only_view_range();

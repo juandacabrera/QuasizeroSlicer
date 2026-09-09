@@ -68,7 +68,8 @@ struct QzSimFrame
     double dir_x = 1.0, dir_y = 0.0;
     double pivot_x = 0.0, pivot_y = 0.0, pivot_z = 0.0; // [mm] hinge edge (material point of the hinge layer furthest along dir)
     double height_deformed = 0.0; // [mm] mean deformed top of the top layer's material (before any fold)
-    double max_util = 0.0;        // current, over all drawn segments
+    double max_util = 0.0;        // current (instantaneous) load/strength, max over the deposited segments
+    double max_ratio = 0.0;       // remembered load/strength (peak up to this instant), max over the deposited segments
     size_t fallen_count = 0;      // strands deposited after the collapse in this frame
     // internal caches (sized by the simulator)
     std::vector<float> settle;    // [mm] settlement below layer j at cell c: settle[j*ncells + c]
@@ -99,8 +100,12 @@ public:
 
     // compute the state for the playback position (top = last deposited layer index)
     void frame(int top, double time, QzSimFrame &fr) const;
-    // current (not peak) local utilization of a segment in this frame
+    // current (instantaneous) local utilization of a segment in this frame
     float util(const QzSimFrame &fr, int seg) const;
+    // remembered local utilization: the peak the segment's material has seen up to this
+    // frame (monotone along the play, never resets when the print moves on) - the colour
+    // of the deformed view
+    float ratio(const QzSimFrame &fr, int seg) const;
     // deformed endpoints of a segment; `fallen` = dropped strand deposited after the collapse
     void deform(const QzSimFrame &fr, int seg, QzSimPoint &a, QzSimPoint &b,
                 float &w_scale, float &h_scale, bool &fallen) const;

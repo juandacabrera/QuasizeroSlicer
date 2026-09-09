@@ -197,6 +197,11 @@ void Viewer::set_layers_view_range(const Interval& range)
     m_impl->set_layers_view_range(range);
 }
 
+void Viewer::set_vertices_stability(const std::vector<float>& values)
+{
+    m_impl->set_vertices_stability(values);
+}
+
 void Viewer::set_layers_view_range(Interval::value_type min, Interval::value_type max)
 {
     m_impl->set_layers_view_range(min, max);

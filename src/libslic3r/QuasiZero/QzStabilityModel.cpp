@@ -231,6 +231,20 @@ static void evaluate_plastic(const QzPasteMaterial &mat, const std::vector<QzLay
     }
 }
 
+std::vector<float> qz_utilization_upto(const QzStabilityResult &res, int k)
+{
+    std::vector<float> out;
+    if (!res.valid || res.history.empty()) return out;
+    k = std::max(0, std::min((int) res.history.size() - 1, k));
+    out.assign((size_t) k + 1, 0.0f);
+    for (int s = 0; s <= k; ++s) {
+        const std::vector<float> &row = res.history[s];
+        for (size_t j = 0; j < row.size() && j < out.size(); ++j)
+            out[j] = std::max(out[j], row[j]);
+    }
+    return out;
+}
+
 QzStabilityResult qz_evaluate_stability(const QzPasteMaterial &mat, const std::vector<QzLayerRecord> &L, const QzStabilityOptions &opt)
 {
     QzStabilityResult r;

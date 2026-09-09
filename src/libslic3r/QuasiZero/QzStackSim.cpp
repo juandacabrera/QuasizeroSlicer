@@ -315,9 +315,12 @@ void QzStackSim::frame(int top, double time, QzSimFrame &fr) const
     // current max utilization over the deposited segments (for the card); util() needs a
     // valid frame, and everything it reads is in place by now
     fr.valid = true;
-    fr.max_util = 0.0;
+    fr.max_util = 0.0; fr.max_ratio = 0.0;
     for (int j = 0; j <= top; ++j)
-        for (int si : m_layer_segs[j]) fr.max_util = std::max(fr.max_util, (double) util(fr, si));
+        for (int si : m_layer_segs[j]) {
+            fr.max_util  = std::max(fr.max_util, (double) util(fr, si));
+            fr.max_ratio = std::max(fr.max_ratio, (double) ratio(fr, si));
+        }
 }
 
 double QzStackSim::layer_mean_top(const QzSimFrame &fr, int layer) const
@@ -414,6 +417,16 @@ float QzStackSim::util(const QzSimFrame &fr, int seg) const
     if (s.layer < 0 || s.layer > fr.top) return 0.0f;
     const int c = m_seg_cell_mid[seg];
     const float lo = U_inst(s.layer, c, fr.k_lo), hi = U_inst(s.layer, c, fr.k_hi);
+    return lo + fr.f * (hi - lo);
+}
+
+float QzStackSim::ratio(const QzSimFrame &fr, int seg) const
+{
+    if (!fr.valid || seg < 0 || (size_t) seg >= m_segs.size()) return 0.0f;
+    const QzSimSegment &s = m_segs[seg];
+    if (s.layer < 0 || s.layer > fr.top) return 0.0f;
+    const int c = m_seg_cell_mid[seg];
+    const float lo = U_peak(s.layer, c, fr.k_lo), hi = U_peak(s.layer, c, fr.k_hi);
     return lo + fr.f * (hi - lo);
 }
 

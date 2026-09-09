@@ -1317,6 +1317,18 @@ void ViewerImpl::set_view_type(EViewType type)
     m_settings.update_colors = true;
 }
 
+void ViewerImpl::set_vertices_stability(const std::vector<float>& values)
+{
+    if (values.size() != m_vertices.size())
+        return;
+    for (size_t i = 0; i < m_vertices.size(); ++i)
+        m_vertices[i].stability = values[i];
+    // the colour cache is rebuilt on the next render only for the Stability view;
+    // for the other views the new values are simply the ones used the next time it is selected
+    if (m_settings.view_type == EViewType::Stability)
+        m_settings.update_colors = true;
+}
+
 void ViewerImpl::set_time_mode(ETimeMode mode)
 {
     m_settings.time_mode = mode;
