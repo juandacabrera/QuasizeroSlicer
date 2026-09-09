@@ -1,6 +1,7 @@
 // Quasizero Slicer - QzStackSim tests. GNU AGPLv3.
 #include "standalone/qz_test.hpp"
 #include "libslic3r/QuasiZero/QzStackSim.hpp"
+#include "libslic3r/QuasiZero/QzSkeleton.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -171,4 +172,99 @@ QZ_TEST(stacksim_ratio_remembers_peak_and_matches_layer_field)
         last = r0;
     }
     QZ_CHECK(last > 0.5f);
+}
+
+QZ_TEST(stacksim_phases_lean_fold_contact_and_settling)
+{
+    Job j = make_ring_job(60, 125.0);
+    QzStackSim sim; sim.build(j.mat, j.L, j.G, j.segs, j.res, j.lam, QzStabilityOptions{}, QzSimOptions{});
+    const int kc = sim.collapse_step();
+    QZ_CHECK(kc > 6);
+    QzSimOptions opt;
+    const double lean0 = opt.lean0_deg * 3.14159265 / 180.0;
+    QzSimFrame fr;
+    // early: stable, no bend
+    sim.frame(3, j.L[3].t_end, fr);
+    QZ_CHECK(fr.phase == QzSimPhase::Stable && fr.fold_angle == 0.0 && !fr.contact);
+    // just before the collapse: pre-failure with a lean no larger than the seed
+    sim.frame(kc - 1, j.L[kc - 1].t_end, fr);
+    QZ_CHECK(fr.phase == QzSimPhase::PreFailure);
+    QZ_CHECK(fr.fold_angle > 0.0 && fr.fold_angle <= lean0 + 1e-9);
+    QZ_CHECK(fr.r_hinge >= opt.pre_r0);
+    // the fold grows monotonically after t_collapse, then the bed stops it
+    double last = 0.0; bool seen_failure = false, seen_contact = false;
+    for (double dt = 0.0; dt <= 4.0; dt += 0.1) {
+        sim.frame(kc, sim.collapse_time() + dt, fr);
+        QZ_CHECK(fr.fold_angle >= last - 1e-9);
+        last = fr.fold_angle;
+        if (fr.phase == QzSimPhase::Failure) seen_failure = true;
+        if (fr.contact) {
+            seen_contact = true;
+            QZ_CHECK(fr.phase == QzSimPhase::Collapsed);
+            // nothing below the bed: every deformed strand end sits at least half a bead high
+            for (int si = 0; si < (int) (kc + 1) * 128; si += 7) {
+                QzSimPoint a, b; float ws, hs; bool fallen;
+                sim.deform(fr, si, a, b, ws, hs, fallen);
+                QZ_CHECK(a.z >= 0.5f * sim.segment(si).h - 1e-3f && b.z >= 0.5f * sim.segment(si).h - 1e-3f);
+            }
+        }
+    }
+    QZ_CHECK(seen_failure && seen_contact);
+    QZ_CHECK(fr.settle_f >= 0.99);
+    QZ_CHECK(last > 1.2 && last < 2.6);            // between ~70 and ~150 degrees
+    // later layers: post-collapse, the strands deposited after it are fallen
+    sim.frame(kc + 4, j.L[kc + 4].t_end, fr);
+    QZ_CHECK(fr.phase == QzSimPhase::PostCollapse && fr.fallen_count > 0);
+}
+
+QZ_TEST(stacksim_fold_bends_towards_dir_with_standing_base_and_continuous_mesh)
+{
+    Job j = make_ring_job(60, 125.0);
+    QzStackSim sim; sim.build(j.mat, j.L, j.G, j.segs, j.res, j.lam, QzStabilityOptions{}, QzSimOptions{});
+    const int kc = sim.collapse_step();
+    QzSimFrame fr; sim.frame(kc, sim.collapse_time() + 1.2, fr);
+    QZ_CHECK(fr.phase == QzSimPhase::Failure && fr.fold_angle > 0.3);
+    // the top layer moved towards the fold direction (+x) and came down; the bottom layer did not move sideways
+    double top_dx = 0.0, base_dx = 0.0; int n = 0;
+    for (int s = 0; s < 128; ++s) {
+        QzSimPoint a, b; float ws, hs; bool fallen;
+        sim.deform(fr, kc * 128 + s, a, b, ws, hs, fallen); top_dx += a.x - sim.segment(kc * 128 + s).x0;
+        sim.deform(fr, s, a, b, ws, hs, fallen);            base_dx += a.x - sim.segment(s).x0; ++n;
+    }
+    top_dx /= n; base_dx /= n;
+    QZ_CHECK(top_dx > 10.0);
+    QZ_CHECK(std::fabs(base_dx) < 3.0);
+    // the inner (+x) side of the bent zone is compressed: consecutive layers closer than nominal there
+    const int h = std::max(1, sim.hinge_layer() + 2);
+    QzSimPoint a1, b1, a2, b2; float ws, hs; bool fallen;
+    sim.deform(fr, h * 128 + 0, a1, b1, ws, hs, fallen);          // angle 0 = +x side
+    sim.deform(fr, (h + 1) * 128 + 0, a2, b2, ws, hs, fallen);
+    const double inner_gap = std::hypot(a2.x - a1.x, a2.z - a1.z);
+    sim.deform(fr, h * 128 + 32, a1, b1, ws, hs, fallen);         // angle 180 = -x side
+    sim.deform(fr, (h + 1) * 128 + 32, a2, b2, ws, hs, fallen);
+    const double outer_gap = std::hypot(a2.x - a1.x, a2.z - a1.z);
+    QZ_CHECK(inner_gap < outer_gap);
+    // continuity: the re-skinned mesh is one piece per bead at this folded instant
+    QzSkeleton sk; sk.build(j.segs);
+    std::vector<QzSkelNodePose> pose;
+    qz_pose_from_sim(sim, fr, sk, 0, (kc + 1) * 128 - 1, pose);
+    QzTubeOptions topt;
+    QZ_CHECK(QzTubeMesher::connected_components(sk, pose, topt) == (size_t) (kc + 1) * 2);
+}
+
+QZ_TEST(stacksim_prefailure_bulge_is_asymmetric_towards_the_fold_side)
+{
+    Job j = make_ring_job(60, 125.0);
+    QzStackSim sim; sim.build(j.mat, j.L, j.G, j.segs, j.res, j.lam, QzStabilityOptions{}, QzSimOptions{});
+    const int kc = sim.collapse_step();
+    QzSimFrame fr; sim.frame(kc - 1, j.L[kc - 1].t_end, fr);
+    QZ_CHECK(fr.phase == QzSimPhase::PreFailure);
+    const int h = sim.hinge_layer();
+    QzSimPoint a, b; float ws, hs; bool fallen;
+    sim.deform(fr, h * 128 + 0, a, b, ws, hs, fallen);    // +x point of the outer ring? (first ring R=28)
+    const double plus = a.x - 100.0;                       // radial offset towards +x
+    sim.deform(fr, h * 128 + 32, a, b, ws, hs, fallen);   // -x point
+    const double minus = 100.0 - a.x;
+    QZ_CHECK(plus > 28.0 && minus > 28.0);                 // both bulged outwards
+    QZ_CHECK(plus > minus + 0.5);                          // more on the side it will fold towards
 }

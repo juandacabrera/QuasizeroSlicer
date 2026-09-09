@@ -31,22 +31,39 @@ struct QzSimSegment
     float t_end = 0;                      // [s] process time at the segment end
 };
 
+// Every number below is a visual/kinematic hypothesis [hyp], tuned on IMG_4657 (cocoa-paste
+// cylinder collapse) - see QZMINI_STABILITY.md section 1c.
 struct QzSimOptions
 {
     double cell_mm        = 2.0;   // grid cell; enlarged automatically for huge jobs
-    double U_yield        = 0.5;   // squash starts above this utilization              [hyp]
-    double eps_max        = 0.35;  // squash strain at U = 1                             [hyp]
-    double bulge_gain     = 0.6;   // plan scale about the layer centroid = 1 + gain*eps [hyp]
-    double imperfection   = 0.002; // initial sway / height                              [hyp]
+    // yielding (squash + bulge), driven by the remembered load/strength per cell
+    double U_yield        = 0.5;   // squash starts above this utilization
+    double eps_max        = 0.35;  // squash strain at U = 1
+    double bulge_gain     = 0.6;   // plan scale about the layer centroid = 1 + gain*eps
+    double bulge_asym     = 1.2;   // extra bulge on the side the stack will fold towards (compressed side), x this
+    double pre_r0         = 0.6;   // pre-failure starts when the hinge zone reaches this load/strength
+    // imperfection sway (elastic)
+    double imperfection   = 0.002; // initial sway / height
     double sway_cap       = 0.25;  // max sway / height
-    double fold_angle_max = 75.0;  // [deg]
-    double fold_time_layers = 2.0; // fold completes in this many mean layer times
-    double hinge_squash   = 0.45;  // extra squash of the hinge layer at full fold
+    // distributed hinge and fold
+    double hinge_len_diam = 0.8;   // length of the bent zone, in section diameters (8-10 layers in IMG_4657)
+    double hinge_below    = 0.25;  // fraction of the bent zone below the critical layer (the confined, older layers
+                                   // under it stay standing; the yielding zone extends mostly upwards)
+    double lean0_deg      = 1.5;   // lean reached at the end of the pre-failure phase; seed of the fold
+    double fold_tau       = 0.4;   // [s] print time; the fold grows as lean0 * exp((t - t_collapse) / tau)
+    double fold_angle_max = 150.0; // [deg] cap when nothing stops the fold (short stub above the hinge)
+    double settle_time    = 1.0;   // [s] after bed contact: the arch settles and widens
+    double settle_extra_deg = 8.0; // extra rotation absorbed while settling (clamped by the bed)
+    double hinge_squash   = 0.45;  // extra squash inside the hinge zone at full fold (inner side)
+    double inner_clamp    = 0.8;   // inner-side offset capped at this fraction of the bend radius (accordion, no inversion)
+    // fallen strands (height-field sketch until the bead simulator takes over)
     double drop_jitter    = 0.25;  // XY jitter of fallen strands, in bead widths (peak to peak)
     double drop_flatten   = 1.35;  // width factor of fallen strands (height factor = 1/this)
     size_t max_table      = 4000000; // max (layers x cells) before the cell grows
     uint32_t seed         = 0x9E3779B9u;
 };
+
+enum class QzSimPhase : int { Stable = 0, PreFailure, Failure, Collapsed, PostCollapse };
 
 struct QzSimPoint { float x = 0, y = 0, z = 0; };
 
@@ -58,15 +75,20 @@ struct QzSimFrame
     double time = 0.0;
     int    k_lo = 0, k_hi = 0;    // interpolated deposition steps
     float  f = 0.0f;              // 0..1 progress inside step k_hi
-    bool   collapsed = false;
+    bool   collapsed = false;     // the fold has started (time >= t_collapse)
     bool   by_buckling = false;
-    int    hinge_layer = -1;
+    int    hinge_layer = -1;      // centre of the bent zone (>= 0 once collapsed)
     int    k_collapse = -1;       // step at which collapse happened
     double t_collapse = 0.0;
-    double fold_angle = 0.0;      // [rad]
+    QzSimPhase phase = QzSimPhase::Stable;
+    double r_hinge = 0.0;         // remembered load/strength of the hinge zone at this instant
+    double fold_angle = 0.0;      // [rad] total bend of the axis (pre-failure lean included)
+    bool   contact = false;       // the fallen part touches the bed
+    double settle_f = 0.0;        // 0..1 settling progress after contact
     double sway = 0.0;            // [mm] at the top
-    double dir_x = 1.0, dir_y = 0.0;
-    double pivot_x = 0.0, pivot_y = 0.0, pivot_z = 0.0; // [mm] hinge edge (material point of the hinge layer furthest along dir)
+    double dir_x = 1.0, dir_y = 0.0;                    // fold direction (unit, plan)
+    double axis_x = 0.0, axis_y = 0.0;                  // [mm] bend axis (hinge layer centroid)
+    double hinge_z0 = 0.0, hinge_len = 0.0, hinge_zc = 0.0; // [mm] bent zone [z0, z0+len], centre
     double height_deformed = 0.0; // [mm] mean deformed top of the top layer's material (before any fold)
     double max_util = 0.0;        // current (instantaneous) load/strength, max over the deposited segments
     double max_ratio = 0.0;       // remembered load/strength (peak up to this instant), max over the deposited segments
@@ -116,11 +138,22 @@ private:
     float U_inst(int layer, int cell, int k) const;   // instantaneous, step k
     float U_peak(int layer, int cell, int k) const;   // peak up to step k
     float squash_of(float U) const;
+    // yielding: settlement on the squashed layers below, own squash, (asymmetric) bulge, sway
     void  point_prefold(const QzSimFrame &fr, int layer, int cell, float x, float y, float z_top, float own_h,
                         float &ox, float &oy, float &oz) const;
-    void  rotate_fold(const QzSimFrame &fr, float &x, float &y, float &z) const;
+    // distributed hinge: bend the axis with constant curvature over the hinge zone, rigid
+    // continuation above; inner side compresses (accordion), outer side opens
+    void  bend(const QzSimFrame &fr, double theta, float &x, float &y, float &z) const;
+    // bed contact of the part above the hinge for a given bend; returns the lowest bead bottom
+    double lowest_point(const QzSimFrame &fr, double theta) const;
+    // after contact: nothing below the bed, the arch settles and widens
+    void  ground(const QzSimFrame &fr, float h, float &x, float &y, float &z, float &w_scale) const;
+    // everything a pre-collapse point goes through (prefold + bend + ground)
+    void  transform_point(const QzSimFrame &fr, int layer, int cell, float x, float y, float z_top, float own_h,
+                          float &ox, float &oy, float &oz, float &w_scale) const;
     // deformed top z (before any fold) averaged over the material of a layer (segment midpoints)
     double layer_mean_top(const QzSimFrame &fr, int layer) const;
+    float  layer_mean_settle(const QzSimFrame &fr, int layer) const;
     void  build_landing(QzSimFrame &fr) const;
     static uint32_t hash_u32(uint32_t v);
 
@@ -142,6 +175,8 @@ private:
     std::vector<int>   m_kpeak;
     // per step: sway amplitude (mm), monotone
     std::vector<float> m_sway;
+    // fold direction (fixed for the whole simulation) and section diameter across it
+    double m_dir_x = 1.0, m_dir_y = 0.0, m_diam = 0.0;
     std::vector<int>   m_seg_cell_mid;            // cell of each segment midpoint
     // collapse
     int    m_k_collapse = -1; double m_t_collapse = 0.0; int m_hinge = -1; bool m_by_buckling = false;

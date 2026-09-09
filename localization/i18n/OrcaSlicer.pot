@@ -20610,14 +20610,60 @@ msgstr ""
 
 #. Quasizero QZmini stability
 msgid ""
-"Kinematic view driven by the model on a plan grid: every layer printed so "
-"far stays visible, each strand carries the column above it and keeps the "
-"peak load/strength it has seen (colour and squash), the stack folds at the "
-"hinge and later strands fall on the pile. Not a nonlinear FEM."
+"Level 0 model: yield + structuration, bed confinement. Calibrate the "
+"material with the collapse tests."
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "Phase"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "Pre-failure"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "Failure"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "Collapsed"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "Post-collapse"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "Fold"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "buckling"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "on the bed"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "Hinge zone"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "load/strength"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "lean"
 msgstr ""
 
 #. Quasizero QZmini stability
 msgid ""
-"Level 0 model: yield + structuration, bed confinement. Calibrate the "
-"material with the collapse tests."
+"Kinematic view driven by the model: every layer printed so far stays "
+"visible, each strand keeps the peak load/strength it has seen (colour and "
+"squash), the hinge zone bulges towards the fold side, then bends over a "
+"distributed hinge until it meets the bed and settles; later strands fall "
+"on the pile. Collapse plays at half speed. Not a nonlinear FEM."
 msgstr ""
+

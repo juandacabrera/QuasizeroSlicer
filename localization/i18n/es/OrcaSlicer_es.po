@@ -24227,24 +24227,70 @@ msgstr "carga/resistencia hasta ahora"
 
 #. Quasizero QZmini stability
 msgid ""
-"Kinematic view driven by the model on a plan grid: every layer printed so "
-"far stays visible, each strand carries the column above it and keeps the "
-"peak load/strength it has seen (colour and squash), the stack folds at the "
-"hinge and later strands fall on the pile. Not a nonlinear FEM."
-msgstr ""
-"Vista cinemática guiada por el modelo sobre una malla en planta: todas las "
-"capas impresas hasta ahora siguen visibles, cada cordón soporta la columna "
-"que tiene encima y conserva la carga/resistencia máxima que ha visto "
-"(color y aplastamiento), la pila se pliega por la rótula y los cordones "
-"posteriores caen sobre el montón. No es un FEM no lineal."
-
-#. Quasizero QZmini stability
-msgid ""
 "Level 0 model: yield + structuration, bed confinement. Calibrate the "
 "material with the collapse tests."
 msgstr ""
 "Modelo de nivel 0: fluencia + estructuración, confinamiento de la cama. "
 "Calibra el material con los ensayos de colapso."
+
+#. Quasizero QZmini stability
+msgid "Phase"
+msgstr "Fase"
+
+#. Quasizero QZmini stability
+msgid "Pre-failure"
+msgstr "Pre-fallo"
+
+#. Quasizero QZmini stability
+msgid "Failure"
+msgstr "Fallo"
+
+#. Quasizero QZmini stability
+msgid "Collapsed"
+msgstr "Colapsado"
+
+#. Quasizero QZmini stability
+msgid "Post-collapse"
+msgstr "Post-colapso"
+
+#. Quasizero QZmini stability
+msgid "Fold"
+msgstr "Pliegue"
+
+#. Quasizero QZmini stability
+msgid "buckling"
+msgstr "pandeo"
+
+#. Quasizero QZmini stability
+msgid "on the bed"
+msgstr "sobre la cama"
+
+#. Quasizero QZmini stability
+msgid "Hinge zone"
+msgstr "Zona de rótula"
+
+#. Quasizero QZmini stability
+msgid "load/strength"
+msgstr "carga/resistencia"
+
+#. Quasizero QZmini stability
+msgid "lean"
+msgstr "inclinación"
+
+#. Quasizero QZmini stability
+msgid ""
+"Kinematic view driven by the model: every layer printed so far stays "
+"visible, each strand keeps the peak load/strength it has seen (colour and "
+"squash), the hinge zone bulges towards the fold side, then bends over a "
+"distributed hinge until it meets the bed and settles; later strands fall "
+"on the pile. Collapse plays at half speed. Not a nonlinear FEM."
+msgstr ""
+"Vista cinemática guiada por el modelo: todas las capas impresas hasta "
+"ahora siguen visibles, cada cordón conserva la carga/resistencia máxima "
+"que ha visto (color y aplastamiento), la zona de rótula se abomba hacia el "
+"lado del pliegue y después se dobla sobre una rótula distribuida hasta "
+"tocar la cama y asentarse; los cordones posteriores caen sobre el montón. "
+"El colapso se reproduce a media velocidad. No es un FEM no lineal."
 
 #~ msgid ""
 #~ "It is recommended to assemble objects first,\n"

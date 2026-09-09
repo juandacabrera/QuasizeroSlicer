@@ -185,6 +185,27 @@ bool QzStackSim::build(const QzPasteMaterial &mat, const std::vector<QzLayerReco
     double tl = 0.0;
     for (const QzLayerRecord &l : m_L) tl += std::max(0.0, l.t_end - l.t_start);
     m_mean_layer_time = std::max(1e-3, tl / (double) N);
+
+    // fold direction: weak axis of the hinge layer (or of the last layer when no collapse is
+    // predicted), fixed for the whole simulation so the fold never swings as layers are added
+    {
+        const int ref = m_hinge >= 0 ? m_hinge : (int) N - 1;
+        double dx = m_G[ref].dir_x, dy = m_G[ref].dir_y;
+        const double dn = std::hypot(dx, dy);
+        if (dn < 1e-9) { dx = 1.0; dy = 0.0; } else { dx /= dn; dy /= dn; }
+        m_dir_x = dx; m_dir_y = dy;
+        // section diameter across the fold direction, from the hinge layer's material
+        double dmin = 1e30, dmax = -1e30;
+        for (int si : m_layer_segs[ref]) {
+            const QzSimSegment &sg = m_segs[si];
+            for (const float *q : { &sg.x0, &sg.x1 }) {
+                const double d = (q[0] - m_G[ref].cx * 1e3) * dx + (q[1] - m_G[ref].cy * 1e3) * dy;
+                dmin = std::min(dmin, d); dmax = std::max(dmax, d);
+            }
+        }
+        m_diam = (dmax > dmin) ? (dmax - dmin) + m_L[ref].thickness * 1e3 : 2.0 * m_G[ref].r_max * 1e3;
+        m_diam = std::max(m_diam, 2.0 * m_L[ref].thickness * 1e3);
+    }
     m_valid = true;
     return true;
 }
@@ -197,9 +218,21 @@ void QzStackSim::point_prefold(const QzSimFrame &fr, int layer, int cell, float 
     const float S   = fr.settle[(size_t) layer * nc + cell];
     // vertical: settle on the squashed layers below, minus the own squash
     oz = z_top - S - own_h * eps;
-    // plan: bulge about the layer centroid
+    // plan: bulge about the layer centroid. When the stack is heading for a fold the side it
+    // will fold towards (the compressed side of the future hinge) bulges more, and the
+    // asymmetry is localised around the hinge zone - the one-sided barrel of IMG_4657
     const float cx = (float) (m_G[layer].cx * 1e3), cy = (float) (m_G[layer].cy * 1e3);
-    const float sc = 1.0f + (float) m_opt.bulge_gain * eps;
+    float asym = 0.0f;
+    if (fr.phase != QzSimPhase::Stable && fr.hinge_len > 0.0) {
+        const float rx = x - cx, ry = y - cy;
+        const float rn = std::hypot(rx, ry);
+        const float cosphi = rn > 1e-6f ? (float) ((rx * fr.dir_x + ry * fr.dir_y) / rn) : 0.0f;
+        const double dz = (z_top - fr.hinge_zc) / std::max(1e-6, fr.hinge_len);
+        const double w_h = std::exp(-dz * dz);
+        const double ramp = std::min(1.0, std::max(0.0, (fr.r_hinge - m_opt.pre_r0) / std::max(1e-6, 1.0 - m_opt.pre_r0)));
+        asym = (float) (m_opt.bulge_asym * w_h * ramp) * std::max(0.0f, cosphi);
+    }
+    const float sc = 1.0f + (float) m_opt.bulge_gain * eps * (1.0f + asym);
     ox = cx + (x - cx) * sc;
     oy = cy + (y - cy) * sc;
     // sway: clamped-free mode shape on the nominal height
@@ -210,17 +243,70 @@ void QzStackSim::point_prefold(const QzSimFrame &fr, int layer, int cell, float 
     oy += (float) (fr.sway * phi * fr.dir_y);
 }
 
-void QzStackSim::rotate_fold(const QzSimFrame &fr, float &x, float &y, float &z) const
+void QzStackSim::bend(const QzSimFrame &fr, double theta, float &x, float &y, float &z) const
 {
-    if (fr.fold_angle <= 0.0) return;
-    const double ax = -fr.dir_y, ay = fr.dir_x;
-    const double px = x - fr.pivot_x, py = y - fr.pivot_y, pz = z - fr.pivot_z;
-    const double c = std::cos(fr.fold_angle), s = std::sin(fr.fold_angle);
-    const double adv = ax * px + ay * py;
-    const double cx_ = ay * pz, cy_ = -ax * pz, cz_ = ax * py - ay * px;
-    x = (float) (fr.pivot_x + px * c + cx_ * s + ax * adv * (1.0 - c));
-    y = (float) (fr.pivot_y + py * c + cy_ * s + ay * adv * (1.0 - c));
-    z = (float) (fr.pivot_z + pz * c + cz_ * s);
+    if (theta <= 1e-6 || fr.hinge_len <= 0.0) return;
+    const double s = (double) z - fr.hinge_z0;
+    if (s <= 0.0) return;                                   // standing base
+    // local offsets: d along the fold direction, (ex, ey) across it
+    const double rx = x - fr.axis_x, ry = y - fr.axis_y;
+    double d = rx * fr.dir_x + ry * fr.dir_y;
+    const double ex = rx - d * fr.dir_x, ey = ry - d * fr.dir_y;
+    const double L = fr.hinge_len, kappa = theta / L, R = 1.0 / kappa;
+    // the inner side cannot pass through the bend axis: accordion instead of inversion
+    if (d > 0.0) d = std::min(d, m_opt.inner_clamp * R);
+    double ad, az, phi;
+    if (s <= L) { phi = kappa * s; ad = R * (1.0 - std::cos(phi)); az = fr.hinge_z0 + R * std::sin(phi); }
+    else        { phi = theta; ad = R * (1.0 - std::cos(theta)) + (s - L) * std::sin(theta); az = fr.hinge_z0 + R * std::sin(theta) + (s - L) * std::cos(theta); }
+    const double pd = ad + d * std::cos(phi), pz = az - d * std::sin(phi);
+    x = (float) (fr.axis_x + pd * fr.dir_x + ex);
+    y = (float) (fr.axis_y + pd * fr.dir_y + ey);
+    z = (float) pz;
+}
+
+double QzStackSim::lowest_point(const QzSimFrame &fr, double theta) const
+{
+    // probe: the endpoints of the top layer's strands (the far end of the rotated part) -
+    // the lowest bead bottom for this bend
+    const size_t nc = (size_t) m_nx * m_ny;
+    double lowest = 1e30;
+    const int top = std::min(fr.top, std::max(0, fr.k_collapse));
+    for (int j : { top, std::max(0, top - 1) }) {
+        for (int si : m_layer_segs[j]) {
+            const QzSimSegment &sg = m_segs[si];
+            const float pts[2][2] = { { sg.x0, sg.y0 }, { sg.x1, sg.y1 } };
+            for (const float *q : pts) {
+                const int c = cell_of(q[0], q[1]);
+                float ox, oy, oz;
+                point_prefold(fr, j, c, q[0], q[1], sg.z, sg.h, ox, oy, oz);
+                bend(fr, theta, ox, oy, oz);
+                lowest = std::min(lowest, (double) oz - sg.h * (1.0 - fr.squash[(size_t) j * nc + c]));
+            }
+        }
+    }
+    return lowest;
+}
+
+void QzStackSim::ground(const QzSimFrame &fr, float h, float &x, float &y, float &z, float &w_scale) const
+{
+    if (!fr.contact) return;
+    const float floor_z = 0.5f * h;                     // bead centre cannot go below half a height
+    if (z >= floor_z) return;
+    const float pen = floor_z - z;
+    // the part that hits the bed squashes against it and spreads outwards along the fold
+    z = floor_z;
+    const float k = (float) fr.settle_f;
+    x += (float) (fr.dir_x * pen * 0.6 * k);
+    y += (float) (fr.dir_y * pen * 0.6 * k);
+    w_scale *= 1.0f + std::min(1.0f, pen / std::max(1e-3f, h)) * 0.5f * k;
+}
+
+void QzStackSim::transform_point(const QzSimFrame &fr, int layer, int cell, float x, float y, float z_top, float own_h,
+                                 float &ox, float &oy, float &oz, float &w_scale) const
+{
+    point_prefold(fr, layer, cell, x, y, z_top, own_h, ox, oy, oz);
+    bend(fr, fr.fold_angle, ox, oy, oz);
+    ground(fr, own_h, ox, oy, oz, w_scale);
 }
 
 void QzStackSim::frame(int top, double time, QzSimFrame &fr) const
@@ -238,18 +324,14 @@ void QzStackSim::frame(int top, double time, QzSimFrame &fr) const
 
     fr.collapsed   = m_k_collapse >= 0 && top >= m_k_collapse && time >= m_t_collapse;
     fr.by_buckling = m_by_buckling;
-    fr.hinge_layer = fr.collapsed ? m_hinge : -1;
+    fr.hinge_layer = m_hinge;
     fr.k_collapse  = m_k_collapse;
     fr.t_collapse  = m_t_collapse;
-    const double fold_f = fr.collapsed ? std::min(1.0, std::max(0.0, (time - m_t_collapse) / (m_opt.fold_time_layers * m_mean_layer_time))) : 0.0;
-    fr.fold_angle  = (m_opt.fold_angle_max * QZ_PI / 180.0) * fold_f;
     fr.sway        = (double) m_sway[fr.k_lo] + fr.f * ((double) m_sway[fr.k_hi] - (double) m_sway[fr.k_lo]);
-    {
-        double dx = m_G[top].dir_x, dy = m_G[top].dir_y;
-        const double dn = std::hypot(dx, dy);
-        if (dn < 1e-9) { dx = 1.0; dy = 0.0; } else { dx /= dn; dy /= dn; }
-        fr.dir_x = dx; fr.dir_y = dy;
-    }
+    fr.dir_x = m_dir_x; fr.dir_y = m_dir_y;
+    fr.contact = false; fr.settle_f = 0.0; fr.fold_angle = 0.0; fr.phase = QzSimPhase::Stable;
+    fr.hinge_z0 = fr.hinge_len = fr.hinge_zc = 0.0;
+    fr.axis_x = m_G[top].cx * 1e3; fr.axis_y = m_G[top].cy * 1e3;
 
     // squash and settlement tables for layers 0..top
     const size_t rows = (size_t) top + 1;
@@ -262,8 +344,7 @@ void QzStackSim::frame(int top, double time, QzSimFrame &fr) const
             const float u = U_peak(j, (int) c, fr.k_lo) + fr.f * (U_peak(j, (int) c, fr.k_hi) - U_peak(j, (int) c, fr.k_lo));
             sq[c] = squash_of(u);
         }
-        if (fr.collapsed && j == fr.hinge_layer)
-            for (size_t c = 0; c < nc; ++c) if (m_kpeak[(size_t) j * nc + c] >= 0) sq[c] = std::min(0.9f, sq[c] + (float) (m_opt.hinge_squash * fold_f));
+        // (extra crush of the hinge zone is applied after the fold angle is known, below)
         if (j > 0) {
             const float  h_below = (float) (m_L[j - 1].height * 1e3);
             const float *sq_b    = &fr.squash[(size_t) (j - 1) * nc];
@@ -273,37 +354,87 @@ void QzStackSim::frame(int top, double time, QzSimFrame &fr) const
         }
     }
 
+    // ---- phase machine: Stable -> PreFailure (hinge zone loading up) -> Failure (fold
+    //      growing) -> Collapsed (on the bed, settling) -> PostCollapse (still printing)
+    if (m_hinge >= 0 && m_k_collapse >= 0) {
+        const int h = std::min(m_hinge, top);
+        // remembered load/strength of the hinge layer's material at this instant
+        double r = 0.0;
+        for (int si : m_layer_segs[h]) {
+            const int c = m_seg_cell_mid[si];
+            const float lo = U_peak(h, c, fr.k_lo), hi = U_peak(h, c, fr.k_hi);
+            r = std::max(r, (double) (lo + fr.f * (hi - lo)));
+        }
+        fr.r_hinge = r;
+        // bent zone: centred on the hinge layer (deformed height), length ~ one section diameter,
+        // never below the first layer; for a buckling collapse the hinge sits at the base
+        const double zc_nom = (m_L[h].z_bottom + 0.5 * m_L[h].height) * 1e3;
+        const double zc = zc_nom - (double) layer_mean_settle(fr, h);
+        const double L  = m_opt.hinge_len_diam * m_diam;
+        double z0 = zc - m_opt.hinge_below * L;
+        const double zbase = m_L.front().z_bottom * 1e3;
+        if (m_by_buckling || z0 < zbase) z0 = zbase;
+        fr.hinge_len = L; fr.hinge_z0 = z0; fr.hinge_zc = z0 + 0.5 * L;
+        fr.axis_x = m_G[h].cx * 1e3; fr.axis_y = m_G[h].cy * 1e3;
+
+        const double lean0 = m_opt.lean0_deg * QZ_PI / 180.0;
+        if (!fr.collapsed) {
+            const double x = (fr.r_hinge - m_opt.pre_r0) / std::max(1e-6, 1.0 - m_opt.pre_r0);
+            if (x > 0.0) {
+                fr.phase = QzSimPhase::PreFailure;
+                const double u = std::min(1.0, x);
+                fr.fold_angle = lean0 * u * u * (3.0 - 2.0 * u);           // smooth ramp to the seed lean
+            }
+        } else {
+            // exponential growth from the seed lean until the bed stops it
+            const double dt = time - m_t_collapse;
+            double theta = lean0 * std::exp(dt / std::max(1e-3, m_opt.fold_tau));
+            const double theta_max = m_opt.fold_angle_max * QZ_PI / 180.0;
+            theta = std::min(theta, theta_max);
+            // contact angle: first theta at which the lowest bead bottom reaches the bed
+            double theta_c = theta_max;
+            if (lowest_point(fr, theta_max) <= 0.0) {
+                double lo = 0.0, hi = theta_max;
+                for (int it = 0; it < 28; ++it) { const double mid = 0.5 * (lo + hi); if (lowest_point(fr, mid) <= 0.0) hi = mid; else lo = mid; }
+                theta_c = hi;
+            }
+            if (theta < theta_c) {
+                fr.phase = QzSimPhase::Failure;
+                fr.fold_angle = theta;
+            } else {
+                fr.contact = true;
+                const double t_contact = m_t_collapse + std::max(1e-3, m_opt.fold_tau) * std::log(std::max(1.0, theta_c / lean0));
+                fr.settle_f = std::min(1.0, std::max(0.0, (time - t_contact) / std::max(1e-3, m_opt.settle_time)));
+                fr.fold_angle = theta_c + (m_opt.settle_extra_deg * QZ_PI / 180.0) * fr.settle_f;
+                fr.phase = (top > m_k_collapse) ? QzSimPhase::PostCollapse : QzSimPhase::Collapsed;
+            }
+            // the hinge zone crushes as the fold develops (the accordion of the inner side)
+            const double fold_f = std::min(1.0, fr.fold_angle / (0.5 * QZ_PI));
+            for (int j = 0; j <= top && j <= m_k_collapse; ++j) {
+                const double zj = (m_L[j].z_bottom + 0.5 * m_L[j].height) * 1e3;
+                const double wz = std::max(0.0, 1.0 - std::fabs(zj - fr.hinge_zc) / std::max(1e-6, 0.5 * L));
+                if (wz <= 0.0) continue;
+                float *sq = &fr.squash[(size_t) j * nc];
+                for (size_t c = 0; c < nc; ++c)
+                    if (m_kpeak[(size_t) j * nc + c] >= 0) sq[c] = std::min(0.9f, sq[c] + (float) (m_opt.hinge_squash * fold_f * wz));
+            }
+            // and the settlement below is recomputed with the crushed hinge
+            for (int j = 1; j <= top; ++j) {
+                const float  h_below = (float) (m_L[j - 1].height * 1e3);
+                const float *sq_b = &fr.squash[(size_t) (j - 1) * nc];
+                const float *st_b = &fr.settle[(size_t) (j - 1) * nc];
+                float       *st   = &fr.settle[(size_t) j * nc];
+                for (size_t c = 0; c < nc; ++c) st[c] = st_b[c] + h_below * sq_b[c];
+            }
+        }
+    }
+
     // deformed height of the top layer's material (a ring has no material at its centroid)
     fr.height_deformed = layer_mean_top(fr, top) - m_L.front().z_bottom * 1e3;
 
-    // fold pivot: the hinge edge is the material point of the hinge layer furthest along
-    // the fold direction, taken where it actually sits (settled, squashed, swayed)
-    if (fr.collapsed) {
-        const int h = fr.hinge_layer;
-        float px = (float) (m_G[h].cx * 1e3), py = (float) (m_G[h].cy * 1e3);
-        double best = -1e30;
-        for (int si : m_layer_segs[h]) {
-            const QzSimSegment &s = m_segs[si];
-            const float pts[2][2] = { { s.x0, s.y0 }, { s.x1, s.y1 } };
-            for (const float *p : pts) {
-                const double adv = fr.dir_x * (p[0] - m_G[h].cx * 1e3) + fr.dir_y * (p[1] - m_G[h].cy * 1e3);
-                if (adv > best) { best = adv; px = p[0]; py = p[1]; }
-            }
-        }
-        const int   ch  = cell_of(px, py);
-        const float eps = fr.squash[(size_t) h * nc + ch];
-        float ox, oy, oz;
-        point_prefold(fr, h, ch, px, py, (float) ((m_L[h].z_bottom + m_L[h].height) * 1e3), (float) (m_L[h].height * 1e3), ox, oy, oz);
-        // half a (bulged) bead beyond the toolpath point: the outer face of the bead
-        const double half_w = 0.5 * m_L[h].thickness * 1e3 * (1.0 + eps);
-        fr.pivot_x = ox + fr.dir_x * half_w;
-        fr.pivot_y = oy + fr.dir_y * half_w;
-        fr.pivot_z = oz;
-    }
-
     // landing field and fallen strands (deposited after the collapse)
     if (fr.collapsed) {
-        const bool rebuild_land = fr.land_top != top || std::fabs(fr.land_fold_angle - fr.fold_angle) > 0.5 * QZ_PI / 180.0 ||
+        const bool rebuild_land = fr.land_top != top || std::fabs(fr.land_fold_angle - (fr.fold_angle + fr.settle_f)) > 0.5 * QZ_PI / 180.0 ||
                                   fr.land.size() != nc || fr.fallen_idx.size() != m_segs.size();
         if (rebuild_land) build_landing(fr);
     } else {
@@ -321,6 +452,15 @@ void QzStackSim::frame(int top, double time, QzSimFrame &fr) const
             fr.max_util  = std::max(fr.max_util, (double) util(fr, si));
             fr.max_ratio = std::max(fr.max_ratio, (double) ratio(fr, si));
         }
+}
+
+float QzStackSim::layer_mean_settle(const QzSimFrame &fr, int layer) const
+{
+    const size_t nc = (size_t) m_nx * m_ny;
+    if (m_layer_segs[layer].empty()) return 0.0f;
+    double sum = 0.0;
+    for (int si : m_layer_segs[layer]) sum += fr.settle[(size_t) layer * nc + m_seg_cell_mid[si]];
+    return (float) (sum / (double) m_layer_segs[layer].size());
 }
 
 double QzStackSim::layer_mean_top(const QzSimFrame &fr, int layer) const
@@ -372,13 +512,12 @@ void QzStackSim::build_landing(QzSimFrame &fr) const
         for (int si : m_layer_segs[j]) {
             const QzSimSegment &s = m_segs[si];
             const int ca = cell_of(s.x0, s.y0), cb = cell_of(s.x1, s.y1);
-            QzSimPoint a, b;
-            point_prefold(fr, j, ca, s.x0, s.y0, s.z, s.h, a.x, a.y, a.z);
-            point_prefold(fr, j, cb, s.x1, s.y1, s.z, s.h, b.x, b.y, b.z);
-            if (j > fr.hinge_layer) { rotate_fold(fr, a.x, a.y, a.z); rotate_fold(fr, b.x, b.y, b.z); }
-            stamp(fr.land, a, b, radius(s.w * (1.0f + fr.squash[(size_t) j * nc + ca])));
+            QzSimPoint a, b; float wsa = 1.0f, wsb = 1.0f;
+            transform_point(fr, j, ca, s.x0, s.y0, s.z, s.h, a.x, a.y, a.z, wsa);
+            transform_point(fr, j, cb, s.x1, s.y1, s.z, s.h, b.x, b.y, b.z, wsb);
+            stamp(fr.land, a, b, radius(s.w * (1.0f + fr.squash[(size_t) j * nc + ca]) * std::max(wsa, wsb)));
         }
-    fr.land_top = top; fr.land_fold_angle = fr.fold_angle;
+    fr.land_top = top; fr.land_fold_angle = fr.fold_angle + fr.settle_f;
 
     // 2) strands deposited after the collapse. Each layer lands on the field as it was when
     //    the layer started (its own strands lie side by side, they do not stack on each
@@ -457,11 +596,11 @@ void QzStackSim::deform(const QzSimFrame &fr, int seg, QzSimPoint &a, QzSimPoint
         return;
     }
     const int ca = cell_of(s.x0, s.y0), cb = cell_of(s.x1, s.y1);
-    point_prefold(fr, s.layer, ca, s.x0, s.y0, s.z, s.h, a.x, a.y, a.z);
-    point_prefold(fr, s.layer, cb, s.x1, s.y1, s.z, s.h, b.x, b.y, b.z);
-    if (fr.collapsed && s.layer > fr.hinge_layer) { rotate_fold(fr, a.x, a.y, a.z); rotate_fold(fr, b.x, b.y, b.z); }
+    float wsa = 1.0f, wsb = 1.0f;
+    transform_point(fr, s.layer, ca, s.x0, s.y0, s.z, s.h, a.x, a.y, a.z, wsa);
+    transform_point(fr, s.layer, cb, s.x1, s.y1, s.z, s.h, b.x, b.y, b.z, wsb);
     const float eps = 0.5f * (fr.squash[(size_t) s.layer * nc + ca] + fr.squash[(size_t) s.layer * nc + cb]);
-    w_scale = 1.0f + eps; h_scale = 1.0f - eps;
+    w_scale = (1.0f + eps) * 0.5f * (wsa + wsb); h_scale = 1.0f - eps;
 }
 
 }} // namespace Slic3r::QuasiZero

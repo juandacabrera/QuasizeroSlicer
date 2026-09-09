@@ -11792,11 +11792,20 @@ void GLCanvas3D::_render_qz_quick_cards()
                         ImGui::TextColored(lbl_col, "%s", _u8L("No toolpath segments to simulate.").c_str());
                         ImGui::SetWindowFontScale(1.0f);
                     } else if (fs.valid) {
+                        // phase of the kinematic machine: Stable -> Pre-failure -> Failure -> Collapsed -> Post-collapse
+                        const char *phase_txt = fs.phase == QuasiZero::QzSimPhase::PreFailure ? "Pre-failure" :
+                                                fs.phase == QuasiZero::QzSimPhase::Failure ? "Failure" :
+                                                fs.phase == QuasiZero::QzSimPhase::Collapsed ? "Collapsed" :
+                                                fs.phase == QuasiZero::QzSimPhase::PostCollapse ? "Post-collapse" : "Stable";
+                        const ImVec4 &pc = fs.phase == QuasiZero::QzSimPhase::Stable ? ok_col : (fs.phase == QuasiZero::QzSimPhase::PreFailure ? warn_col : bad_col);
+                        kv(_u8L("Phase").c_str(), _u8L(phase_txt), &pc);
                         if (fs.collapsed) {
-                            kv(_u8L("Now").c_str(), (fs.by_buckling ? _u8L("buckled") : _u8L("plastic hinge")) + " - " + _u8L("layer") + " " + std::to_string(fs.hinge_layer + 1) + ", " + fmt("%.0f", fs.fold_angle * 180.0 / 3.14159265) + " deg", &bad_col);
+                            kv(_u8L("Fold").c_str(), (fs.by_buckling ? _u8L("buckling") : _u8L("plastic hinge")) + " - " + _u8L("layer") + " " + std::to_string(fs.hinge_layer + 1) + ", " + fmt("%.0f", fs.fold_angle * 180.0 / 3.14159265) + " deg" + (fs.contact ? ", " + _u8L("on the bed") : std::string()), &bad_col);
                             if (fs.fallen_count > 0)
                                 kv(_u8L("Falling").c_str(), std::to_string(fs.fallen_count) + " " + _u8L("strands on the pile"), &bad_col);
                         } else {
+                            if (fs.phase == QuasiZero::QzSimPhase::PreFailure)
+                                kv(_u8L("Hinge zone").c_str(), fmt("%.0f %%", 100.0 * fs.r_hinge) + "  " + _u8L("load/strength") + ", " + _u8L("lean") + " " + fmt("%.1f", fs.fold_angle * 180.0 / 3.14159265) + " deg", &warn_col);
                             const ImVec4 &uc = fs.max_ratio >= 1.0 ? bad_col : (fs.max_ratio > sf_target ? warn_col : ok_col);
                             kv(_u8L("Now").c_str(), fmt("%.1f mm", fs.height_deformed) + " " + _u8L("tall") + ", " + _u8L("sway") + " " + fmt("%.1f mm", fs.sway), &ok_col);
                             // the same field the strands are coloured with: peak load/strength seen so far
@@ -11805,7 +11814,7 @@ void GLCanvas3D::_render_qz_quick_cards()
                     }
                     ImGui::SetWindowFontScale(0.85f);
                     ImGui::PushTextWrapPos(330.0f * scale);
-                    ImGui::TextColored(lbl_col, "%s", _u8L("Kinematic view driven by the model on a plan grid: every layer printed so far stays visible, each strand carries the column above it and keeps the peak load/strength it has seen (colour and squash), the stack folds at the hinge and later strands fall on the pile. Not a nonlinear FEM.").c_str());
+                    ImGui::TextColored(lbl_col, "%s", _u8L("Kinematic view driven by the model: every layer printed so far stays visible, each strand keeps the peak load/strength it has seen (colour and squash), the hinge zone bulges towards the fold side, then bends over a distributed hinge until it meets the bed and settles; later strands fall on the pile. Collapse plays at half speed. Not a nonlinear FEM.").c_str());
                     ImGui::PopTextWrapPos();
                     ImGui::SetWindowFontScale(1.0f);
                 } else {

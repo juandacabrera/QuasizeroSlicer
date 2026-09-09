@@ -5010,7 +5010,17 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
                     const int li = layer_cur - 1;
                     if (li >= 0 && li < (int)lts.size() && lts[li] > 0.5f) t_layer = (double)lts[li];
                 }
-                const double rate = std::max(30.0, (double)(hi - lo) / std::max(2.0, t_layer / 3.0));
+                double rate = std::max(30.0, (double)(hi - lo) / std::max(2.0, t_layer / 3.0));
+                // Quasizero: the collapse is a ~2 s event after minutes of silent loading. With
+                // the deformation view on, play it at half real speed instead of 3x so the fold,
+                // the contact and the settling can be seen (the layer pace resumes afterwards)
+                if (qz_deform_active() && m_qz_stability.sim.collapse_step() >= 0) {
+                    const libvgcode::Interval& vis = m_viewer.get_view_visible_range();
+                    const double t_now = (m_viewer.get_vertices_count() > vis[1]) ? (double) m_viewer.get_estimated_time_at(vis[1]) : -1.0;
+                    const double t_c   = m_qz_stability.sim.collapse_time();
+                    if (t_now >= t_c - 0.5 && t_now <= t_c + 4.5)
+                        rate = std::max(1.0, rate / 6.0);
+                }
                 s_acc += ImGui::GetIO().DeltaTime * rate;
                 const int step = (int)s_acc;
                 if (step > 0) {
