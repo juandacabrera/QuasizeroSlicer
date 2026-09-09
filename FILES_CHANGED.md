@@ -11,7 +11,10 @@ A	QZMINI_REFILL_ASSIST.md
 A	QZMINI_STABILITY.md
 A	src/libslic3r/QuasiZero/QzStabilityModel.cpp
 A	src/libslic3r/QuasiZero/QzStabilityModel.hpp
+A	src/libslic3r/QuasiZero/QzStackSim.cpp
+A	src/libslic3r/QuasiZero/QzStackSim.hpp
 A	tests/qzmini/test_qz_stability.cpp
+A	tests/qzmini/test_qz_stacksim.cpp
 A	SUPPORTED_PRINTERS.md
 A	doc/quasizero/IMPLEMENTATION_PLAN.md
 M	localization/i18n/OrcaSlicer.pot

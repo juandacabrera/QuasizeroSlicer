@@ -1848,10 +1848,11 @@ void ViewerImpl::update_color_ranges()
     m_acceleration_range.reset();
     // ORCA: Add Jerk visualization support
     m_jerk_range.reset();
-    // Quasizero: semantic scale, always 0 -> 1 (collapse); data above 1 is clamped
+    // Quasizero: semantic scale, always 0 -> 1 (collapse); data above 1 is clamped.
+    // Fed as a ladder so the legend shows every palette step, not just the two anchors.
     m_stability_range.reset();
-    m_stability_range.update(0.0f);
-    m_stability_range.update(1.0f);
+    for (int i = 0; i <= 10; ++i)
+        m_stability_range.update(0.1f * static_cast<float>(i));
     m_volumetric_rate_range.reset();
     m_actual_volumetric_rate_range.reset();
     m_layer_time_range[0].reset(); // ColorRange::EType::Linear

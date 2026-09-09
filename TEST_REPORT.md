@@ -81,6 +81,19 @@ PASS samples/qzmini/qz_sample_one_refill.gcode  (refills=1, deposited=131.00 ml)
 PASS samples/qzmini/qz_sample_two_refills.gcode  (refills=2, deposited=262.00 ml)
 ```
 
+## Stability model and stack simulation (executed, 2026-09-09)
+
+Same runner, current tree: `bash tests/qzmini/standalone/run_standalone.sh` →
+**54 tests, 0 failures** (29 MVP + short-segment anchoring / subdivision + 12 stability +
+4 stack-simulation). The stack-simulation tests check that a uniform ring reproduces the
+layer model exactly, that the bulge band sits above the bed and the top settles, that an
+irregular part (half ring on a full ring) loads the base unevenly, and that after a
+collapse the earlier layers fold about the hinge while later strands fall on the pile
+deterministically. An additional timing check on a synthetic 480 000-segment,
+400-layer job: simulation build ≈ 1.0 s, one playback frame ≈ 20 ms (this environment,
+2 cores). The GUI glue of the deformation view (`GCodeViewer`, `GLCanvas3D`, libvgcode
+legend) is compiled by the Windows build, not here — **not yet built or visually checked**.
+
 ## Static/structural checks (executed)
 
 - All Quasizero vendor JSON profiles parse; names/paths consistent; machine limits inherited

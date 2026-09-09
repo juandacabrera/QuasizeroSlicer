@@ -1,4 +1,4 @@
-# QZmini paste stability simulation (Level 0/1)
+# QZmini paste stability simulation (Level 0/1, deformation Level 1.5 v2)
 
 **Status: implemented, NOT hardware-validated.** The model runs on every loaded G-code
 (sliced or from the G-code Editor) and is exposed as the *Stability* view of the preview
@@ -53,6 +53,45 @@ A kinematic view of the stack driven by the model, synchronised with the player
 It is a visualisation of the analytical model, **not** a nonlinear FEM: shapes are mode
 shapes and hinge kinematics, not equilibrium solutions. Level 2 (staged beam/shell
 model on the toolpath, Karamba-style) remains future work.
+
+## 1c. Level 1.5 v2 — grid-resolved, history-aware stack simulation
+
+Source: `src/libslic3r/QuasiZero/QzStackSim.{hpp,cpp}` (pure C++17; tested by
+`tests/qzmini/test_qz_stacksim.cpp`). Since v2 the *Show deformation* view is driven by
+this simulator instead of the per-layer state of §1b; the per-layer functions stay in the
+model (and in the tests) as the analytical reference.
+
+- **Spatial resolution.** A plan grid (2 mm cells, enlarged automatically for very large
+  jobs) carries the nominal material height after every deposition step, so the load on a
+  point of layer *i* is the *local* column above it. An irregular part (a half ring printed
+  on a full ring, an overhanging wing) loads different zones of the same layer differently;
+  the uniform-ring case reproduces the §1 layer model exactly (unit test).
+- **Memory.** Every (layer, cell) remembers the peak load it has seen; the plastic squash is
+  irreversible and accumulates layer after layer. The peak can only occur when the column
+  above a cell grows, so it is searched at those steps only (this keeps the build of a
+  480 000-segment job around one second).
+- **Settlement.** Each point drops by the squash of all the material below it, so barrels
+  and dents show where they belong. The height reported in the card is the mean deformed
+  top of the top layer's material (a ring has no material at its centroid).
+- **Sway and fold** as in §1b, with the hinge pivot taken at the material point of the
+  hinge layer furthest along the fold direction, where it actually sits after settlement.
+- **After the collapse.** Layers deposited before the collapse fold about the hinge; layers
+  deposited after it are *not* transformed — they fall at their nominal XY (small
+  deterministic jitter) onto a landing height field made of what is left standing plus the
+  strands that fell before them. Each end of a strand finds its own landing height, so a
+  strand reaching the edge of the pile drapes to the ground instead of hovering; strands of
+  the same layer lie side by side; no strand lands above the nozzle. The heap grows under
+  the toolpath and spreads slowly along it. It is a height-field sketch — it does not
+  conserve volume and has no angle of repose.
+- **Colour.** The deformed beads are coloured by their *current* local load/strength
+  (Stability palette), not by the layer peak that the Stability toolpath view shows.
+- **Rendering.** Octagonal tubes (square beyond 40 000 visible strands) rebuilt whenever the
+  player position or time changes; the nominal toolpaths are rendered masked so libvgcode
+  keeps its deferred updates.
+
+Options (`QzSimOptions`, all **[hyp]**): squash starts at U = 0.5 and reaches 35 % at U = 1,
+bulge gain 0.6, imperfection 0.2 % of height, sway cap 25 %, fold 75° over two mean layer
+times, hinge crush +45 %, dropped strands flattened ×1.35 with ±0.125 bead widths of jitter.
 
 ## 2. Where it shows
 
@@ -112,8 +151,10 @@ Literature ranges, to anchor expectations. Values are tagged **[lit: source]** o
   free wall length, curvature, closed loops, corrugation) is the next step.
 - Strength growth is linear; drying-driven build-up depends on humidity, bead size and
   exposure. Re-calibrate per batch.
-- Not an FEM: no deformed geometry, no adhesion failure, no imperfections beyond the
-  confinement/knockdown factors.
+- Not an FEM: the deformed geometry (§1b, §1c) is kinematic — mode shapes, hinge
+  rotation, a landing height field — not an equilibrium solution; no adhesion failure, no
+  imperfections beyond the confinement/knockdown factors. The pile of fallen strands does
+  not conserve volume and has no angle of repose.
 - No prediction here is hardware-validated. Treat the card as a warning system, not a
   guarantee.
 

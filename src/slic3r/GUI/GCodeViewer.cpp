@@ -1307,6 +1307,8 @@ void GCodeViewer::load_as_gcode(const GCodeProcessorResult& gcode_result, const 
     // send data to the viewer
     m_viewer.reset_default_extrusion_roles_colors();
     m_viewer.load(std::move(data));
+    // Quasizero: the stack simulation reads its segments back from the viewer vertices
+    qz_build_sim();
 
 // #if !VGCODE_ENABLE_COG_AND_TOOL_MARKERS
 //     const size_t vertices_count = m_viewer.get_vertices_count();
@@ -1605,6 +1607,12 @@ void GCodeViewer::reset()
     m_right_extruder_filament.clear();
     m_sequential_view.gcode_window.reset();
     m_contained_in_bed = true;
+    // Quasizero: no stale stability state or deformed meshes may outlive the vertices
+    // (the user's "Show deformation" choice survives)
+    const bool keep_deform_view = m_qz_stability.deform_view;
+    m_qz_stability = QzStability();
+    m_qz_stability.deform_view = keep_deform_view;
+    for (GLModel& gm : m_qz_deform_models) gm.reset();
 }
 
 //BBS: GUI refactor: add canvas width and height
@@ -5285,7 +5293,9 @@ void GCodeViewer::render_slider(int canvas_width, int canvas_height) {
 // ------------------------------------------------------------------------------------
 void GCodeViewer::qz_evaluate_stability(const GCodeProcessorResult& gcode_result)
 {
+    const bool keep_deform_view = m_qz_stability.deform_view;
     m_qz_stability = QzStability();
+    m_qz_stability.deform_view = keep_deform_view;
     const PresetBundle* bundle = wxGetApp().preset_bundle;
     if (bundle == nullptr) return;
     const DynamicPrintConfig& pc = bundle->printers.get_edited_preset().config;
@@ -5416,26 +5426,71 @@ int GCodeViewer::qz_stability_layer_at_view_top() const
 }
 
 
+void GCodeViewer::qz_build_sim()
+{
+    QzStability& st = m_qz_stability;
+    st.seg_of_vertex.clear();
+    st.sim = QuasiZero::QzStackSim();
+    st.sim_frame = QuasiZero::QzSimFrame();
+    st.deform_cache_vertex = size_t(-1);
+    if (!st.result.valid || st.geom.empty()) return;
+    const size_t n = m_viewer.get_vertices_count();
+    if (n == 0) return;
+    st.seg_of_vertex.assign(n, -1);
+    std::vector<QuasiZero::QzSimSegment> segs;
+    segs.reserve(n / 2);
+    // running process time: Viewer::get_estimated_time_at() accumulates from vertex 0 on
+    // every call, which would make this loop quadratic
+    const size_t tmode = static_cast<size_t>(m_viewer.get_time_mode());
+    float t_acc = m_viewer.get_vertex_at(0).times[tmode];
+    for (size_t i = 1; i < n; ++i) {
+        const libvgcode::PathVertex& v = m_viewer.get_vertex_at(i);
+        t_acc += v.times[tmode];
+        if (!v.is_extrusion() || v.layer_id >= st.layer_index_of_id.size()) continue;
+        const int li = st.layer_index_of_id[v.layer_id];
+        if (li < 0) continue;
+        const libvgcode::PathVertex& u = m_viewer.get_vertex_at(i - 1);
+        const float dx = v.position[0] - u.position[0], dy = v.position[1] - u.position[1];
+        if (dx * dx + dy * dy < 1e-8f) continue;
+        QuasiZero::QzSimSegment s;
+        s.x0 = u.position[0]; s.y0 = u.position[1]; s.x1 = v.position[0]; s.y1 = v.position[1];
+        s.z = v.position[2]; s.w = v.width; s.h = v.height; s.layer = li;
+        s.t_end = t_acc;
+        st.seg_of_vertex[i] = (int) segs.size();
+        segs.push_back(s);
+    }
+    if (segs.empty()) { st.seg_of_vertex.clear(); return; }
+    st.sim.build(st.material, st.layers, st.geom, std::move(segs), st.result, st.lambda_by_top, st.options, QuasiZero::QzSimOptions());
+    if (!st.sim.valid()) st.seg_of_vertex.clear();
+}
+
 void GCodeViewer::qz_rebuild_deformed_mesh()
 {
     QzStability& st = m_qz_stability;
+    if (!st.sim.valid()) return;
     const libvgcode::Interval& vis = m_viewer.get_view_visible_range();
+    const libvgcode::Interval& ena = m_viewer.get_view_enabled_range();   // what libvgcode draws: [enabled start .. visible end]
     const size_t nverts = m_viewer.get_vertices_count();
-    if (nverts == 0 || vis[1] >= nverts) return;
+    if (nverts == 0 || vis[1] >= nverts || st.seg_of_vertex.size() != nverts) return;
     // top layer = record of the last visible extrusion vertex
     int top = -1;
     for (size_t i = vis[1] + 1; i-- > 0;) {
-        const libvgcode::PathVertex& v = m_viewer.get_vertex_at(i);
-        if (!v.is_extrusion()) { if (vis[1] - i > 5000) break; continue; }
-        if (v.layer_id < st.layer_index_of_id.size()) top = st.layer_index_of_id[v.layer_id];
-        break;
+        const int sg = st.seg_of_vertex[i];
+        if (sg >= 0) { top = st.sim.segment(sg).layer; break; }
+        if (vis[1] - i > 20000) break;
     }
-    if (top < 0) return;
     const double t = (double) m_viewer.get_estimated_time_at(vis[1]);
-    st.deform_state = QuasiZero::qz_deformation_state(st.material, st.layers, st.geom, st.result, st.lambda_by_top, top, t, st.deform_opt);
-    if (!st.deform_state.valid) return;
+    st.deform_cache_vertex = vis[1];
+    st.deform_cache_time   = t;
+    if (top >= 0) st.sim.frame(top, t, st.sim_frame);
+    if (top < 0 || !st.sim_frame.valid) {
+        // nothing deposited yet at this position: draw nothing rather than the previous stack
+        for (GLModel& gm : m_qz_deform_models) gm.reset();
+        st.sim_frame.valid = false;
+        return;
+    }
 
-    // colours: the Stability legend palette, binned
+    // colours: the Stability legend palette, binned by the CURRENT local load of each strand
     const libvgcode::ColorRange& range = m_viewer.get_color_range(libvgcode::EViewType::Stability);
     for (size_t b = 0; b < QZ_DEFORM_BINS; ++b) {
         const libvgcode::Color c = range.get_color_at((float(b) + 0.5f) / float(QZ_DEFORM_BINS));
@@ -5444,39 +5499,49 @@ void GCodeViewer::qz_rebuild_deformed_mesh()
     std::array<GLModel::Geometry, QZ_DEFORM_BINS> geos;
     for (auto& g : geos) g.format = { GLModel::Geometry::EPrimitiveType::Triangles, GLModel::Geometry::EVertexLayout::P3N3 };
 
-    auto add_face = [](GLModel::Geometry& g, const Vec3f& p0, const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, const Vec3f& n) {
-        const unsigned int base = (unsigned int) g.vertices_count();
-        g.add_vertex(p0, n); g.add_vertex(p1, n); g.add_vertex(p2, n); g.add_vertex(p3, n);
-        g.add_triangle(base, base + 1, base + 2); g.add_triangle(base, base + 2, base + 3);
-    };
-    for (size_t i = std::max<size_t>(vis[0], 1); i <= vis[1]; ++i) {
-        const libvgcode::PathVertex& v = m_viewer.get_vertex_at(i);
-        if (!v.is_extrusion()) continue;
-        const libvgcode::PathVertex& u = m_viewer.get_vertex_at(i - 1);
-        if (v.layer_id >= st.layer_index_of_id.size()) continue;
-        const int li = st.layer_index_of_id[v.layer_id];
-        if (li < 0 || li > st.deform_state.top) continue;
-        const QuasiZero::QzDeformLayer& dl = st.deform_state.layers[li];
-        // deform both ends (metres in, metres out)
-        double ax, ay, az, bx, by, bz;
-        QuasiZero::qz_deform_point(st.deform_state, st.layers, st.geom, li, 1e-3 * u.position[0], 1e-3 * u.position[1], 1e-3 * u.position[2], ax, ay, az);
-        QuasiZero::qz_deform_point(st.deform_state, st.layers, st.geom, li, 1e-3 * v.position[0], 1e-3 * v.position[1], 1e-3 * v.position[2], bx, by, bz);
-        const Vec3f a(1e3f * (float) ax, 1e3f * (float) ay, 1e3f * (float) az);
-        const Vec3f b(1e3f * (float) bx, 1e3f * (float) by, 1e3f * (float) bz);
-        Vec3f d = b - a; d.z() = 0.0f;
-        const float len = d.norm();
-        if (len < 1e-4f) continue;
+    // tube around the segment axis (octagonal, square for very large jobs), ends extended by
+    // half a width so consecutive strands join, closed caps; the toolpath point is the bead top
+    const size_t start = std::max<size_t>(ena[0], 1);
+    size_t nseg = 0;
+    for (size_t i = start; i <= vis[1]; ++i) if (st.seg_of_vertex[i] >= 0) ++nseg;
+    const int sides = nseg > 40000 ? 4 : 8;
+    std::vector<Vec3f> ring(sides), rn(sides);
+    auto add_tube = [&](GLModel::Geometry& g, const Vec3f& a, const Vec3f& b, float w, float h) {
+        Vec3f d = b - a; const float len = d.norm();
+        if (len < 1e-4f || w < 1e-4f || h < 1e-4f) return;
         d /= len;
-        const float w = 0.5f * v.width * (float) dl.width_scale;
-        const float h = v.height * (float) (1.0 - dl.squash);
-        const Vec3f n(-d.y() * w, d.x() * w, 0.0f);
-        const Vec3f dz(0.0f, 0.0f, h);
-        const size_t bin = std::min(QZ_DEFORM_BINS - 1, (size_t) std::max(0.0f, std::min(dl.util, 0.9999f) * (float) QZ_DEFORM_BINS));
-        GLModel::Geometry& g = geos[bin];
-        add_face(g, a + n, b + n, b - n, a - n, Vec3f::UnitZ());                        // top
-        add_face(g, a - n - dz, b - n - dz, b + n - dz, a + n - dz, -Vec3f::UnitZ());    // bottom
-        add_face(g, a + n - dz, b + n - dz, b + n, a + n, Vec3f(-d.y(), d.x(), 0.0f));   // +n side
-        add_face(g, a - n, b - n, b - n - dz, a - n - dz, Vec3f(d.y(), -d.x(), 0.0f));   // -n side
+        Vec3f side = d.cross(Vec3f::UnitZ()); if (side.norm() < 1e-4f) side = Vec3f::UnitX(); side.normalize();
+        Vec3f nrm = side.cross(d); nrm.normalize();
+        const Vec3f a2 = a - d * (0.5f * w), b2 = b + d * (0.5f * w);
+        const Vec3f ca = a2 - nrm * (0.5f * h), cb = b2 - nrm * (0.5f * h);
+        for (int s = 0; s < sides; ++s) {
+            const float ang = 2.0f * float(M_PI) * (float(s) + 0.5f) / float(sides);
+            ring[s] = side * (0.5f * w * std::cos(ang)) + nrm * (0.5f * h * std::sin(ang));
+            rn[s]   = (side * (std::cos(ang) / (0.5f * w)) + nrm * (std::sin(ang) / (0.5f * h))).normalized();
+        }
+        const unsigned int base = (unsigned int) g.vertices_count();
+        for (int s = 0; s < sides; ++s) { g.add_vertex(ca + ring[s], rn[s]); g.add_vertex(cb + ring[s], rn[s]); }
+        for (int s = 0; s < sides; ++s) {
+            const unsigned int i0 = base + 2 * s, i1 = base + 2 * ((s + 1) % sides);
+            g.add_triangle(i0, i0 + 1, i1 + 1); g.add_triangle(i0, i1 + 1, i1);
+        }
+        const unsigned int ca_id = (unsigned int) g.vertices_count(); g.add_vertex(ca, -d);
+        for (int s = 0; s < sides; ++s) g.add_vertex(ca + ring[s], -d);
+        for (int s = 0; s < sides; ++s) g.add_triangle(ca_id, ca_id + 1 + s, ca_id + 1 + (s + 1) % sides);      // CCW seen from outside (-d)
+        const unsigned int cb_id = (unsigned int) g.vertices_count(); g.add_vertex(cb, d);
+        for (int s = 0; s < sides; ++s) g.add_vertex(cb + ring[s], d);
+        for (int s = 0; s < sides; ++s) g.add_triangle(cb_id, cb_id + 1 + (s + 1) % sides, cb_id + 1 + s);      // CCW seen from outside (+d)
+    };
+    for (size_t i = start; i <= vis[1]; ++i) {
+        const int sg = st.seg_of_vertex[i];
+        if (sg < 0) continue;
+        const QuasiZero::QzSimSegment& s = st.sim.segment(sg);
+        if (s.layer > st.sim_frame.top) continue;
+        QuasiZero::QzSimPoint pa, pb; float ws, hs; bool fallen;
+        st.sim.deform(st.sim_frame, sg, pa, pb, ws, hs, fallen);
+        const float u = st.sim.util(st.sim_frame, sg);
+        const size_t bin = std::min(QZ_DEFORM_BINS - 1, (size_t) std::max(0.0f, std::min(u, 0.9999f) * (float) QZ_DEFORM_BINS));
+        add_tube(geos[bin], Vec3f(pa.x, pa.y, pa.z), Vec3f(pb.x, pb.y, pb.z), s.w * ws, s.h * hs);
     }
     for (size_t b = 0; b < QZ_DEFORM_BINS; ++b) {
         m_qz_deform_models[b].reset();
@@ -5485,8 +5550,6 @@ void GCodeViewer::qz_rebuild_deformed_mesh()
             m_qz_deform_models[b].set_color(m_qz_deform_colors[b]);
         }
     }
-    st.deform_cache_vertex = vis[1];
-    st.deform_cache_time   = t;
 }
 
 void GCodeViewer::qz_render_deformed()

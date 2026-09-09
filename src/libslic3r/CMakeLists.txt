@@ -231,6 +231,8 @@ set(lisbslic3r_sources
     QuasiZero/QzShortSegmentAnchor.hpp
     QuasiZero/QzStabilityModel.cpp
     QuasiZero/QzStabilityModel.hpp
+    QuasiZero/QzStackSim.cpp
+    QuasiZero/QzStackSim.hpp
     GCode/GCodeProcessor.cpp
     GCode/GCodeProcessor.hpp
     GCode.hpp

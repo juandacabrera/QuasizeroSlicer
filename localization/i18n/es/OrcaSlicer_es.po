@@ -23954,6 +23954,296 @@ msgstr ""
 msgid "Biomaterial"
 msgstr "Biomaterial"
 
+#. Quasizero QZmini stability
+msgid "Yield stress at deposition"
+msgstr "Tensión de fluencia al depositar"
+
+#. Quasizero QZmini stability
+msgid ""
+"Static yield stress of the paste right after extrusion. 0 = material not "
+"characterised (stability simulation off for this material). Measure it "
+"with the cylinder collapse test."
+msgstr ""
+"Tensión de fluencia estática de la pasta justo después de extruir. 0 = "
+"material no caracterizado (simulación de estabilidad desactivada para este "
+"material). Mídela con el ensayo de colapso del cilindro."
+
+#. Quasizero QZmini stability
+msgid "Structuration rate"
+msgstr "Velocidad de estructuración"
+
+#. Quasizero QZmini stability
+msgid ""
+"Linear growth of the yield stress with the age of the layer (thixotropy, "
+"drying, setting). Identified from two collapse tests at different speeds."
+msgstr ""
+"Crecimiento lineal de la tensión de fluencia con la edad de la capa "
+"(tixotropía, secado, fraguado). Se identifica con dos ensayos de colapso a "
+"velocidades distintas."
+
+#. Quasizero QZmini stability
+msgid "Elastic modulus at deposition"
+msgstr "Módulo elástico al depositar"
+
+#. Quasizero QZmini stability
+msgid ""
+"Young's modulus of the fresh paste (large-strain, compression test). "
+"Governs buckling of thin walls."
+msgstr ""
+"Módulo de Young de la pasta fresca (gran deformación, ensayo de "
+"compresión). Gobierna el pandeo de paredes finas."
+
+#. Quasizero QZmini stability
+msgid "Stiffening rate"
+msgstr "Velocidad de rigidización"
+
+#. Quasizero QZmini stability
+msgid "Linear growth of the elastic modulus with layer age."
+msgstr "Crecimiento lineal del módulo elástico con la edad de la capa."
+
+#. Quasizero QZmini stability
+msgid "Poisson ratio"
+msgstr "Coeficiente de Poisson"
+
+#. Quasizero QZmini stability
+msgid "Fresh paste Poisson ratio (0.3-0.45). Low sensitivity."
+msgstr "Coeficiente de Poisson de la pasta fresca (0,3-0,45). Poca sensibilidad."
+
+#. Quasizero QZmini stability
+msgid "Yield criterion factor"
+msgstr "Factor del criterio de fluencia"
+
+#. Quasizero QZmini stability
+msgid ""
+"Compressive strength = factor x yield stress. 1.732 (sqrt 3) for von "
+"Mises, 2 for Tresca."
+msgstr ""
+"Resistencia a compresión = factor x tensión de fluencia. 1,732 (raíz de 3) "
+"para von Mises, 2 para Tresca."
+
+#. Quasizero QZmini stability
+msgid "QZmini paste stability"
+msgstr "Estabilidad de la pasta QZmini"
+
+#. Quasizero QZmini stability
+msgid "Paste stability simulation"
+msgstr "Simulación de estabilidad de la pasta"
+
+#. Quasizero QZmini stability
+msgid "Stability simulation"
+msgstr "Simulación de estabilidad"
+
+#. Quasizero QZmini stability
+msgid ""
+"Evaluate the paste's ability to carry its own weight while printing "
+"(plastic collapse with time-dependent strength, buckling indicators) and "
+"expose it as the Stability view of the preview. Needs the paste parameters "
+"of the material preset."
+msgstr ""
+"Evalúa la capacidad de la pasta para soportar su propio peso durante la "
+"impresión (colapso plástico con resistencia dependiente del tiempo, "
+"indicadores de pandeo) y la muestra como vista Estabilidad de la "
+"previsualización. Necesita los parámetros de pasta del preajuste de "
+"material."
+
+#. Quasizero QZmini stability
+msgid "Stability safety factor"
+msgstr "Factor de seguridad de estabilidad"
+
+#. Quasizero QZmini stability
+msgid ""
+"Utilization above 1/factor is flagged. The recommended layer time keeps "
+"the whole print below it."
+msgstr ""
+"Se señala toda utilización por encima de 1/factor. El tiempo de capa "
+"recomendado mantiene toda la impresión por debajo."
+
+#. Quasizero QZmini stability
+msgid "Bed confinement of the first layers"
+msgstr "Confinamiento de las primeras capas por la cama"
+
+#. Quasizero QZmini stability
+msgid ""
+"Layers stuck to the bed cannot spread laterally and carry more (Suiker "
+"2018). Moves the critical layer above the base, as observed in collapse "
+"tests. Disable for a conservative estimate."
+msgstr ""
+"Las capas adheridas a la cama no pueden extenderse lateralmente y soportan "
+"más (Suiker 2018). Desplaza la capa crítica por encima de la base, como se "
+"observa en los ensayos de colapso. Desactívalo para una estimación "
+"conservadora."
+
+#. Quasizero QZmini stability
+msgid "Stability"
+msgstr "Estabilidad"
+
+#. Quasizero QZmini stability
+msgid "Load/strength: "
+msgstr "Carga/resistencia: "
+
+#. Quasizero QZmini stability
+msgid "Stability (load / strength, 1 = collapse)"
+msgstr "Estabilidad (carga / resistencia, 1 = colapso)"
+
+#. Quasizero QZmini stability
+msgid "Stability simulation is off (Printer > QZmini)."
+msgstr "La simulación de estabilidad está desactivada (Impresora > QZmini)."
+
+#. Quasizero QZmini stability
+msgid ""
+"Material not characterised: set the paste yield stress in the material "
+"preset (Material > QZmini paste stability)."
+msgstr ""
+"Material no caracterizado: define la tensión de fluencia de la pasta en el "
+"preajuste de material (Material > Estabilidad de la pasta QZmini)."
+
+#. Quasizero QZmini stability
+msgid "No extrusion layers to evaluate."
+msgstr "No hay capas de extrusión que evaluar."
+
+#. Quasizero QZmini stability
+msgid "Verdict"
+msgstr "Veredicto"
+
+#. Quasizero QZmini stability
+msgid "Collapse predicted"
+msgstr "Colapso previsto"
+
+#. Quasizero QZmini stability
+msgid "Collapse at"
+msgstr "Colapso a"
+
+#. Quasizero QZmini stability
+msgid "Critical layer"
+msgstr "Capa crítica"
+
+#. Quasizero QZmini stability
+msgid "Prints, below the safety margin"
+msgstr "Imprime, por debajo del margen de seguridad"
+
+#. Quasizero QZmini stability
+msgid "Peak load/strength"
+msgstr "Carga/resistencia máxima"
+
+#. Quasizero QZmini stability
+msgid "Stable"
+msgstr "Estable"
+
+#. Quasizero QZmini stability
+msgid "At layer"
+msgstr "En la capa"
+
+#. Quasizero QZmini stability
+msgid "on layer"
+msgstr "en la capa"
+
+#. Quasizero QZmini stability
+msgid "Vertical speed"
+msgstr "Velocidad vertical"
+
+#. Quasizero QZmini stability
+msgid "Critical speed"
+msgstr "Velocidad crítica"
+
+#. Quasizero QZmini stability
+msgid "Max height (plastic)"
+msgstr "Altura máx. (plástica)"
+
+#. Quasizero QZmini stability
+msgid "unbounded"
+msgstr "sin límite"
+
+#. Quasizero QZmini stability
+msgid "Buckling, free wall"
+msgstr "Pandeo, pared libre"
+
+#. Quasizero QZmini stability
+msgid "bead"
+msgstr "cordón"
+
+#. Quasizero QZmini stability
+msgid "Layer time factor"
+msgstr "Factor de tiempo de capa"
+
+#. Quasizero QZmini stability
+msgid "to be safe"
+msgstr "para ir seguro"
+
+#. Quasizero QZmini stability
+msgid "no speed makes it safe"
+msgstr "ninguna velocidad lo hace seguro"
+
+#. Quasizero QZmini stability
+msgid "Buckling factor"
+msgstr "Factor de pandeo"
+
+#. Quasizero QZmini stability
+msgid "(buckles)"
+msgstr "(pandea)"
+
+#. Quasizero QZmini stability
+msgid "Show deformation"
+msgstr "Mostrar deformación"
+
+#. Quasizero QZmini stability
+msgid "No toolpath segments to simulate."
+msgstr "No hay segmentos de trayectoria que simular."
+
+#. Quasizero QZmini stability
+msgid "Now"
+msgstr "Ahora"
+
+#. Quasizero QZmini stability
+msgid "buckled"
+msgstr "pandeado"
+
+#. Quasizero QZmini stability
+msgid "plastic hinge"
+msgstr "rótula plástica"
+
+#. Quasizero QZmini stability
+msgid "Falling"
+msgstr "Cayendo"
+
+#. Quasizero QZmini stability
+msgid "strands on the pile"
+msgstr "cordones sobre el montón"
+
+#. Quasizero QZmini stability
+msgid "tall"
+msgstr "de alto"
+
+#. Quasizero QZmini stability
+msgid "sway"
+msgstr "balanceo"
+
+#. Quasizero QZmini stability
+msgid "Local load"
+msgstr "Carga local"
+
+#. Quasizero QZmini stability
+msgid "max, this instant"
+msgstr "máx., en este instante"
+
+#. Quasizero QZmini stability
+msgid ""
+"Kinematic view driven by the model on a plan grid: each strand carries the "
+"column above it, squash is remembered and accumulates, the stack folds at "
+"the hinge and later strands fall on the pile. Not a nonlinear FEM."
+msgstr ""
+"Vista cinemática guiada por el modelo sobre una malla en planta: cada "
+"cordón soporta la columna que tiene encima, el aplastamiento se recuerda y "
+"se acumula, la pila se pliega por la rótula y los cordones posteriores "
+"caen sobre el montón. No es un FEM no lineal."
+
+#. Quasizero QZmini stability
+msgid ""
+"Level 0 model: yield + structuration, bed confinement. Calibrate the "
+"material with the collapse tests."
+msgstr ""
+"Modelo de nivel 0: fluencia + estructuración, confinamiento de la cama. "
+"Calibra el material con los ensayos de colapso."
+
 #~ msgid ""
 #~ "It is recommended to assemble objects first,\n"
 #~ "because the objects is restriced to bed \n"

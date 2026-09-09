@@ -11786,16 +11786,25 @@ void GLCanvas3D::_render_qz_quick_cards()
                 if (ImGui::Checkbox((_u8L("Show deformation") + "##qzdef").c_str(), &deform))
                     m_gcode_viewer.set_qz_deform_view(deform);
                 if (deform) {
-                    const auto &ds = st.deform_state;
-                    if (ds.valid) {
-                        if (ds.collapsed)
-                            kv(_u8L("Now").c_str(), (ds.by_buckling ? _u8L("buckled") : _u8L("plastic hinge")) + " - " + _u8L("layer") + " " + std::to_string(ds.hinge_layer + 1) + ", " + fmt("%.0f", ds.fold_angle * 180.0 / 3.14159265) + " deg", &bad_col);
-                        else
-                            kv(_u8L("Now").c_str(), fmt("%.1f mm", ds.height_deformed * 1000.0) + " " + _u8L("tall") + ", " + _u8L("sway") + " " + fmt("%.1f mm", ds.sway_amp * 1000.0), &ok_col);
+                    const auto &fs = st.sim_frame;
+                    if (!st.sim.valid()) {
+                        ImGui::SetWindowFontScale(0.85f);
+                        ImGui::TextColored(lbl_col, "%s", _u8L("No toolpath segments to simulate.").c_str());
+                        ImGui::SetWindowFontScale(1.0f);
+                    } else if (fs.valid) {
+                        if (fs.collapsed) {
+                            kv(_u8L("Now").c_str(), (fs.by_buckling ? _u8L("buckled") : _u8L("plastic hinge")) + " - " + _u8L("layer") + " " + std::to_string(fs.hinge_layer + 1) + ", " + fmt("%.0f", fs.fold_angle * 180.0 / 3.14159265) + " deg", &bad_col);
+                            if (fs.fallen_count > 0)
+                                kv(_u8L("Falling").c_str(), std::to_string(fs.fallen_count) + " " + _u8L("strands on the pile"), &bad_col);
+                        } else {
+                            const ImVec4 &uc = fs.max_util > sf_target ? warn_col : ok_col;
+                            kv(_u8L("Now").c_str(), fmt("%.1f mm", fs.height_deformed) + " " + _u8L("tall") + ", " + _u8L("sway") + " " + fmt("%.1f mm", fs.sway), &ok_col);
+                            kv(_u8L("Local load").c_str(), fmt("%.0f %%", 100.0 * fs.max_util) + "  " + _u8L("max, this instant"), &uc);
+                        }
                     }
                     ImGui::SetWindowFontScale(0.85f);
                     ImGui::PushTextWrapPos(330.0f * scale);
-                    ImGui::TextColored(lbl_col, "%s", _u8L("Kinematic view driven by the model: squash where load/strength is high, sway from buckling, fold at the hinge. Not a nonlinear FEM.").c_str());
+                    ImGui::TextColored(lbl_col, "%s", _u8L("Kinematic view driven by the model on a plan grid: each strand carries the column above it, squash is remembered and accumulates, the stack folds at the hinge and later strands fall on the pile. Not a nonlinear FEM.").c_str());
                     ImGui::PopTextWrapPos();
                     ImGui::SetWindowFontScale(1.0f);
                 } else {

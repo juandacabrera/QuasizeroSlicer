@@ -8,7 +8,7 @@ mkdir -p build-qztests
 src_dir="src/libslic3r/QuasiZero"
 
 sources=("$src_dir/QzVolumetricModel.cpp")
-for name in QzGcodeStateMachine QzFirmwareAdapter QzRefillPlanner QzShortSegmentAnchor QzStabilityModel; do
+for name in QzGcodeStateMachine QzFirmwareAdapter QzRefillPlanner QzShortSegmentAnchor QzStabilityModel QzStackSim; do
     if [ -f "$src_dir/$name.cpp" ]; then
         sources+=("$src_dir/$name.cpp")
     fi

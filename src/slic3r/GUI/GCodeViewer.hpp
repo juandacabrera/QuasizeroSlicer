@@ -12,6 +12,7 @@
 
 #include "LibVGCode/LibVGCodeWrapper.hpp"
 #include "libslic3r/QuasiZero/QzStabilityModel.hpp"
+#include "libslic3r/QuasiZero/QzStackSim.hpp"
 // needed for tech VGCODE_ENABLE_COG_AND_TOOL_MARKERS
 #include <libvgcode/include/Types.hpp>
 
@@ -258,12 +259,14 @@ public:
         std::vector<int>              layer_index_of_id;   // result.moves layer_id -> record index
         std::vector<float>            per_move;            // utilization per result move (< 0 = n/a)
         std::vector<double>           layer_top_z;         // [mm] per record, for slider lookups
-        // Level 1.5: deformation kinematics
+        // Level 1.5: deformation kinematics (per-layer geometry feeds the grid simulation)
         std::vector<QuasiZero::QzLayerRecord> layers;
         std::vector<QuasiZero::QzLayerGeom>   geom;
         std::vector<double>                   lambda_by_top; // buckling load factor of the stack 0..k
-        QuasiZero::QzDeformOptions            deform_opt;
-        QuasiZero::QzDeformState              deform_state;  // state of the last rendered frame
+        // Level 1.5 v2: history-aware, grid-resolved stack simulation (QzStackSim)
+        QuasiZero::QzStackSim                 sim;
+        QuasiZero::QzSimFrame                 sim_frame;     // state of the last rendered frame
+        std::vector<int>                      seg_of_vertex; // libvgcode vertex id -> sim segment (-1 = none)
         bool                                  deform_view = false;
         size_t                                deform_cache_vertex = size_t(-1);
         double                                deform_cache_time = -1.0;
@@ -274,7 +277,8 @@ private:
     std::array<GLModel, QZ_DEFORM_BINS> m_qz_deform_models;
     std::array<ColorRGBA, QZ_DEFORM_BINS> m_qz_deform_colors;
     void qz_evaluate_stability(const GCodeProcessorResult& gcode_result);
-    bool qz_deform_active() const { return m_qz_stability.deform_view && m_qz_stability.result.valid && !m_qz_stability.geom.empty(); }
+    void qz_build_sim();   // after m_viewer.load(): segments straight from the libvgcode vertices
+    bool qz_deform_active() const { return m_qz_stability.deform_view && m_qz_stability.sim.valid(); }
     void qz_rebuild_deformed_mesh();
     void qz_render_deformed();
 
