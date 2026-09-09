@@ -32,6 +32,28 @@ dependencies; tested by `tests/qzmini/test_qz_stability.cpp`).
 Layer records come straight from the processed moves: real process time per layer
 (dwells, refill pauses included), bead height/width from the metadata.
 
+## 1b. Level 1.5 — deformation animation ("Show deformation" in the Stability card)
+
+A kinematic view of the stack driven by the model, synchronised with the player
+(`qz_deformation_state` / `qz_deform_point`):
+
+- **Squash / bulge**: each layer shortens by `ε = ε_max·((U − U_y)/(1 − U_y))²`
+  (U_y = 0.5, ε_max = 0.35 [hyp]) and spreads in plan about its centroid by `1 + 0.6·ε`;
+  layers stack on the shortened ones below. The barrel appears where the utilization
+  band is — above the bed, as in the collapse video.
+- **Sway**: the stack is a heavy column with the real plan inertia of every layer
+  (minimum second moment of area of the toolpath section, age-dependent E). Its load
+  factor λ_cr amplifies an initial imperfection (0.2 % of height [hyp]) by
+  `1/(1 − 1/λ_cr)` along the weak axis, mode `1 − cos(πz/2H)`. λ_cr ≤ 1 = buckling
+  collapse (hinge at the base).
+- **Fold**: once the model reaches collapse (plastic: hinge at the critical layer;
+  buckling: base), the layers above rotate about the hinge edge towards the weak axis,
+  up to 75° over two layer times [hyp]; the hinge layer crushes.
+
+It is a visualisation of the analytical model, **not** a nonlinear FEM: shapes are mode
+shapes and hinge kinematics, not equilibrium solutions. Level 2 (staged beam/shell
+model on the toolpath, Karamba-style) remains future work.
+
 ## 2. Where it shows
 
 - **Preview → view type "Stability"**: extrusions coloured by peak load/strength
@@ -39,7 +61,8 @@ Layer records come straight from the processed moves: real process time per laye
 - **Stability card** (left stack, above Process): verdict (Stable / below margin /
   Collapse predicted at height, layer, minute), critical layer, live load at the layer
   the vertical slider shows, vertical speed vs critical speed, max plastic height,
-  free-wall buckling height, recommended layer-time factor.
+  free-wall buckling height, buckling factor of the real section, layer-time factor,
+  and the **Show deformation** toggle (Level 1.5).
 - **Material preset → "QZmini paste stability"**: yield stress [Pa], structuration rate
   [Pa/min], elastic modulus [kPa], stiffening rate [kPa/min], Poisson, yield factor.
   Density comes from `filament_density`.

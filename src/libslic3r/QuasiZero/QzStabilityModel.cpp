@@ -287,4 +287,143 @@ QzStabilityResult qz_evaluate_stability(const QzPasteMaterial &mat, const std::v
     return r;
 }
 
+// ------------------------------------------------------------------ Level 1.5 kinematics
+std::vector<double> qz_buckling_load_factors(const QzPasteMaterial &mat, const std::vector<QzLayerRecord> &L,
+                                             const std::vector<QzLayerGeom> &G)
+{
+    std::vector<double> out(L.size(), 1e9);
+    if (L.empty() || G.size() != L.size()) return out;
+    const double z0 = L.front().z_bottom;
+    for (size_t k = 0; k < L.size(); ++k) {
+        const double H = L[k].z_bottom + L[k].height - z0;
+        if (H <= 1e-6) continue;
+        double area = 0.0; size_t na = 0;
+        for (size_t j = 0; j <= k; ++j) if (G[j].area > 0.0) { area += G[j].area; ++na; }
+        if (na == 0) continue;
+        const double q = mat.rho * QZ_G * (area / na);
+        const double now = L[k].t_end;
+        auto EI = [&](double x) {
+            // layer containing height x (layers sorted by z)
+            size_t j = 0;
+            const double zx = z0 + x;
+            while (j + 1 <= k && L[j + 1].z_bottom <= zx) ++j;
+            const double I = std::max(G[j].I_min, 1e-16);
+            return mat.E(now - L[j].t_start) * I / (1.0 - mat.nu * mat.nu);
+        };
+        out[k] = qz_heavy_column_load_factor(EI, q, H, 8, 600);
+    }
+    return out;
+}
+
+static double squash_of(double U, const QzDeformOptions &o)
+{
+    if (U <= o.U_yield) return 0.0;
+    const double f = std::min(1.0, (U - o.U_yield) / std::max(1e-9, 1.0 - o.U_yield));
+    return o.eps_max * f * f;
+}
+
+QzDeformState qz_deformation_state(const QzPasteMaterial &mat, const std::vector<QzLayerRecord> &L,
+                                   const std::vector<QzLayerGeom> &G, const QzStabilityResult &res,
+                                   const std::vector<double> &lam, int top, double time, const QzDeformOptions &opt)
+{
+    QzDeformState st;
+    (void) mat; // material enters through `res` (utilization) and `lam` (stiffness); kept for API symmetry
+    if (!res.valid || L.empty() || G.size() != L.size() || top < 0) return st;
+    top = std::min<int>(top, (int) L.size() - 1);
+    st.top = top; st.time = time;
+    const size_t n = (size_t) top + 1;
+    st.layers.assign(n, QzDeformLayer());
+    const double z0 = L.front().z_bottom;
+    const double H  = L[top].z_bottom + L[top].height - z0;
+
+    // utilization now: the history row of the top layer
+    const std::vector<float> *row = (top < (int) res.history.size()) ? &res.history[top] : nullptr;
+
+    // buckling collapse: first stack whose load factor dropped below 1 (before or at `top`)
+    int buck_k = -1;
+    for (int k = 0; k <= top && k < (int) lam.size(); ++k) if (lam[k] <= 1.0) { buck_k = k; break; }
+    st.lambda_cr = (top < (int) lam.size()) ? lam[top] : 1e9;
+
+    // plastic collapse from the model
+    const bool plastic_now = res.collapse_after_layer >= 0 && top >= res.collapse_after_layer;
+    double t_c = 0.0;
+    if (buck_k >= 0 && (!plastic_now || L[buck_k].t_end <= res.collapse_time)) {
+        st.collapsed = true; st.by_buckling = true; st.hinge_layer = 0; t_c = L[buck_k].t_end;
+    } else if (plastic_now) {
+        st.collapsed = true; st.by_buckling = false; st.hinge_layer = std::max(0, res.critical_layer); t_c = res.collapse_time;
+    }
+
+    // sway direction: weak axis of the top layer section
+    st.dir_x = G[top].dir_x; st.dir_y = G[top].dir_y;
+    const double dn = std::hypot(st.dir_x, st.dir_y);
+    if (dn < 1e-9) { st.dir_x = 1.0; st.dir_y = 0.0; } else { st.dir_x /= dn; st.dir_y /= dn; }
+
+    // sway amplitude: imperfection amplified by 1/(1 - 1/lambda)
+    const double delta0 = opt.imperfection * H;
+    double amp = delta0;
+    if (st.lambda_cr > 1.0001) amp = delta0 / (1.0 - 1.0 / st.lambda_cr);
+    else amp = opt.sway_cap * H;
+    st.sway_amp = std::min(amp, opt.sway_cap * H);
+    if (st.by_buckling) st.sway_amp = opt.sway_cap * H;
+
+    // per-layer squash and deformed heights
+    double zc = z0;
+    for (size_t j = 0; j < n; ++j) {
+        QzDeformLayer &d = st.layers[j];
+        d.util   = (row && j < row->size()) ? (*row)[j] : 0.0f;
+        d.squash = squash_of(d.util, opt);
+        if (st.collapsed && (int) j == st.hinge_layer) d.squash = std::min(0.9, d.squash + opt.hinge_squash * std::min(1.0, (time - t_c) / std::max(1e-6, opt.fold_time_layers * (L[top].t_end - L[top].t_start))));
+        d.z_bottom = zc;
+        d.height   = L[j].height * (1.0 - d.squash);
+        zc += d.height;
+        d.scale_xy    = 1.0 + opt.bulge_gain * d.squash;
+        d.width_scale = 1.0 + d.squash;
+        const double zj = (L[j].z_bottom + L[j].height - z0);
+        const double phi = H > 1e-9 ? (1.0 - std::cos(0.5 * 3.14159265358979 * std::min(1.0, zj / H))) : 0.0;
+        d.sway_x = st.sway_amp * phi * st.dir_x;
+        d.sway_y = st.sway_amp * phi * st.dir_y;
+    }
+    st.height_deformed = zc - z0;
+
+    // fold about the hinge once collapsed
+    if (st.collapsed) {
+        const double t_layer = std::max(1e-6, L[top].t_end - L[top].t_start);
+        const double f = std::min(1.0, std::max(0.0, (time - t_c) / (opt.fold_time_layers * t_layer)));
+        st.fold_angle = (opt.fold_angle_max * 3.14159265358979 / 180.0) * f;
+        const int h = st.hinge_layer;
+        const QzDeformLayer &dh = st.layers[h];
+        st.pivot_x = G[h].cx + dh.sway_x + st.dir_x * G[h].r_max * dh.scale_xy;
+        st.pivot_y = G[h].cy + dh.sway_y + st.dir_y * G[h].r_max * dh.scale_xy;
+        st.pivot_z = dh.z_bottom + dh.height;
+    }
+    st.valid = true;
+    return st;
+}
+
+void qz_deform_point(const QzDeformState &st, const std::vector<QzLayerRecord> &L, const std::vector<QzLayerGeom> &G,
+                     int layer, double x, double y, double z, double &ox, double &oy, double &oz)
+{
+    ox = x; oy = y; oz = z;
+    if (!st.valid || layer < 0 || layer >= (int) st.layers.size() || layer >= (int) L.size() || layer >= (int) G.size()) return;
+    const QzDeformLayer &d = st.layers[layer];
+    // vertical: squash within the layer, stacked on the squashed layers below
+    const double zl = std::max(0.0, std::min(1.0, (z - L[layer].z_bottom) / std::max(1e-9, L[layer].height)));
+    oz = d.z_bottom + zl * d.height;
+    // plan: bulge (scale about the layer centroid) + sway
+    ox = G[layer].cx + (x - G[layer].cx) * d.scale_xy + d.sway_x;
+    oy = G[layer].cy + (y - G[layer].cy) * d.scale_xy + d.sway_y;
+    if (st.collapsed && layer > st.hinge_layer && st.fold_angle > 0.0) {
+        // rotate about the horizontal axis a = (-dir_y, dir_x, 0) through the pivot, tilting towards dir
+        const double ax = -st.dir_y, ay = st.dir_x;
+        const double px = ox - st.pivot_x, py = oy - st.pivot_y, pz = oz - st.pivot_z;
+        const double c = std::cos(st.fold_angle), s = std::sin(st.fold_angle);
+        // Rodrigues: v' = v c + (a x v) s + a (a.v)(1 - c)
+        const double adv = ax * px + ay * py;
+        const double cx_ = ay * pz, cy_ = -ax * pz, cz_ = ax * py - ay * px;
+        ox = st.pivot_x + px * c + cx_ * s + ax * adv * (1.0 - c);
+        oy = st.pivot_y + py * c + cy_ * s + ay * adv * (1.0 - c);
+        oz = st.pivot_z + pz * c + cz_ * s;
+    }
+}
+
 }} // namespace Slic3r::QuasiZero

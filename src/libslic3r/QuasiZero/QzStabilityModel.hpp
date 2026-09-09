@@ -110,4 +110,67 @@ struct QzMoveSample
 std::vector<QzLayerRecord> qz_layers_from_moves(const std::vector<QzMoveSample> &moves,
                                                 std::vector<int> &layer_index_of_id);
 
+// --- Level 1.5: deformation kinematics driven by the model ----------------------------
+// Per-layer plan geometry of the toolpath (from the extrusion segments of the layer)
+struct QzLayerGeom
+{
+    double cx = 0.0, cy = 0.0;     // [m] centroid of the deposited material
+    double area = 0.0;             // [m^2] plan area of material (sum length*width)
+    double I_min = 0.0;            // [m^4] minimum second moment of area of the layer section
+    double dir_x = 1.0, dir_y = 0.0; // unit direction of the weak (buckling) axis
+    double r_max = 0.0;            // [m] max distance centroid -> material
+};
+
+struct QzDeformOptions
+{
+    double U_yield          = 0.5;   // squash starts above this utilization           [hyp]
+    double eps_max          = 0.35;  // squash strain at U = 1                          [hyp]
+    double bulge_gain       = 0.6;   // plan scale = 1 + gain * squash                  [hyp]
+    double imperfection     = 0.002; // initial sway / height                           [hyp: Suiker uses deflections ~ bead]
+    double sway_cap         = 0.25;  // max sway / height before it counts as buckled
+    double fold_angle_max   = 75.0;  // [deg]
+    double fold_time_layers = 2.0;   // fold completes in this many mean layer times
+    double hinge_squash     = 0.45;  // extra squash of the hinge layer
+};
+
+struct QzDeformLayer
+{
+    double squash = 0.0;                 // strain 0..1
+    double z_bottom = 0.0, height = 0.0; // [m] deformed
+    double scale_xy = 1.0;               // plan scale about the centroid (bulge)
+    double sway_x = 0.0, sway_y = 0.0;   // [m]
+    double width_scale = 1.0;            // bead width factor
+    float  util = 0.0f;                  // U at this time
+};
+
+struct QzDeformState
+{
+    bool   valid = false;
+    int    top = -1;             // last deposited layer index
+    double time = 0.0;           // [s]
+    std::vector<QzDeformLayer> layers;   // 0..top
+    double lambda_cr = 1e9;      // buckling load factor of the current stack
+    double sway_amp = 0.0;       // [m] sway at the top
+    double dir_x = 1.0, dir_y = 0.0;
+    int    hinge_layer = -1;     // >= 0 once collapsed
+    bool   collapsed = false;
+    bool   by_buckling = false;
+    double fold_angle = 0.0;     // [rad]
+    double pivot_x = 0.0, pivot_y = 0.0, pivot_z = 0.0; // [m]
+    double height_deformed = 0.0;
+};
+
+// buckling load factor of the stack 0..k for every k (time = t_end of layer k)
+std::vector<double> qz_buckling_load_factors(const QzPasteMaterial &mat, const std::vector<QzLayerRecord> &layers,
+                                             const std::vector<QzLayerGeom> &geom);
+// full kinematic state of the stack at (top, time)
+QzDeformState qz_deformation_state(const QzPasteMaterial &mat, const std::vector<QzLayerRecord> &layers,
+                                   const std::vector<QzLayerGeom> &geom, const QzStabilityResult &res,
+                                   const std::vector<double> &lambda_by_top, int top, double time,
+                                   const QzDeformOptions &opt);
+// map an undeformed toolpath point (m, z = bead top) of layer `layer` to its deformed position
+void qz_deform_point(const QzDeformState &st, const std::vector<QzLayerRecord> &layers,
+                     const std::vector<QzLayerGeom> &geom, int layer,
+                     double x, double y, double z, double &ox, double &oy, double &oz);
+
 }} // namespace Slic3r::QuasiZero

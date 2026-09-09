@@ -258,10 +258,25 @@ public:
         std::vector<int>              layer_index_of_id;   // result.moves layer_id -> record index
         std::vector<float>            per_move;            // utilization per result move (< 0 = n/a)
         std::vector<double>           layer_top_z;         // [mm] per record, for slider lookups
+        // Level 1.5: deformation kinematics
+        std::vector<QuasiZero::QzLayerRecord> layers;
+        std::vector<QuasiZero::QzLayerGeom>   geom;
+        std::vector<double>                   lambda_by_top; // buckling load factor of the stack 0..k
+        QuasiZero::QzDeformOptions            deform_opt;
+        QuasiZero::QzDeformState              deform_state;  // state of the last rendered frame
+        bool                                  deform_view = false;
+        size_t                                deform_cache_vertex = size_t(-1);
+        double                                deform_cache_time = -1.0;
     };
 private:
     QzStability m_qz_stability;
+    static constexpr size_t QZ_DEFORM_BINS = 16;
+    std::array<GLModel, QZ_DEFORM_BINS> m_qz_deform_models;
+    std::array<ColorRGBA, QZ_DEFORM_BINS> m_qz_deform_colors;
     void qz_evaluate_stability(const GCodeProcessorResult& gcode_result);
+    bool qz_deform_active() const { return m_qz_stability.deform_view && m_qz_stability.result.valid && !m_qz_stability.geom.empty(); }
+    void qz_rebuild_deformed_mesh();
+    void qz_render_deformed();
 
 public:
     GCodeViewer();
@@ -300,6 +315,8 @@ public:
     const QzStability& qz_stability() const { return m_qz_stability; }
     // top layer currently shown by the vertical slider, as an index into the stability records (-1 = none)
     int qz_stability_layer_at_view_top() const;
+    bool qz_deform_view() const { return m_qz_stability.deform_view; }
+    void set_qz_deform_view(bool on) { m_qz_stability.deform_view = on; m_qz_stability.deform_cache_vertex = size_t(-1); }
 
     bool can_export_toolpaths() const;
     std::vector<int> get_plater_extruder();

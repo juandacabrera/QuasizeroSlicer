@@ -140,3 +140,71 @@ QZ_TEST(stability_uncharacterised_material_is_invalid_not_a_crash)
     const auto r = qz_evaluate_stability(m, uniform_layers(10, 3.0, 100.0, 4.0), QzStabilityOptions{});
     QZ_CHECK(!r.valid);
 }
+
+// ---------------------------------------------------------------- Level 1.5 kinematics
+namespace {
+// ring (cylinder) or straight wall geometry per layer, in metres
+std::vector<QzLayerGeom> ring_geom(int n, double R, double w)
+{
+    std::vector<QzLayerGeom> g(n);
+    for (auto &x : g) { x.cx = 0.05; x.cy = 0.05; x.area = 2 * 3.14159265 * R * w; x.I_min = 3.14159265 * R * R * R * w; x.dir_x = 1; x.dir_y = 0; x.r_max = R; }
+    return g;
+}
+std::vector<QzLayerGeom> wall_geom(int n, double Lw, double w)
+{
+    std::vector<QzLayerGeom> g(n);
+    for (auto &x : g) { x.cx = 0.05; x.cy = 0.05; x.area = Lw * w; x.I_min = Lw * w * w * w / 12.0; x.dir_x = 0; x.dir_y = 1; x.r_max = 0.5 * Lw; }
+    return g;
+}
+}
+
+QZ_TEST(deform_cylinder_resists_buckling_wall_does_not)
+{
+    QzPasteMaterial m; m.rho = 1500.0; m.tau0 = 550.0; m.athix = 0.04; m.E0 = 30000.0;
+    const auto L = uniform_layers(40, 3.0, 125.0, 8.0);
+    const auto lam_ring = qz_buckling_load_factors(m, L, ring_geom(40, 0.03, 0.008));
+    const auto lam_wall = qz_buckling_load_factors(m, L, wall_geom(40, 0.12, 0.004));
+    // closed ring (Euler, E0 = 30 kPa): lambda ~ 4-5 at 120 mm, i.e. global buckling would
+    // only come at ~200 mm, well above the plastic limit; the thin wall is long gone
+    QZ_CHECK(lam_ring.back() > 3.0);
+    QZ_CHECK(lam_wall.back() < 1.0);
+    QZ_CHECK(lam_ring.back() > 5.0 * lam_wall.back());
+    // the wall buckles somewhere before the top
+    int first = -1; for (size_t k = 0; k < lam_wall.size(); ++k) if (lam_wall[k] <= 1.0) { first = (int) k; break; }
+    QZ_CHECK(first > 3 && first < 40);
+}
+
+QZ_TEST(deform_state_bulges_at_critical_band_and_folds_after_collapse)
+{
+    QzPasteMaterial m; m.rho = 1500.0; m.tau0 = 550.0; m.athix = 0.04; m.E0 = 30000.0;
+    const auto L = uniform_layers(60, 3.0, 125.0, 8.0);
+    const auto G = ring_geom(60, 0.03, 0.008);
+    const auto res = qz_evaluate_stability(m, L, QzStabilityOptions{});
+    QZ_CHECK(res.collapse_after_layer > 0);
+    const auto lam = qz_buckling_load_factors(m, L, G);
+    QzDeformOptions o;
+    // early: nothing squashed, no fold
+    auto s0 = qz_deformation_state(m, L, G, res, lam, 5, L[5].t_end, o);
+    QZ_CHECK(s0.valid && !s0.collapsed && s0.fold_angle == 0.0);
+    for (const auto &d : s0.layers) QZ_CHECK(d.squash == 0.0 && d.scale_xy == 1.0);
+    // just before collapse: squash concentrated at the critical band, above the base
+    const int kb = res.collapse_after_layer - 1;
+    auto s1 = qz_deformation_state(m, L, G, res, lam, kb, L[kb].t_end, o);
+    int jmax = 0; for (size_t j = 0; j < s1.layers.size(); ++j) if (s1.layers[j].squash > s1.layers[jmax].squash) jmax = (int) j;
+    QZ_CHECK(s1.layers[jmax].squash > 0.05 && jmax > 0 && jmax < kb / 2);
+    QZ_CHECK(s1.height_deformed < L[kb].z_bottom + L[kb].height - L[0].z_bottom); // shorter than nominal
+    // after collapse + fold time: hinge at the critical layer, top folded towards dir
+    const int kc = res.collapse_after_layer;
+    auto s2 = qz_deformation_state(m, L, G, res, lam, kc + 2, L[kc + 2].t_end + 1000.0, o);
+    QZ_CHECK(s2.collapsed && !s2.by_buckling && s2.hinge_layer == res.critical_layer);
+    QZ_CHECK(s2.fold_angle > 1.0); // ~75 deg
+    double ox, oy, oz;
+    const double ztop = L[kc + 2].z_bottom + L[kc + 2].height;
+    qz_deform_point(s2, L, G, kc + 2, G[0].cx, G[0].cy, ztop, ox, oy, oz);
+    QZ_CHECK(ox > G[0].cx + 0.02);      // moved towards +x (dir)
+    QZ_CHECK(oz < ztop);                // and came down
+    // a point below the hinge is only squashed/bulged, not rotated
+    qz_deform_point(s2, L, G, 0, G[0].cx + 0.03, G[0].cy, L[0].z_bottom + L[0].height, ox, oy, oz);
+    QZ_CHECK_NEAR(oy, G[0].cy, 1e-9);
+    QZ_CHECK(oz <= L[0].z_bottom + L[0].height + 1e-9);
+}

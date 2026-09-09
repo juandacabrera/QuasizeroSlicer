@@ -2345,7 +2345,18 @@ void GCodeViewer::render_toolpaths()
     m_viewer.set_cog_marker_scale_factor(m_cog_marker_fixed_screen_size ? 10.0f * m_cog_marker_size * camera.get_inv_zoom() : m_cog_marker_size);
     m_viewer.set_tool_marker_scale_factor(m_tool_marker_fixed_screen_size ? 10.0f * m_tool_marker_size * camera.get_inv_zoom() : m_tool_marker_size);
 #endif // VGCODE_ENABLE_COG_AND_TOOL_MARKERS
-    m_viewer.render(converted_view_matrix, converted_projetion_matrix);
+    if (qz_deform_active()) {
+        // Quasizero: the nominal toolpaths are still "rendered" (libvgcode performs its
+        // deferred range/colour updates inside render) but masked out; the deformed
+        // stack is drawn in their place
+        glsafe(::glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
+        glsafe(::glDepthMask(GL_FALSE));
+        m_viewer.render(converted_view_matrix, converted_projetion_matrix);
+        glsafe(::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE));
+        glsafe(::glDepthMask(GL_TRUE));
+        qz_render_deformed();
+    } else
+        m_viewer.render(converted_view_matrix, converted_projetion_matrix);
 
 #if ENABLE_NEW_GCODE_VIEWER_DEBUG
     if (is_legend_shown()) {
@@ -5320,6 +5331,62 @@ void GCodeViewer::qz_evaluate_stability(const GCodeProcessorResult& gcode_result
     if (layers.empty()) return;
     m_qz_stability.result = QuasiZero::qz_evaluate_stability(m, layers, m_qz_stability.options);
     if (!m_qz_stability.result.valid) return;
+    m_qz_stability.layers = layers;
+
+    // plan geometry of every layer from its extrusion segments: centroid, material area,
+    // minimum second moment of area (weak axis) - drives bulge centre, buckling and fold
+    {
+        struct Acc { double a = 0, sx = 0, sy = 0; std::vector<std::array<double, 4>> segs; }; // x, y, len*w, (unused)
+        std::vector<Acc> acc(layers.size());
+        for (size_t i = 1; i < moves.size(); ++i) {
+            if (!samples[i].extrusion) continue;
+            const unsigned id = moves[i].layer_id;
+            if (id >= m_qz_stability.layer_index_of_id.size()) continue;
+            const int li = m_qz_stability.layer_index_of_id[id];
+            if (li < 0) continue;
+            const Vec3f& a = moves[i - 1].position; const Vec3f& b = moves[i].position;
+            const double len = 1e-3 * std::hypot((double) (b.x() - a.x()), (double) (b.y() - a.y()));
+            if (len <= 1e-9) continue;
+            const double w  = 1e-3 * moves[i].width;
+            const double mx = 0.5e-3 * (a.x() + b.x()), my = 0.5e-3 * (a.y() + b.y());
+            Acc& c = acc[li];
+            c.a += len * w; c.sx += mx * len * w; c.sy += my * len * w;
+            c.segs.push_back({ mx, my, len * w, 0.0 });
+        }
+        m_qz_stability.geom.assign(layers.size(), QuasiZero::QzLayerGeom());
+        for (size_t li = 0; li < layers.size(); ++li) {
+            const Acc& c = acc[li];
+            QuasiZero::QzLayerGeom& g = m_qz_stability.geom[li];
+            if (c.a <= 0.0) continue;
+            g.area = c.a; g.cx = c.sx / c.a; g.cy = c.sy / c.a;
+            double Ixx = 0, Iyy = 0, Ixy = 0, rmax = 0;
+            for (const auto& sg : c.segs) {
+                const double dx = sg[0] - g.cx, dy = sg[1] - g.cy;
+                Ixx += sg[2] * dy * dy; Iyy += sg[2] * dx * dx; Ixy -= sg[2] * dx * dy;
+                rmax = std::max(rmax, std::hypot(dx, dy));
+            }
+            // add the own inertia of a bead of width w about its centre (thin strip ~ w^2/12 per unit area)
+            const double w_mean = layers[li].thickness;
+            Ixx += c.a * w_mean * w_mean / 12.0; Iyy += c.a * w_mean * w_mean / 12.0;
+            // 2x2 eigen: min principal inertia and its axis
+            const double tr = Ixx + Iyy, det = Ixx * Iyy - Ixy * Ixy;
+            const double disc = std::sqrt(std::max(0.0, 0.25 * tr * tr - det));
+            const double Imin = 0.5 * tr - disc;
+            g.I_min = std::max(Imin, 1e-16);
+            // eigenvector of Imin in the (x, y) tensor [[Ixx, Ixy],[Ixy, Iyy]]: (Ixy, Imin - Ixx) or (Imin - Iyy, Ixy)
+            double vx = Ixy, vy = Imin - Ixx;
+            if (std::hypot(vx, vy) < 1e-18) { vx = Imin - Iyy; vy = Ixy; }
+            if (std::hypot(vx, vy) < 1e-18) { vx = 1.0; vy = 0.0; }
+            // the tensor above is the inertia about an axis; the weak bending direction (sway) is
+            // perpendicular to the axis of minimum inertia -> rotate by 90 degrees
+            const double nn = std::hypot(vx, vy);
+            g.dir_x = -vy / nn; g.dir_y = vx / nn;
+            g.r_max = rmax + 0.5 * w_mean;
+        }
+        m_qz_stability.lambda_by_top = QuasiZero::qz_buckling_load_factors(m, layers, m_qz_stability.geom);
+    }
+    for (GLModel& gm : m_qz_deform_models) gm.reset();
+    m_qz_stability.deform_cache_vertex = size_t(-1);
     m_qz_stability.layer_top_z.resize(layers.size());
     for (size_t i = 0; i < layers.size(); ++i)
         m_qz_stability.layer_top_z[i] = (layers[i].z_bottom + layers[i].height) * 1000.0;
@@ -5346,6 +5413,103 @@ int GCodeViewer::qz_stability_layer_at_view_top() const
         if (d < bd) { bd = d; best = (int)i; }
     }
     return best;
+}
+
+
+void GCodeViewer::qz_rebuild_deformed_mesh()
+{
+    QzStability& st = m_qz_stability;
+    const libvgcode::Interval& vis = m_viewer.get_view_visible_range();
+    const size_t nverts = m_viewer.get_vertices_count();
+    if (nverts == 0 || vis[1] >= nverts) return;
+    // top layer = record of the last visible extrusion vertex
+    int top = -1;
+    for (size_t i = vis[1] + 1; i-- > 0;) {
+        const libvgcode::PathVertex& v = m_viewer.get_vertex_at(i);
+        if (!v.is_extrusion()) { if (vis[1] - i > 5000) break; continue; }
+        if (v.layer_id < st.layer_index_of_id.size()) top = st.layer_index_of_id[v.layer_id];
+        break;
+    }
+    if (top < 0) return;
+    const double t = (double) m_viewer.get_estimated_time_at(vis[1]);
+    st.deform_state = QuasiZero::qz_deformation_state(st.material, st.layers, st.geom, st.result, st.lambda_by_top, top, t, st.deform_opt);
+    if (!st.deform_state.valid) return;
+
+    // colours: the Stability legend palette, binned
+    const libvgcode::ColorRange& range = m_viewer.get_color_range(libvgcode::EViewType::Stability);
+    for (size_t b = 0; b < QZ_DEFORM_BINS; ++b) {
+        const libvgcode::Color c = range.get_color_at((float(b) + 0.5f) / float(QZ_DEFORM_BINS));
+        m_qz_deform_colors[b] = ColorRGBA(float(c[0]) / 255.0f, float(c[1]) / 255.0f, float(c[2]) / 255.0f, 1.0f);
+    }
+    std::array<GLModel::Geometry, QZ_DEFORM_BINS> geos;
+    for (auto& g : geos) g.format = { GLModel::Geometry::EPrimitiveType::Triangles, GLModel::Geometry::EVertexLayout::P3N3 };
+
+    auto add_face = [](GLModel::Geometry& g, const Vec3f& p0, const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, const Vec3f& n) {
+        const unsigned int base = (unsigned int) g.vertices_count();
+        g.add_vertex(p0, n); g.add_vertex(p1, n); g.add_vertex(p2, n); g.add_vertex(p3, n);
+        g.add_triangle(base, base + 1, base + 2); g.add_triangle(base, base + 2, base + 3);
+    };
+    for (size_t i = std::max<size_t>(vis[0], 1); i <= vis[1]; ++i) {
+        const libvgcode::PathVertex& v = m_viewer.get_vertex_at(i);
+        if (!v.is_extrusion()) continue;
+        const libvgcode::PathVertex& u = m_viewer.get_vertex_at(i - 1);
+        if (v.layer_id >= st.layer_index_of_id.size()) continue;
+        const int li = st.layer_index_of_id[v.layer_id];
+        if (li < 0 || li > st.deform_state.top) continue;
+        const QuasiZero::QzDeformLayer& dl = st.deform_state.layers[li];
+        // deform both ends (metres in, metres out)
+        double ax, ay, az, bx, by, bz;
+        QuasiZero::qz_deform_point(st.deform_state, st.layers, st.geom, li, 1e-3 * u.position[0], 1e-3 * u.position[1], 1e-3 * u.position[2], ax, ay, az);
+        QuasiZero::qz_deform_point(st.deform_state, st.layers, st.geom, li, 1e-3 * v.position[0], 1e-3 * v.position[1], 1e-3 * v.position[2], bx, by, bz);
+        const Vec3f a(1e3f * (float) ax, 1e3f * (float) ay, 1e3f * (float) az);
+        const Vec3f b(1e3f * (float) bx, 1e3f * (float) by, 1e3f * (float) bz);
+        Vec3f d = b - a; d.z() = 0.0f;
+        const float len = d.norm();
+        if (len < 1e-4f) continue;
+        d /= len;
+        const float w = 0.5f * v.width * (float) dl.width_scale;
+        const float h = v.height * (float) (1.0 - dl.squash);
+        const Vec3f n(-d.y() * w, d.x() * w, 0.0f);
+        const Vec3f dz(0.0f, 0.0f, h);
+        const size_t bin = std::min(QZ_DEFORM_BINS - 1, (size_t) std::max(0.0f, std::min(dl.util, 0.9999f) * (float) QZ_DEFORM_BINS));
+        GLModel::Geometry& g = geos[bin];
+        add_face(g, a + n, b + n, b - n, a - n, Vec3f::UnitZ());                        // top
+        add_face(g, a - n - dz, b - n - dz, b + n - dz, a + n - dz, -Vec3f::UnitZ());    // bottom
+        add_face(g, a + n - dz, b + n - dz, b + n, a + n, Vec3f(-d.y(), d.x(), 0.0f));   // +n side
+        add_face(g, a - n, b - n, b - n - dz, a - n - dz, Vec3f(d.y(), -d.x(), 0.0f));   // -n side
+    }
+    for (size_t b = 0; b < QZ_DEFORM_BINS; ++b) {
+        m_qz_deform_models[b].reset();
+        if (geos[b].vertices_count() > 0) {
+            m_qz_deform_models[b].init_from(std::move(geos[b]));
+            m_qz_deform_models[b].set_color(m_qz_deform_colors[b]);
+        }
+    }
+    st.deform_cache_vertex = vis[1];
+    st.deform_cache_time   = t;
+}
+
+void GCodeViewer::qz_render_deformed()
+{
+    QzStability& st = m_qz_stability;
+    const libvgcode::Interval& vis = m_viewer.get_view_visible_range();
+    const double t = (m_viewer.get_vertices_count() > vis[1]) ? (double) m_viewer.get_estimated_time_at(vis[1]) : 0.0;
+    if (vis[1] != st.deform_cache_vertex || std::fabs(t - st.deform_cache_time) > 0.25)
+        qz_rebuild_deformed_mesh();
+
+    GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
+    if (shader == nullptr) return;
+    shader->start_using();
+    shader->set_uniform("emission_factor", 0.0f);
+    const Camera& camera = wxGetApp().plater()->get_camera();
+    const Transform3d& view_matrix = camera.get_view_matrix();
+    shader->set_uniform("view_model_matrix", view_matrix);
+    shader->set_uniform("projection_matrix", camera.get_projection_matrix());
+    const Matrix3d view_normal_matrix = view_matrix.matrix().block(0, 0, 3, 3);
+    shader->set_uniform("view_normal_matrix", view_normal_matrix);
+    for (GLModel& gm : m_qz_deform_models)
+        if (gm.is_initialized()) gm.render();
+    shader->stop_using();
 }
 
 } // namespace GUI

@@ -11725,7 +11725,7 @@ void GLCanvas3D::_render_qz_quick_cards()
                 ImGui::SetWindowFontScale(0.85f);
                 ImGui::TextColored(lbl_col, "%s", label);
                 ImGui::SetWindowFontScale(1.0f);
-                ImGui::SameLine(150.0f * scale);
+                ImGui::SameLine(175.0f * scale);
                 if (vcol) ImGui::TextColored(*vcol, "%s", value.c_str()); else ImGui::TextUnformatted(value.c_str());
             };
             auto fmt = [](const char *f, double v) { char b[64]; std::snprintf(b, sizeof(b), f, v); return std::string(b); };
@@ -11773,12 +11773,38 @@ void GLCanvas3D::_render_qz_quick_cards()
                 kv(_u8L("Max height (plastic)").c_str(), r.max_height_plastic < 0.0 ? _u8L("unbounded") : fmt("%.0f mm", r.max_height_plastic * 1000.0));
                 kv(_u8L("Buckling, free wall").c_str(), r.buckling_height_wall_cured > 0.0 ? fmt("%.0f mm", std::min(r.buckling_height_wall_cured, 9.999) * 1000.0) + " (" + fmt("%.0f mm", r.mean_thickness * 1000.0) + " " + _u8L("bead") + ")" : std::string("-"));
                 if (r.min_time_scale > 1.0)
-                    kv(_u8L("Recommended layer time").c_str(), fmt("x %.2f", r.min_time_scale) + "  " + _u8L("of current"), &warn_col);
+                    kv(_u8L("Layer time factor").c_str(), fmt("x %.2f", r.min_time_scale) + "  " + _u8L("to be safe"), &warn_col);
                 else if (r.min_time_scale < 0.0)
-                    kv(_u8L("Recommended layer time").c_str(), _u8L("no speed makes it safe"), &bad_col);
-                ImGui::SetWindowFontScale(0.85f);
-                ImGui::TextColored(lbl_col, "%s", _u8L("Level 0 model: yield + structuration, bed confinement. Calibrate the material with the collapse tests.").c_str());
-                ImGui::SetWindowFontScale(1.0f);
+                    kv(_u8L("Layer time factor").c_str(), _u8L("no speed makes it safe"), &bad_col);
+                if (!st.lambda_by_top.empty()) {
+                    const double lam_end = st.lambda_by_top.back();
+                    kv(_u8L("Buckling factor").c_str(), lam_end > 100.0 ? std::string("> 100") : fmt("%.2f", lam_end) + (lam_end <= 1.0 ? "  " + _u8L("(buckles)") : std::string("")), lam_end <= 1.0 ? &bad_col : (lam_end < 2.0 ? &warn_col : nullptr));
+                }
+                // Level 1.5: deformed stack animation, synced with the player
+                ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+                bool deform = m_gcode_viewer.qz_deform_view();
+                if (ImGui::Checkbox((_u8L("Show deformation") + "##qzdef").c_str(), &deform))
+                    m_gcode_viewer.set_qz_deform_view(deform);
+                if (deform) {
+                    const auto &ds = st.deform_state;
+                    if (ds.valid) {
+                        if (ds.collapsed)
+                            kv(_u8L("Now").c_str(), (ds.by_buckling ? _u8L("buckled") : _u8L("plastic hinge")) + " - " + _u8L("layer") + " " + std::to_string(ds.hinge_layer + 1) + ", " + fmt("%.0f", ds.fold_angle * 180.0 / 3.14159265) + " deg", &bad_col);
+                        else
+                            kv(_u8L("Now").c_str(), fmt("%.1f mm", ds.height_deformed * 1000.0) + " " + _u8L("tall") + ", " + _u8L("sway") + " " + fmt("%.1f mm", ds.sway_amp * 1000.0), &ok_col);
+                    }
+                    ImGui::SetWindowFontScale(0.85f);
+                    ImGui::PushTextWrapPos(330.0f * scale);
+                    ImGui::TextColored(lbl_col, "%s", _u8L("Kinematic view driven by the model: squash where load/strength is high, sway from buckling, fold at the hinge. Not a nonlinear FEM.").c_str());
+                    ImGui::PopTextWrapPos();
+                    ImGui::SetWindowFontScale(1.0f);
+                } else {
+                    ImGui::SetWindowFontScale(0.85f);
+                    ImGui::PushTextWrapPos(330.0f * scale);
+                    ImGui::TextColored(lbl_col, "%s", _u8L("Level 0 model: yield + structuration, bed confinement. Calibrate the material with the collapse tests.").c_str());
+                    ImGui::PopTextWrapPos();
+                    ImGui::SetWindowFontScale(1.0f);
+                }
             }
         }
         imgui.end();
