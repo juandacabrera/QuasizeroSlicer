@@ -73,16 +73,45 @@ model (and in the tests) as the analytical reference.
 - **Settlement.** Each point drops by the squash of all the material below it, so barrels
   and dents show where they belong. The height reported in the card is the mean deformed
   top of the top layer's material (a ring has no material at its centroid).
-- **Sway and fold** as in §1b, with the hinge pivot taken at the material point of the
-  hinge layer furthest along the fold direction, where it actually sits after settlement.
-- **After the collapse.** Layers deposited before the collapse fold about the hinge; layers
-  deposited after it are *not* transformed — they fall at their nominal XY (small
-  deterministic jitter) onto a landing height field made of what is left standing plus the
-  strands that fell before them. Each end of a strand finds its own landing height, so a
-  strand reaching the edge of the pile drapes to the ground instead of hovering; strands of
-  the same layer lie side by side; no strand lands above the nozzle. The heap grows under
-  the toolpath and spreads slowly along it. It is a height-field sketch — it does not
-  conserve volume and has no angle of repose.
+- **Sway** as in §1b (imperfection amplified by the buckling load factor along the weak
+  axis). The fold direction is fixed for the whole simulation (weak axis of the hinge
+  layer), so it never swings as layers are added.
+- **Collapse kinematics** (redesigned on the cocoa-paste cylinder of `IMG_4657`, frames
+  25.5–29.7 s: 25 s of silent growth, one-sided bulge of the lower third over ~2 s, the
+  wall bends over a zone of 8–10 layers, the upper part swings over in ~1 s until its rim
+  meets the bed, the arch settles and widens). Each frame runs a phase machine:
+  *Stable* → *Pre-failure* when the remembered load/strength of the hinge zone passes 0.6
+  (the bulge becomes asymmetric towards the side the stack will fold to, a lean ramps
+  smoothly to 1.5°) → *Failure* at t_collapse (the axis bends with constant curvature over
+  a distributed hinge zone of 0.8 section diameters, a quarter below the critical layer
+  and the rest above, rigid continuation above; the inner side compresses like an
+  accordion — offset capped at 0.8 R, never an inversion — the outer side opens; the angle
+  grows as 1.5°·exp((t − t_c)/0.4 s): long accumulation, brief event) → *Collapsed* when
+  the lowest bead bottom of the rotated part reaches the bed (contact angle by bisection
+  every frame; over the next second the arch settles: nothing below the bed, the part on
+  the bed squashes and spreads along the fold, +8° absorbed; the hinge zone crushes with a
+  bell profile and the settlement below is recomputed) → *Post-collapse* while more
+  layers are printed. Buckling collapses put the hinge zone at the base.
+- **After the collapse — the bead keeps coming** (`QzBeadSim`, `QzBeadSim.{hpp,cpp}`,
+  `tests/qzmini/test_qz_beadsim.cpp`). The head follows its nominal path; the bead
+  extruded from then on is a chain of particles emitted at the nozzle at the real cadence
+  (one per bead width of path) with position-based dynamics: gravity, strong viscous
+  damping, inextensible links along the chain, a weak bending smoothing of the hanging
+  part, a little smooth lateral noise at emission, collision with a height field of
+  everything already deposited (the settled stack plus the strand itself once at rest —
+  frozen particles are stamped into the field, flattened ×1.35), friction on contact. The
+  strand hangs from the nozzle, descends at the extrusion speed, lands under the head and
+  is laid along the projected path; over the edge of the pile it drapes down (a step
+  taller than 1.5 bead heights is a wall: the strand is stopped against it, never lifted
+  onto it); rings pile up strand after strand. A travel (XY jump > 1.5 bead widths or a
+  z jump > 2.5 bead heights) lets the strand go and starts a new one; a plain layer change
+  keeps it continuous; when the path ends the strand stays hanging from the stopped head.
+  Deterministic for a given seed; snapshots every 20 s make scrubbing backwards cheap.
+  Coverage: the first 15 min of print time after the collapse (`max_duration`), later
+  the head goes on without a strand. The bead is drawn as one continuous tube per chain,
+  the attached one up to the nozzle, coloured at the bottom of the load/strength ladder
+  (it carries no load). The height-field sketch of dropped strands remains the fallback
+  when the bead simulator cannot run (no collapse, no segments after it).
 - **Colour.** The deformed beads are coloured by the local load/strength they *remember*
   up to the play instant (Stability palette) — the same per-cell field that drives the
   squash, so colour and geometry agree; it is ≥ the instantaneous value and never resets.
@@ -92,13 +121,27 @@ model (and in the tests) as the analytical reference.
 - **Range.** With *Show deformation* on, every layer of the layers range up to the player
   position is drawn (the "sequential slider applies only to top layer" preference does
   not hide the layers below), coloured as above.
-- **Rendering.** Octagonal tubes (square beyond 40 000 visible strands) rebuilt whenever the
-  player position or time changes; the nominal toolpaths are rendered masked so libvgcode
-  keeps its deferred updates.
+- **Rendering** (`QzSkeleton`, `QzSkeleton.{hpp,cpp}`, `tests/qzmini/test_qz_skeleton.cpp`).
+  Consecutive extrusion segments that share an endpoint (no travel between, same layer)
+  form one bead = polyline of *shared* centre-line nodes; the simulator poses the nodes
+  (a node shared by two segments gets one position) and the tubes are re-skinned as
+  continuous strips — one ring per node with orientation continuity, so a bead bends,
+  squashes and falls without breaking into per-move blocks. Octagonal section (square
+  beyond 40 000 visible strands), rebuilt whenever the player position or time changes;
+  the nominal toolpaths are rendered masked so libvgcode keeps its deferred updates.
+  Acceptance test: the number of connected mesh components equals the number of visible
+  beads under any displacement (`connected_components`).
+- **Player.** With the deformation view on, the moves slider runs in slow motion (1/6 of
+  the layer pace) from 0.5 s before t_collapse to 4.5 s after it, then resumes.
 
-Options (`QzSimOptions`, all **[hyp]**): squash starts at U = 0.5 and reaches 35 % at U = 1,
-bulge gain 0.6, imperfection 0.2 % of height, sway cap 25 %, fold 75° over two mean layer
-times, hinge crush +45 %, dropped strands flattened ×1.35 with ±0.125 bead widths of jitter.
+Options (`QzSimOptions`, `QzBeadOptions`, all **[hyp]**): squash starts at U = 0.5 and
+reaches 35 % at U = 1, bulge gain 0.6 (×1.2 on the compressed side), pre-failure from 0.6
+of the hinge-zone load/strength, imperfection 0.2 % of height, sway cap 25 %, hinge zone
+0.8 diameters (25 % below the critical layer), lean 1.5°, fold time constant 0.4 s, cap
+150°, settling 1 s / +8°, hinge crush +45 %, inner offset cap 0.8 R; bead: dt 1/120 s,
+damping 0.85 per step, 8 constraint passes, bending 0.1, laid-strand share 0.2, noise
+0.2 of the nozzle speed, rest 0.5 s, flatten ×1.35, wall 1.5 bead heights, 20 000
+particles, 900 s.
 
 ## 2. Where it shows
 
@@ -164,10 +207,14 @@ Literature ranges, to anchor expectations. Values are tagged **[lit: source]** o
   free wall length, curvature, closed loops, corrugation) is the next step.
 - Strength growth is linear; drying-driven build-up depends on humidity, bead size and
   exposure. Re-calibrate per batch.
-- Not an FEM: the deformed geometry (§1b, §1c) is kinematic — mode shapes, hinge
-  rotation, a landing height field — not an equilibrium solution; no adhesion failure, no
-  imperfections beyond the confinement/knockdown factors. The pile of fallen strands does
-  not conserve volume and has no angle of repose.
+- Not an FEM: the deformed geometry (§1b, §1c) is kinematic — mode shapes, a distributed
+  hinge with a prescribed fold law, a settled height field — not an equilibrium solution;
+  no adhesion failure, no imperfections beyond the confinement/knockdown factors. The
+  post-collapse bead is a particle chain on a height field: no bead-to-bead adhesion, no
+  self-collision between hanging strands, a cliff stops the strand instead of letting it
+  slide down, the pile is stamped (no angle of repose), and it falls on the *settled*
+  stack from the start (the fold itself takes ~3 s; the strand needs longer than that to
+  reach the pile). Only the first 15 min after the collapse are simulated.
 - No prediction here is hardware-validated. Treat the card as a warning system, not a
   guarantee.
 

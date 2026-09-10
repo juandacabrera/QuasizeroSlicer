@@ -5501,7 +5501,25 @@ void GCodeViewer::qz_build_sim()
     if (segs.empty()) { st.seg_of_vertex.clear(); return; }
     st.skeleton.build(segs);
     st.sim.build(st.material, st.layers, st.geom, std::move(segs), st.result, st.lambda_by_top, st.options, QuasiZero::QzSimOptions());
-    if (!st.sim.valid()) { st.seg_of_vertex.clear(); st.skeleton = QuasiZero::QzSkeleton(); }
+    if (!st.sim.valid()) { st.seg_of_vertex.clear(); st.skeleton = QuasiZero::QzSkeleton(); return; }
+    // PR 4 (E6): the bead extruded after the collapse - nozzle path of the layers deposited
+    // after the collapse step, falling on the settled height field of the stack
+    st.bead = QuasiZero::QzBeadSim();
+    if (st.sim.collapse_step() >= 0) {
+        std::vector<float> land; double t_settled = 0.0;
+        if (st.sim.settled_landing(land, t_settled)) {
+            std::vector<QuasiZero::QzSimSegment> path;
+            double t_start = st.sim.collapse_time();
+            for (size_t i = 0; i < st.sim.segments_count(); ++i) {
+                const QuasiZero::QzSimSegment& sg = st.sim.segment(i);
+                if (sg.layer > st.sim.collapse_step()) path.push_back(sg);
+                else t_start = std::max(t_start, (double) sg.t_end);
+            }
+            if (!path.empty())
+                st.bead.build(path, t_start, land, st.sim.grid_x0(), st.sim.grid_y0(), st.sim.cell_mm(),
+                              st.sim.cells_x(), st.sim.cells_y(), QuasiZero::QzBeadOptions());
+        }
+    }
 }
 
 void GCodeViewer::qz_rebuild_deformed_mesh()
@@ -5548,12 +5566,33 @@ void GCodeViewer::qz_rebuild_deformed_mesh()
         for (GLModel& gm : m_qz_deform_models) gm.reset();
         return;
     }
-    // poses of the skeleton nodes (shared between consecutive segments) and continuous tubes
-    QuasiZero::qz_pose_from_sim(st.sim, st.sim_frame, st.skeleton, seg_lo, seg_hi, st.pose);
+    // poses of the skeleton nodes (shared between consecutive segments) and continuous tubes;
+    // with the bead simulator the strands deposited after the collapse are its chains instead
+    const bool use_bead = st.bead.valid() && st.sim_frame.collapsed;
+    QuasiZero::qz_pose_from_sim(st.sim, st.sim_frame, st.skeleton, seg_lo, seg_hi, st.pose, use_bead);
     QuasiZero::QzTubeOptions topt;
     topt.sides = (seg_hi - seg_lo > 40000) ? 4 : 8;
     topt.bins  = (int) QZ_DEFORM_BINS;
     QuasiZero::QzTubeMesher::mesh(st.skeleton, st.pose, topt, st.tube_geos);
+    if (use_bead) {
+        // the strand hanging from the head and everything it has piled up so far, at this
+        // instant (forward steps are incremental, backwards jumps restart from a snapshot)
+        st.bead.seek(t);
+        const std::vector<QuasiZero::QzBeadParticle>& parts = st.bead.particles();
+        float nx = 0.0f, ny = 0.0f, nz = 0.0f;
+        const bool has_nozzle = st.bead.nozzle(nx, ny, nz);
+        const std::vector<std::vector<int>>& chains = st.bead.chains();
+        for (size_t c = 0; c < chains.size(); ++c) {
+            st.bead_pts.clear();
+            for (int idx : chains[c])
+                if (idx >= 0 && (size_t) idx < parts.size()) st.bead_pts.push_back({ parts[idx].x, parts[idx].y, parts[idx].z });
+            // the attached chain runs up to the nozzle
+            if ((int) c == st.bead.active_chain() && has_nozzle && !st.bead_pts.empty()) st.bead_pts.push_back({ nx, ny, nz });
+            if (st.bead_pts.size() < 2) continue;
+            // unloaded material: bottom of the load/strength ladder
+            QuasiZero::QzTubeMesher::mesh_polyline(st.bead_pts, st.bead.bead_w(), st.bead.bead_h(), 0.02f, topt, st.tube_geos);
+        }
+    }
     for (size_t b = 0; b < QZ_DEFORM_BINS; ++b) {
         m_qz_deform_models[b].reset();
         if (b >= st.tube_geos.size()) continue;

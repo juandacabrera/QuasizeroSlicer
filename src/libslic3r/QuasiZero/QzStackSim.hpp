@@ -115,6 +115,11 @@ public:
     int    cells_x() const { return m_nx; }
     int    cells_y() const { return m_ny; }
     double cell_mm() const { return m_cell; }
+    double grid_x0() const { return m_x0; }
+    double grid_y0() const { return m_y0; }
+    // height field (per cell, [mm] bead top) of what is left standing once the collapse has
+    // settled - the ground the post-collapse bead falls on. False when no collapse is predicted.
+    bool   settled_landing(std::vector<float> &land, double &t_settled) const;
     int    collapse_step() const { return m_k_collapse; }
     double collapse_time() const { return m_t_collapse; }
     int    hinge_layer() const { return m_hinge; }
@@ -154,7 +159,7 @@ private:
     // deformed top z (before any fold) averaged over the material of a layer (segment midpoints)
     double layer_mean_top(const QzSimFrame &fr, int layer) const;
     float  layer_mean_settle(const QzSimFrame &fr, int layer) const;
-    void  build_landing(QzSimFrame &fr) const;
+    void  build_landing(QzSimFrame &fr, bool standing_only = false) const;
     static uint32_t hash_u32(uint32_t v);
 
     bool m_valid = false;

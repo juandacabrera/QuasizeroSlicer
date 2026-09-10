@@ -24210,6 +24210,14 @@ msgid "strands on the pile"
 msgstr "cordones sobre el montón"
 
 #. Quasizero QZmini stability
+msgid "of strand"
+msgstr "de cordón"
+
+#. Quasizero QZmini stability
+msgid "at rest on the pile"
+msgstr "en reposo sobre el montón"
+
+#. Quasizero QZmini stability
 msgid "tall"
 msgstr "de alto"
 
@@ -24282,15 +24290,17 @@ msgid ""
 "Kinematic view driven by the model: every layer printed so far stays "
 "visible, each strand keeps the peak load/strength it has seen (colour and "
 "squash), the hinge zone bulges towards the fold side, then bends over a "
-"distributed hinge until it meets the bed and settles; later strands fall "
-"on the pile. Collapse plays at half speed. Not a nonlinear FEM."
+"distributed hinge until it meets the bed and settles; the bead extruded "
+"afterwards hangs from the head, falls and piles up on what is left. "
+"Collapse plays in slow motion. Not a nonlinear FEM."
 msgstr ""
 "Vista cinemática guiada por el modelo: todas las capas impresas hasta "
 "ahora siguen visibles, cada cordón conserva la carga/resistencia máxima "
 "que ha visto (color y aplastamiento), la zona de rótula se abomba hacia el "
 "lado del pliegue y después se dobla sobre una rótula distribuida hasta "
-"tocar la cama y asentarse; los cordones posteriores caen sobre el montón. "
-"El colapso se reproduce a media velocidad. No es un FEM no lineal."
+"tocar la cama y asentarse; el cordón extruido después cuelga del cabezal, "
+"cae y se amontona sobre lo que queda. El colapso se reproduce a cámara "
+"lenta. No es un FEM no lineal."
 
 #~ msgid ""
 #~ "It is recommended to assemble objects first,\n"

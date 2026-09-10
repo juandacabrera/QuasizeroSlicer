@@ -11801,7 +11801,12 @@ void GLCanvas3D::_render_qz_quick_cards()
                         kv(_u8L("Phase").c_str(), _u8L(phase_txt), &pc);
                         if (fs.collapsed) {
                             kv(_u8L("Fold").c_str(), (fs.by_buckling ? _u8L("buckling") : _u8L("plastic hinge")) + " - " + _u8L("layer") + " " + std::to_string(fs.hinge_layer + 1) + ", " + fmt("%.0f", fs.fold_angle * 180.0 / 3.14159265) + " deg" + (fs.contact ? ", " + _u8L("on the bed") : std::string()), &bad_col);
-                            if (fs.fallen_count > 0)
+                            if (st.bead.valid() && !st.bead.particles().empty()) {
+                                // PR 4: particle chain of the bead extruded after the collapse
+                                size_t at_rest = 0;
+                                for (const auto &q : st.bead.particles()) if (q.frozen) ++at_rest;
+                                kv(_u8L("Falling").c_str(), fmt("%.0f mm", (double) st.bead.particles().size() * st.bead.spacing()) + " " + _u8L("of strand") + ", " + fmt("%.0f mm", (double) at_rest * st.bead.spacing()) + " " + _u8L("at rest on the pile"), &bad_col);
+                            } else if (fs.fallen_count > 0)
                                 kv(_u8L("Falling").c_str(), std::to_string(fs.fallen_count) + " " + _u8L("strands on the pile"), &bad_col);
                         } else {
                             if (fs.phase == QuasiZero::QzSimPhase::PreFailure)
@@ -11814,7 +11819,7 @@ void GLCanvas3D::_render_qz_quick_cards()
                     }
                     ImGui::SetWindowFontScale(0.85f);
                     ImGui::PushTextWrapPos(330.0f * scale);
-                    ImGui::TextColored(lbl_col, "%s", _u8L("Kinematic view driven by the model: every layer printed so far stays visible, each strand keeps the peak load/strength it has seen (colour and squash), the hinge zone bulges towards the fold side, then bends over a distributed hinge until it meets the bed and settles; later strands fall on the pile. Collapse plays at half speed. Not a nonlinear FEM.").c_str());
+                    ImGui::TextColored(lbl_col, "%s", _u8L("Kinematic view driven by the model: every layer printed so far stays visible, each strand keeps the peak load/strength it has seen (colour and squash), the hinge zone bulges towards the fold side, then bends over a distributed hinge until it meets the bed and settles; the bead extruded afterwards hangs from the head, falls and piles up on what is left. Collapse plays in slow motion. Not a nonlinear FEM.").c_str());
                     ImGui::PopTextWrapPos();
                     ImGui::SetWindowFontScale(1.0f);
                 } else {

@@ -89,6 +89,11 @@ public:
     static void mesh(const QzSkeleton &skel, const std::vector<QzSkelNodePose> &pose,
                      const QzTubeOptions &opt, std::vector<QzTubeGeometry> &out);
 
+    // one continuous tube along a free polyline (the post-collapse bead): constant section
+    // w x h, one colour value; appended to `out` (which must already have opt.bins entries)
+    static void mesh_polyline(const std::vector<QzSimPoint> &pts, float w, float h, float value,
+                              const QzTubeOptions &opt, std::vector<QzTubeGeometry> &out);
+
     // number of connected components of the meshed tubes (by exact ring coincidence) -
     // test helper; equals the number of visible bead runs when the mesh is continuous
     static size_t connected_components(const QzSkeleton &skel, const std::vector<QzSkelNodePose> &pose,
@@ -98,8 +103,9 @@ public:
 // Poses of every node for one simulator frame. Segments in [seg_lo, seg_hi] (sim order) are
 // deposited/visible; the shared node between two visible segments gets the same position
 // from both (the simulator transforms endpoints by their coordinates), its colour value is
-// the max of the two segments' remembered load/strength.
+// the max of the two segments' remembered load/strength. `skip_fallen` hides the strands
+// deposited after the collapse (drawn by the bead simulator instead of the height-field sketch).
 void qz_pose_from_sim(const QzStackSim &sim, const QzSimFrame &fr, const QzSkeleton &skel,
-                      int seg_lo, int seg_hi, std::vector<QzSkelNodePose> &out);
+                      int seg_lo, int seg_hi, std::vector<QzSkelNodePose> &out, bool skip_fallen = false);
 
 }} // namespace Slic3r::QuasiZero

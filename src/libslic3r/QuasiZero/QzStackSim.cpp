@@ -476,7 +476,23 @@ double QzStackSim::layer_mean_top(const QzSimFrame &fr, int layer) const
     return sum / (double) m_layer_segs[layer].size();
 }
 
-void QzStackSim::build_landing(QzSimFrame &fr) const
+bool QzStackSim::settled_landing(std::vector<float> &land, double &t_settled) const
+{
+    land.clear();
+    if (!m_valid || m_k_collapse < 0) return false;
+    const double lean0 = m_opt.lean0_deg * QZ_PI / 180.0;
+    const double theta_max = m_opt.fold_angle_max * QZ_PI / 180.0;
+    // the latest the fold can take + the settling time
+    t_settled = m_t_collapse + std::max(1e-3, m_opt.fold_tau) * std::log(std::max(1.0, theta_max / lean0)) + m_opt.settle_time + 0.1;
+    QzSimFrame fr;
+    frame(m_k_collapse, t_settled, fr);
+    if (!fr.valid) return false;
+    build_landing(fr, true);
+    land = fr.land;
+    return true;
+}
+
+void QzStackSim::build_landing(QzSimFrame &fr, bool standing_only) const
 {
     const size_t nc  = (size_t) m_nx * m_ny;
     const int    top = fr.top;
@@ -518,6 +534,7 @@ void QzStackSim::build_landing(QzSimFrame &fr) const
             stamp(fr.land, a, b, radius(s.w * (1.0f + fr.squash[(size_t) j * nc + ca]) * std::max(wsa, wsb)));
         }
     fr.land_top = top; fr.land_fold_angle = fr.fold_angle + fr.settle_f;
+    if (standing_only) { fr.fallen_a.clear(); fr.fallen_b.clear(); fr.fallen_idx.assign(m_segs.size(), -1); return; }
 
     // 2) strands deposited after the collapse. Each layer lands on the field as it was when
     //    the layer started (its own strands lie side by side, they do not stack on each

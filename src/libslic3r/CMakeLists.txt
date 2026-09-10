@@ -235,6 +235,8 @@ set(lisbslic3r_sources
     QuasiZero/QzStackSim.hpp
     QuasiZero/QzSkeleton.cpp
     QuasiZero/QzSkeleton.hpp
+    QuasiZero/QzBeadSim.cpp
+    QuasiZero/QzBeadSim.hpp
     GCode/GCodeProcessor.cpp
     GCode/GCodeProcessor.hpp
     GCode.hpp

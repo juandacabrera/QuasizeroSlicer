@@ -14,6 +14,7 @@
 #include "libslic3r/QuasiZero/QzStabilityModel.hpp"
 #include "libslic3r/QuasiZero/QzStackSim.hpp"
 #include "libslic3r/QuasiZero/QzSkeleton.hpp"
+#include "libslic3r/QuasiZero/QzBeadSim.hpp"
 // needed for tech VGCODE_ENABLE_COG_AND_TOOL_MARKERS
 #include <libvgcode/include/Types.hpp>
 
@@ -274,6 +275,10 @@ public:
         QuasiZero::QzSkeleton                 skeleton;
         std::vector<QuasiZero::QzSkelNodePose> pose;         // scratch, per node
         std::vector<QuasiZero::QzTubeGeometry> tube_geos;    // scratch, per colour bin
+        // PR 4 (E6): the bead extruded after the collapse, simulated as a particle chain that
+        // hangs from the head and piles up on the settled stack (replaces the height-field sketch)
+        QuasiZero::QzBeadSim                  bead;
+        std::vector<QuasiZero::QzSimPoint>    bead_pts;      // scratch, one chain
         bool                                  deform_view = false;
         size_t                                deform_cache_vertex = size_t(-1);
         double                                deform_cache_time = -1.0;

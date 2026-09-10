@@ -81,20 +81,43 @@ PASS samples/qzmini/qz_sample_one_refill.gcode  (refills=1, deposited=131.00 ml)
 PASS samples/qzmini/qz_sample_two_refills.gcode  (refills=2, deposited=262.00 ml)
 ```
 
-## Stability model and stack simulation (executed, 2026-09-09)
+## Stability model, stack simulation, skeleton and bead simulation (executed, 2026-09-09)
 
 Same runner, current tree: `bash tests/qzmini/standalone/run_standalone.sh` →
-**56 tests, 0 failures** (29 MVP + short-segment anchoring / subdivision + 13 stability +
-5 stack-simulation; the two newest check that the load/strength field shown at layer k
-keeps the peak memory — it dips between load increments for a fast-curing paste with
-pauses — and that the deformed view's per-strand colour equals that field on a ring). The stack-simulation tests check that a uniform ring reproduces the
-layer model exactly, that the bulge band sits above the bed and the top settles, that an
-irregular part (half ring on a full ring) loads the base unevenly, and that after a
-collapse the earlier layers fold about the hinge while later strands fall on the pile
-deterministically. An additional timing check on a synthetic 480 000-segment,
-400-layer job: simulation build ≈ 1.0 s, one playback frame ≈ 20 ms (this environment,
-2 cores). The GUI glue of the deformation view (`GCodeViewer`, `GLCanvas3D`, libvgcode
-legend) is compiled by the Windows build, not here — **not yet built or visually checked**.
+**66 tests, 0 failures** (13 MVP refill + 4 short-segment anchoring + 11 G-code state
+machine + 3 subdivision + 7 volumetric & calibration + 13 stability + 8 stack-simulation +
+4 skeleton/tube + 3 bead-simulation; ~13 s, g++ -O1).
+
+- Stability model: the load/strength field shown at layer k keeps the peak memory (it
+  dips between load increments for a fast-curing paste with pauses; `qz_utilization_upto`
+  is monotone), and the deformed view's per-strand colour equals that field on a ring.
+- Stack simulation: a uniform ring reproduces the layer model exactly; the bulge band sits
+  above the bed and the top settles; an irregular part (half ring on a full ring) loads
+  the base unevenly; after a collapse the earlier layers fold about the hinge while later
+  strands fall on the pile deterministically; the remembered ratio never decreases along
+  the play; the phases come in order (lean ≤ seed before t_collapse, fold angle monotone,
+  bed contact reached, nothing below the bed, settling → 1); the fold goes towards +dir
+  with the base standing still, the inner gap closes less than the outer one opens; the
+  pre-failure bulge is larger on the fold side.
+- Skeleton / tubes: shared nodes between consecutive segments, one ring per node,
+  components == beads under a bend, a fold and a drop (the handoff acceptance test),
+  hidden nodes split beads, caps closed.
+- Bead simulation (rings printed 100 mm above a field with a 10 mm cliff): emission at the
+  nozzle cadence (13–17 particles after 20 s at 3 mm/s), all below the nozzle and never
+  inside the field, the strand hangs from the head within one spacing, links ≤ 1.3
+  spacings; by the end most particles are at rest and stamped, the pile grew on the
+  block, nothing sits inside the cliff, the loop sinks to the bed on the low side; the
+  strand stays attached to the stopped head. Determinism and rewind through snapshots
+  (two simulators, one scrubbed back, agree to 1e-3 mm); a travel starts a new chain and
+  the particle cap holds. Side/top plots of the chain over time were inspected
+  (hanging strand, laid rings, drape over the cliff, climb back, rings piling).
+
+An additional timing check on a synthetic 480 000-segment, 400-layer job: simulation
+build ≈ 1.0 s, one playback frame ≈ 20 ms (this environment, 2 cores); the bead
+simulator of the reference cylinder (8 layers after the collapse, ~220 particles) runs
+its 5 min of print time in ~0.15 s. The GUI glue of the deformation view (`GCodeViewer`,
+`GLCanvas3D`, libvgcode legend) is compiled by the Windows build, not here — **not yet
+built or visually checked**.
 
 ## Static/structural checks (executed)
 

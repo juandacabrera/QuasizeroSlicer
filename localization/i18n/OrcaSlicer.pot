@@ -20593,6 +20593,14 @@ msgid "strands on the pile"
 msgstr ""
 
 #. Quasizero QZmini stability
+msgid "of strand"
+msgstr ""
+
+#. Quasizero QZmini stability
+msgid "at rest on the pile"
+msgstr ""
+
+#. Quasizero QZmini stability
 msgid "tall"
 msgstr ""
 
@@ -20663,7 +20671,8 @@ msgid ""
 "Kinematic view driven by the model: every layer printed so far stays "
 "visible, each strand keeps the peak load/strength it has seen (colour and "
 "squash), the hinge zone bulges towards the fold side, then bends over a "
-"distributed hinge until it meets the bed and settles; later strands fall "
-"on the pile. Collapse plays at half speed. Not a nonlinear FEM."
+"distributed hinge until it meets the bed and settles; the bead extruded "
+"afterwards hangs from the head, falls and piles up on what is left. "
+"Collapse plays in slow motion. Not a nonlinear FEM."
 msgstr ""
 

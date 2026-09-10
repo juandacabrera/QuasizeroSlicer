@@ -94,6 +94,46 @@ void add_cap(QzTubeGeometry &g, const Ring &r, const V3 &centre, const V3 &n, bo
 }
 } // namespace
 
+namespace {
+// one run of m >= 2 points with per-point section and colour value -> tubes into `out`
+void mesh_run(const std::vector<V3> &P, const std::vector<float> &W, const std::vector<float> &H, const std::vector<float> &val,
+              int sides, int bins, bool caps, std::vector<QzTubeGeometry> &out)
+{
+    const int m = (int) P.size();
+    if (m < 2) return;
+    std::vector<V3> T(m);
+    std::vector<Ring> rings(m);
+    for (int k = 0; k < m; ++k) {
+        V3 t;
+        if (k == 0) t = P[1] - P[0];
+        else if (k == m - 1) t = P[m - 1] - P[m - 2];
+        else t = norm(P[k] - P[k - 1]) + norm(P[k + 1] - P[k]);
+        if (len(t) < 1e-6f) t = (k > 0) ? T[k - 1] : V3{ 1, 0, 0 };
+        T[k] = norm(t);
+    }
+    V3 side{ 0, 0, 0 };
+    for (int k = 0; k < m; ++k) ring_at(P[k], T[k], side, std::max(1e-3f, W[k]), std::max(1e-3f, H[k]), sides, rings[k]);
+    auto bin_of = [bins](float v) { return std::min(bins - 1, (int) std::max(0.0f, std::min(v, 0.99999f) * (float) bins)); };
+    for (int k = 0; k + 1 < m; ++k) {
+        QzTubeGeometry &g = out[(size_t) bin_of(0.5f * (val[k] + val[k + 1]))];
+        const uint32_t base = (uint32_t) g.vertices_count();
+        for (int s = 0; s < sides; ++s) { add_v(g, rings[k].p[s], rings[k].n[s]); add_v(g, rings[k + 1].p[s], rings[k + 1].n[s]); }
+        for (int s = 0; s < sides; ++s) {
+            const uint32_t i0 = base + 2 * s, i1 = base + 2 * ((s + 1) % sides);
+            add_t(g, i0, i0 + 1, i1 + 1); add_t(g, i0, i1 + 1, i1);
+        }
+    }
+    if (caps) {
+        V3 c0{ 0, 0, 0 }, c1{ 0, 0, 0 };
+        for (const V3 &p : rings[0].p) c0 = c0 + p;
+        for (const V3 &p : rings[m - 1].p) c1 = c1 + p;
+        c0 = c0 * (1.0f / sides); c1 = c1 * (1.0f / sides);
+        add_cap(out[(size_t) bin_of(val[0])], rings[0], c0, T[0] * -1.0f, true);
+        add_cap(out[(size_t) bin_of(val[m - 1])], rings[m - 1], c1, T[m - 1], false);
+    }
+}
+} // namespace
+
 void QzTubeMesher::mesh(const QzSkeleton &skel, const std::vector<QzSkelNodePose> &pose,
                         const QzTubeOptions &opt, std::vector<QzTubeGeometry> &out)
 {
@@ -102,61 +142,38 @@ void QzTubeMesher::mesh(const QzSkeleton &skel, const std::vector<QzSkelNodePose
     for (QzTubeGeometry &g : out) g.clear();
     if (pose.size() != skel.nodes().size()) return;
     const std::vector<QzSkelNode> &N = skel.nodes();
-    std::vector<V3> P, T;
-    std::vector<Ring> rings;
+    std::vector<V3> P; std::vector<float> W, H, V;
     for (const QzSkelBead &bd : skel.beads()) {
         int i = bd.first_node;
         const int end = bd.first_node + bd.node_count;
         while (i < end) {
-            // next run of visible nodes
             while (i < end && !pose[i].visible) ++i;
             int j = i;
             while (j < end && pose[j].visible) ++j;
             const int m = j - i;
             if (m >= 2) {
-                P.resize(m); T.resize(m); rings.resize(m);
-                for (int k = 0; k < m; ++k) P[k] = V3{ pose[i + k].x, pose[i + k].y, pose[i + k].z };
+                P.resize(m); W.resize(m); H.resize(m); V.resize(m);
                 for (int k = 0; k < m; ++k) {
-                    V3 t;
-                    if (k == 0) t = P[1] - P[0];
-                    else if (k == m - 1) t = P[m - 1] - P[m - 2];
-                    else t = norm(P[k] - P[k - 1]) + norm(P[k + 1] - P[k]);
-                    if (len(t) < 1e-6f) t = (k > 0) ? T[k - 1] : V3{ 1, 0, 0 };
-                    T[k] = norm(t);
+                    const QzSkelNodePose &q = pose[i + k];
+                    P[k] = V3{ q.x, q.y, q.z }; W[k] = N[i + k].w * q.w_scale; H[k] = N[i + k].h * q.h_scale; V[k] = q.value;
                 }
-                V3 side{ 0, 0, 0 };
-                for (int k = 0; k < m; ++k) {
-                    const QzSkelNode &nd = N[i + k];
-                    ring_at(P[k], T[k], side, std::max(1e-3f, nd.w * pose[i + k].w_scale),
-                            std::max(1e-3f, nd.h * pose[i + k].h_scale), sides, rings[k]);
-                }
-                // one quad strip per segment, in the segment's colour bin (mean of its nodes)
-                for (int k = 0; k + 1 < m; ++k) {
-                    const float v = 0.5f * (pose[i + k].value + pose[i + k + 1].value);
-                    const int bin = std::min(bins - 1, (int) std::max(0.0f, std::min(v, 0.99999f) * (float) bins));
-                    QzTubeGeometry &g = out[(size_t) bin];
-                    const uint32_t base = (uint32_t) g.vertices_count();
-                    for (int s = 0; s < sides; ++s) { add_v(g, rings[k].p[s], rings[k].n[s]); add_v(g, rings[k + 1].p[s], rings[k + 1].n[s]); }
-                    for (int s = 0; s < sides; ++s) {
-                        const uint32_t i0 = base + 2 * s, i1 = base + 2 * ((s + 1) % sides);
-                        add_t(g, i0, i0 + 1, i1 + 1); add_t(g, i0, i1 + 1, i1);
-                    }
-                }
-                if (opt.cap_ends > 0.0f) {
-                    const float v0 = pose[i].value, v1 = pose[j - 1].value;
-                    const int b0 = std::min(bins - 1, (int) std::max(0.0f, std::min(v0, 0.99999f) * (float) bins));
-                    const int b1 = std::min(bins - 1, (int) std::max(0.0f, std::min(v1, 0.99999f) * (float) bins));
-                    V3 c0{ 0, 0, 0 }, c1{ 0, 0, 0 };
-                    for (const V3 &p : rings[0].p) c0 = c0 + p;
-                    for (const V3 &p : rings[m - 1].p) c1 = c1 + p;
-                    c0 = c0 * (1.0f / sides); c1 = c1 * (1.0f / sides);
-                    add_cap(out[(size_t) b0], rings[0], c0, T[0] * -1.0f, true);
-                    add_cap(out[(size_t) b1], rings[m - 1], c1, T[m - 1], false);
-                }
+                mesh_run(P, W, H, V, sides, bins, opt.cap_ends > 0.0f, out);
             }
             i = j;
         }
     }
+}
+
+void QzTubeMesher::mesh_polyline(const std::vector<QzSimPoint> &pts, float w, float h, float value,
+                                 const QzTubeOptions &opt, std::vector<QzTubeGeometry> &out)
+{
+    const int sides = std::max(3, opt.sides), bins = std::max(1, opt.bins);
+    if (out.size() < (size_t) bins) out.resize((size_t) bins);
+    if (pts.size() < 2) return;
+    std::vector<V3> P(pts.size());
+    for (size_t k = 0; k < pts.size(); ++k) P[k] = V3{ pts[k].x, pts[k].y, pts[k].z };
+    const std::vector<float> W(pts.size(), w), H(pts.size(), h), V(pts.size(), value);
+    mesh_run(P, W, H, V, sides, bins, opt.cap_ends > 0.0f, out);
 }
 
 size_t QzTubeMesher::connected_components(const QzSkeleton &skel, const std::vector<QzSkelNodePose> &pose,
@@ -191,7 +208,7 @@ size_t QzTubeMesher::connected_components(const QzSkeleton &skel, const std::vec
 }
 
 void qz_pose_from_sim(const QzStackSim &sim, const QzSimFrame &fr, const QzSkeleton &skel,
-                      int seg_lo, int seg_hi, std::vector<QzSkelNodePose> &out)
+                      int seg_lo, int seg_hi, std::vector<QzSkelNodePose> &out, bool skip_fallen)
 {
     out.assign(skel.nodes().size(), QzSkelNodePose());
     for (QzSkelNodePose &p : out) p.visible = false;
@@ -206,6 +223,7 @@ void qz_pose_from_sim(const QzStackSim &sim, const QzSimFrame &fr, const QzSkele
     for (int s = seg_lo; s <= seg_hi; ++s) {
         const QzSimSegment &sg = sim.segment((size_t) s);
         if (sg.layer < 0 || sg.layer > fr.top) continue;
+        if (skip_fallen && fr.collapsed && sg.layer > fr.k_collapse) continue;
         QzSimPoint a, b; float ws, hs; bool fallen;
         sim.deform(fr, s, a, b, ws, hs, fallen);
         const float v = sim.ratio(fr, s);

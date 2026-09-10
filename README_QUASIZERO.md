@@ -55,7 +55,7 @@ See `TEST_REPORT.md` for evidence and `SUPPORTED_PRINTERS.md` for per-printer de
 
 ## Known limitations
 
-- **Paste stability simulation (Stability view + card) is a Level 0/1 model, not hardware-validated.** Material values shipped in the presets are hypotheses; calibrate with the cylinder/wall collapse tests in `QZMINI_STABILITY.md` before trusting a prediction. The *Show deformation* animation (Level 1.5 v2) is a kinematic picture driven by that model on a plan grid — not a nonlinear FEM, and the pile of strands deposited after a collapse is a height-field sketch, not a physical simulation.
+- **Paste stability simulation (Stability view + card) is a Level 0/1 model, not hardware-validated.** Material values shipped in the presets are hypotheses; calibrate with the cylinder/wall collapse tests in `QZMINI_STABILITY.md` before trusting a prediction. The *Show deformation* animation (Level 1.5 v2) is a kinematic picture driven by that model on a plan grid — not a nonlinear FEM; the collapse kinematics are tuned on one video of a cocoa-paste cylinder, and the bead extruded after a collapse is a particle chain on a height field (no adhesion, no self-collision), not a fluid simulation.
 
 - No physical hardware validation has been performed yet on any printer.
 - Bambu Lab network sending is untouched upstream functionality; QZmini Bambu profiles are
