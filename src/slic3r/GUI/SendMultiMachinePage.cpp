@@ -56,7 +56,7 @@ void SendDeviceItem::DrawTextWithEllipsis(wxDC& dc, const wxString& text, int ma
     wxFont font = dc.GetFont();
 
     wxSize textSize = dc.GetTextExtent(text);
-    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour(50, 58, 61)));
+    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour(61, 55, 51)));
     int textWidth = textSize.GetWidth();
 
     if (textWidth > maxWidth) {
@@ -211,7 +211,7 @@ void SendDeviceItem::doRender(wxDC& dc)
 
     //device state
     if (state_printable <= 2) {
-        dc.SetTextForeground(wxColour(0, 150, 136));
+        dc.SetTextForeground(wxColour(58, 56, 53));
     }
     else {
         dc.SetTextForeground(wxColour(208, 27, 27));
@@ -236,7 +236,7 @@ void SendDeviceItem::doRender(wxDC& dc)
     }
 
     if (m_hover) {
-        dc.SetPen(wxPen(wxColour(0, 150, 136)));
+        dc.SetPen(wxPen(wxColour(58, 56, 53)));
         dc.SetBrush(*wxTRANSPARENT_BRUSH);
         dc.DrawRoundedRectangle(0, 0, size.x, size.y, 3);
     }

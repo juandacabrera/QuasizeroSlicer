@@ -1,0 +1,9 @@
+# Quasizero: paths that exist only in the PRO edition. The LITE export
+# (scripts/quasizero/qz_export_lite.sh) removes them and the LITE leak guard
+# (.github/qz_edition_check.sh, in a tree without engine/) fails if any is present.
+# One path per line, relative to the repository root; directories remove their content.
+engine
+.gitmodules
+.github/workflows/sync_lite.yml
+src/slic3r/GUI/QuasiZero/QzProView.hpp
+src/slic3r/GUI/QuasiZero/QzProView.cpp

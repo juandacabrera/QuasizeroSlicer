@@ -39,7 +39,7 @@ body
 .BtnItem:hover
 {
 	color: #efeff0;
-	background-color: #223C3C;
+	background-color: #3B3B3A;
 }
 
 .BtnItem:hover .LeftIcon
@@ -50,7 +50,7 @@ body
 .BtnItemSelected
 {
 	color: #efeff0;
-	background-color: #223C3C;
+	background-color: #3B3B3A;
 }
 
 .BtnItemSelected .LeftIcon
@@ -61,8 +61,8 @@ body
 /*-----Right Top MenuBtn-----*/
 .MenuItem:hover
 {
-	border-color: #00675b;
-	background-color: #223C3C;
+	border-color: #262523;
+	background-color: #3B3B3A;
 }
 
 .FileImg
@@ -80,7 +80,7 @@ body
 
 .CT_Item:hover
 {
-	background-color:#00675b; /*ORCA color*/
+	background-color:#262523; /*ORCA color*/
 }
 
 /*----User Manual------*/

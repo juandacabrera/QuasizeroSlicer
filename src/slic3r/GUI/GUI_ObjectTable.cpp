@@ -2711,7 +2711,7 @@ ObjectTablePanel::ObjectTablePanel( wxWindow* parent, wxWindowID id, const wxPoi
     //m_bg_colour = wxColour(0xfa, 0xfa, 0xfa);
     m_float_validator.SetRange(0, 100);
     m_bg_colour = wxColour("#FFFFFF");
-    //m_hover_colour = wxColour(61, 70, 72);
+    //m_hover_colour = wxColour(72, 66, 62);
     SetBackgroundColour(m_bg_colour);
 
     SetSize(wxSize(-1, FromDIP(450)));
@@ -2894,7 +2894,7 @@ void ObjectTablePanel::load_data()
     m_object_grid->SetColLabelValue(ObjectGridTable::col_speed_perimeter, _L("Outer wall speed"));
     m_object_grid->SetColLabelValue(ObjectGridTable::col_speed_perimeter_reset, "");
     m_object_grid->SetLabelFont(Label::Head_13);
-    m_object_grid->SetLabelTextColour(StateColor::darkModeColorFor(wxColour("#303A3C")));
+    m_object_grid->SetLabelTextColour(StateColor::darkModeColorFor(wxColour("#3B3B3A")));
     m_object_grid->SetLabelBackgroundColour( wxColour("#FFFFFF"));
 #else
     m_object_grid->HideColLabels();

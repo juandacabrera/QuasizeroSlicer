@@ -37,6 +37,7 @@
 #include "HMS.hpp"
 #include "PartSkipDialog.hpp"
 #include "DeviceErrorDialog.hpp"
+#include "QuasiZero/QzSyringePanel.hpp"
 
 class StepIndicator;
 
@@ -606,6 +607,8 @@ public:
     wxBoxSizer *create_ams_group(wxWindow *parent);
     wxBoxSizer *create_settings_group(wxWindow *parent);
     wxBoxSizer* create_filament_group(wxWindow* parent);
+    wxBoxSizer* create_qz_syringe_group(wxWindow* parent);  // Quasizero QZmini
+    QzSyringePanel *m_qz_syringe = nullptr;
 
 	void           expand_filament_loading(wxMouseEvent &e);
     void           show_ams_group(bool show = true);

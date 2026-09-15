@@ -101,6 +101,11 @@ struct PathVertex
     // Jerk value
     //
     float jerk{ 0.0f };
+    //
+    // Quasizero: stability utilization of the layer this segment belongs to
+    // (peak load / strength during the print). < 0 = not evaluated
+    //
+    float stability{ -1.0f };
 
     //
     // Return true if the segment is an extrusion move

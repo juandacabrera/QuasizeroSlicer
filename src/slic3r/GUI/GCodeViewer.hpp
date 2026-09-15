@@ -11,11 +11,14 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 
 #include "LibVGCode/LibVGCodeWrapper.hpp"
+#include "libslic3r/QuasiZero/QzStabilityModel.hpp"
+#include "QuasiZero/QzProHooks.hpp"
 // needed for tech VGCODE_ENABLE_COG_AND_TOOL_MARKERS
 #include <libvgcode/include/Types.hpp>
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <float.h>
 #include <set>
 #include <unordered_set>
@@ -206,7 +209,7 @@ private:
     float m_z_offset{ 0.0f };
 
     ConfigOptionMode m_user_mode;
-    bool m_fold = {false};
+    bool m_fold = {true}; // Quasizero: legend starts folded (clean stage)
 
     size_t m_extruders_count;
     std::vector<float> m_filament_diameters;
@@ -247,6 +250,35 @@ mutable bool m_no_render_path { false };
     bool m_loaded_as_preview{ false };
 
 public:
+    // Quasizero: paste stability evaluation of the loaded G-code (see QzStabilityModel)
+    struct QzStability {
+        bool   enabled = false;        // printer option on
+        bool   characterised = false;  // material has a yield stress
+        QuasiZero::QzPasteMaterial   material;
+        QuasiZero::QzStabilityOptions options;
+        QuasiZero::QzStabilityResult  result;
+        std::vector<int>              layer_index_of_id;   // result.moves layer_id -> record index
+        std::vector<float>            per_move;            // utilization per result move at load (< 0 = n/a)
+        int                           colors_layer = -1;   // record index the Stability colours currently show
+        std::vector<double>           layer_top_z;         // [mm] per record, for slider lookups
+        // Level 1: per-layer geometry (buckling factors; the PRO simulation reads it too)
+        std::vector<QuasiZero::QzLayerRecord> layers;
+        std::vector<QuasiZero::QzLayerGeom>   geom;
+        std::vector<double>                   lambda_by_top; // buckling load factor of the stack 0..k
+    };
+private:
+    QzStability m_qz_stability;
+    // PRO extension of the preview (deformation view, collapse kinematics, post-collapse bead):
+    // nullptr in the LITE edition - see QuasiZero/QzProHooks.hpp
+    std::unique_ptr<QzProHooks> m_qz_pro;
+    friend class QzProView;
+    void qz_evaluate_stability(const GCodeProcessorResult& gcode_result);
+    // Stability view colours = the load/strength field as it stands at the top layer of the
+    // vertical slider (with memory), so the static view and the play show results[k], not
+    // the whole-print peak. Cheap (O(vertices)); called on every layers-range change.
+    void qz_refresh_stability_colors();
+
+public:
     GCodeViewer();
     ~GCodeViewer();
 
@@ -279,6 +311,11 @@ public:
     // void _render_calibration_thumbnail_framebuffer(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, const ThumbnailsParams& thumbnail_params, PartPlateList& partplate_list, OpenGLManager& opengl_manager);
     // void render_calibration_thumbnail(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, const ThumbnailsParams& thumbnail_params, PartPlateList& partplate_list, OpenGLManager& opengl_manager);
     bool has_data() const { return !m_viewer.get_extrusion_roles().empty(); }
+    // Quasizero
+    const QzStability& qz_stability() const { return m_qz_stability; }
+    QzProHooks* qz_pro() const { return m_qz_pro.get(); }
+    // top layer currently shown by the vertical slider, as an index into the stability records (-1 = none)
+    int qz_stability_layer_at_view_top() const;
 
     bool can_export_toolpaths() const;
     std::vector<int> get_plater_extruder();
@@ -361,6 +398,7 @@ private:
 
     //BBS: GUI refactor: add canvas size
     void render_legend(float &legend_height, int canvas_width, int canvas_height, int right_margin);
+    void render_qz_quickbar(int canvas_width, int canvas_height); // Quasizero floating quick-settings card
     void render_legend_color_arr_recommen(float window_padding);
     void render_slider(int canvas_width, int canvas_height);
 };

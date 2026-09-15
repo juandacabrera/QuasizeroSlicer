@@ -195,6 +195,7 @@ public:
 
     // set font
     const std::vector<std::string> get_fonts_names() const { return m_fonts_names; }
+    ImFont* get_large_font() { return large_font; } // Quasizero: crisp 1.5x font for capsules
     bool push_bold_font();
     bool pop_bold_font();
     bool push_font_by_name(std::string font_name);
@@ -389,6 +390,7 @@ private:
     LastSliderStatus m_last_slider_status;
     ImFont* default_font = nullptr;
     ImFont* bold_font = nullptr;
+    ImFont* large_font = nullptr; // Quasizero: 1.5x regular for capsule values
     std::map<std::string, ImFont*> im_fonts_map;
     std::vector<std::string> m_fonts_names;
 };

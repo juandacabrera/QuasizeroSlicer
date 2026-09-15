@@ -96,7 +96,7 @@ PingCodeBindDialog::PingCodeBindDialog(Plater* plater /*= nullptr*/)
     m_status_text->SetFont(Label::Body_14);
     m_status_text->SetMaxSize(wxSize(FromDIP(440), -1));
     m_status_text->Wrap(FromDIP(440));
-    m_status_text->SetForegroundColour(wxColour(38, 46, 48));
+    m_status_text->SetForegroundColour(wxColour(48, 43, 39));
 
     // ORCA standardized HyperLink
     m_link_show_ping_code_wiki = new HyperLink(request_bind_panel, _L("Can't find Pin Code?"), "https://wiki.bambulab.com/en/bambu-studio/manual/pin-code");
@@ -112,7 +112,7 @@ PingCodeBindDialog::PingCodeBindDialog(Plater* plater /*= nullptr*/)
         m_text_input_single_code[i] = new TextInput(request_bind_panel, wxEmptyString, "", "", wxDefaultPosition, wxSize(FromDIP(38), FromDIP(38)), wxTE_PROCESS_ENTER | wxTE_CENTER);
         wxTextAttr textAttr;
         textAttr.SetAlignment(wxTEXT_ALIGNMENT_CENTER);
-        textAttr.SetTextColour(wxColour(34, 139, 34));
+        textAttr.SetTextColour(wxColour(139, 83, 42));
         m_text_input_single_code[i]->GetTextCtrl()->SetDefaultStyle(textAttr);
         m_text_input_single_code[i]->SetFont(Label::Body_16);
         m_text_input_single_code[i]->GetTextCtrl()->SetMaxLength(1);
@@ -442,7 +442,7 @@ PingCodeBindDialog::~PingCodeBindDialog() {
      auto m_checkbox_privacy = new CheckBox(m_panel_agreement, wxID_ANY);
      auto m_st_privacy_title = new Label(m_panel_agreement, _L("Read and accept"));
      m_st_privacy_title->SetFont(Label::Body_13);
-     m_st_privacy_title->SetForegroundColour(wxColour(38, 46, 48));
+     m_st_privacy_title->SetForegroundColour(wxColour(48, 43, 39));
 
      // ORCA standardized HyperLink
      auto m_link_Terms_title = new HyperLink(m_panel_agreement, _L("Terms and Conditions"));
@@ -461,7 +461,7 @@ PingCodeBindDialog::~PingCodeBindDialog() {
 
      auto m_st_and_title = new Label(m_panel_agreement, _L("and"));
      m_st_and_title->SetFont(Label::Body_13);
-     m_st_and_title->SetForegroundColour(wxColour(38, 46, 48));
+     m_st_and_title->SetForegroundColour(wxColour(48, 43, 39));
 
      // ORCA standardized HyperLink
      auto m_link_privacy_title = new HyperLink(m_panel_agreement, _L("Privacy Policy"));
@@ -499,7 +499,7 @@ PingCodeBindDialog::~PingCodeBindDialog() {
      auto m_checkbox_notice = new CheckBox(m_panel_agreement, wxID_ANY);
      auto m_st_notice_title = new Label(m_panel_agreement, notice_title);
      m_st_notice_title->SetFont(Label::Body_13);
-     m_st_notice_title->SetForegroundColour(wxColour(38, 46, 48));
+     m_st_notice_title->SetForegroundColour(wxColour(48, 43, 39));
 
      // ORCA standardized HyperLink
      auto m_link_notice_title = new HyperLink(m_panel_agreement, notice_link_title);

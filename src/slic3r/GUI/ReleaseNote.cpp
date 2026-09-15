@@ -488,9 +488,9 @@ void UpdateVersionDialog::update_version_info(wxString release_note, wxString ve
         m_text_up_info->SetLabel(wxString::Format(_L("Click to download new version in default browser: %s"), version));
     auto data_buf_in = release_note.utf8_str();
     auto bg_color = StateColor::darkModeColorFor(wxColour("#FFFFFF")).GetAsString();
-    auto fg_color = StateColor::darkModeColorFor(wxColour("#262E30")).GetAsString();
+    auto fg_color = StateColor::darkModeColorFor(wxColour("#30302F")).GetAsString();
     auto style    = "body {color:" + fg_color + "; background-color:" + bg_color + "; font-family:sans-serif}"
-                  + "a    {color: #009688}"               // matches hyperlink colors
+                  + "a    {color: #3A3835}"               // matches hyperlink colors
                   + "img  {max-width:100%; height:auto}"  // fixes overflowing images
                   + "ul   {padding-inline-start: 20px}";  // reduce left padding on list items
     html_source = (boost::format("<html><head><style>%1%</style></head><body>") % style).str();
@@ -1341,8 +1341,8 @@ void ConfirmBeforeSendDialog::edit_cancel_button_txt(const wxString& txt, bool s
 
     if (switch_green)
     {
-        StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(0, 137, 123), StateColor::Pressed),
-                                std::pair<wxColour, int>(wxColour(38, 166, 154), StateColor::Hovered),
+        StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(45, 44, 42), StateColor::Pressed),
+                                std::pair<wxColour, int>(wxColour(85, 82, 78), StateColor::Hovered),
                                 std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Normal));
         m_button_cancel->SetBackgroundColor(btn_bg_green);
         m_button_cancel->SetBorderColor(*wxWHITE);
@@ -1512,7 +1512,7 @@ InputIpAddressDialog::InputIpAddressDialog(wxWindow *parent)
 
     /*other*/
     m_test_right_msg = new Label(this, Label::Body_13, wxEmptyString, LB_AUTO_WRAP);
-    m_test_right_msg->SetForegroundColour(wxColour(38, 166, 154));
+    m_test_right_msg->SetForegroundColour(wxColour(85, 82, 78));
     m_test_right_msg->Hide();
 
     m_test_wrong_msg = new Label(this, Label::Body_13, wxEmptyString, LB_AUTO_WRAP);

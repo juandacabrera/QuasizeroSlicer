@@ -344,7 +344,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
     m_sizer_autorefill = new wxBoxSizer(wxHORIZONTAL);
     m_ams_backup_tip = new Label(m_scroll_area, _L("Auto Refill"));
     m_ams_backup_tip->SetFont(::Label::Head_13);
-    m_ams_backup_tip->SetForegroundColour(wxColour("#009688"));
+    m_ams_backup_tip->SetForegroundColour(wxColour("#3A3835"));
     m_ams_backup_tip->SetBackgroundColour(*wxWHITE);
     img_ams_backup = new wxStaticBitmap(m_scroll_area, wxID_ANY, create_scaled_bitmap("automatic_material_renewal", this, 16), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)), 0);
     img_ams_backup->SetBackgroundColour(*wxWHITE);
@@ -443,7 +443,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
 
     m_link_edit_nozzle = new Label(m_scroll_area, wxEmptyString);
     m_link_edit_nozzle->SetFont(::Label::Body_13);
-    m_link_edit_nozzle->SetForegroundColour("#009688");
+    m_link_edit_nozzle->SetForegroundColour("#3A3835");
     m_link_edit_nozzle->SetBackgroundColour(*wxWHITE);
     m_link_edit_nozzle->Bind(wxEVT_ENTER_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_HAND); });
     m_link_edit_nozzle->Bind(wxEVT_LEAVE_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_ARROW); });
@@ -609,7 +609,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
 
     m_statictext_finish = new wxStaticText(m_panel_finish, wxID_ANY, _L("Send complete"), wxDefaultPosition, wxDefaultSize, 0);
     m_statictext_finish->Wrap(-1);
-    m_statictext_finish->SetForegroundColour(wxColour(0, 150, 136));
+    m_statictext_finish->SetForegroundColour(wxColour(58, 56, 53));
     m_sizer_finish_h->Add(m_statictext_finish, 0, wxALIGN_CENTER | wxALL, FromDIP(5));
 
     m_sizer_finish_v->Add(m_sizer_finish_h, 1, wxALIGN_CENTER, 0);
@@ -1359,6 +1359,15 @@ void SelectMachineDialog::auto_supply_with_ext(std::vector<DevAmsTray> slots) {
 bool SelectMachineDialog::is_nozzle_type_match(DevExtderSystem data, wxString& error_message) const {
     if (data.GetTotalExtderCount() <= 1 || !wxGetApp().preset_bundle)
         return false;
+    // Quasizero: a QZmini retrofit replaces the printer's hot-end with a syringe
+    // plunger; the physical nozzle (and its flow) live on the QZmini unit, so the
+    // diameter/flow reported by the host firmware is meaningless here. Skip the
+    // host-vs-slicer nozzle checks for QZmini printers. EXPERIMENTAL.
+    {
+        auto _qz = wxGetApp().preset_bundle->printers.get_edited_preset().config.option<ConfigOptionBool>("qzmini_enable");
+        if (_qz != nullptr && _qz->value)
+            return true;
+    }
 
     const auto& project_config = wxGetApp().preset_bundle->project_config;
     //check nozzle used
@@ -1794,6 +1803,15 @@ static bool _is_nozzle_data_valid(MachineObject* obj_, const DevExtderSystem &ex
 static bool _is_same_nozzle_diameters(MachineObject* obj, float &tag_nozzle_diameter, int& mismatch_nozzle_id)
 {
     if (obj == nullptr) return false;
+    // Quasizero: a QZmini retrofit replaces the printer's hot-end with a syringe
+    // plunger; the physical nozzle (and its flow) live on the QZmini unit, so the
+    // diameter/flow reported by the host firmware is meaningless here. Skip the
+    // host-vs-slicer nozzle checks for QZmini printers. EXPERIMENTAL.
+    {
+        auto _qz = wxGetApp().preset_bundle->printers.get_edited_preset().config.option<ConfigOptionBool>("qzmini_enable");
+        if (_qz != nullptr && _qz->value)
+            return true;
+    }
 
     PresetBundle* preset_bundle = wxGetApp().preset_bundle;
     auto opt_nozzle_diameters = preset_bundle->printers.get_edited_preset().config.option<ConfigOptionFloats>("nozzle_diameter");
@@ -2370,7 +2388,7 @@ void SelectMachineDialog::save_option_vals(MachineObject *obj) {
 void SelectMachineDialog::Enable_Auto_Refill(bool enable)
 {
     if (enable) {
-        m_ams_backup_tip->SetForegroundColour(wxColour("#009688"));
+        m_ams_backup_tip->SetForegroundColour(wxColour("#3A3835"));
     }
     else {
         m_ams_backup_tip->SetForegroundColour(wxColour(0x90, 0x90, 0x90));
@@ -4775,7 +4793,7 @@ void PrintOption::enable(bool en)
         m_printoption_item->enable(en);
 
         if (en) {
-            m_printoption_title->SetForegroundColour(StateColor::darkModeColorFor("#262E30"));
+            m_printoption_title->SetForegroundColour(StateColor::darkModeColorFor("#30302F"));
         } else {
             m_printoption_title->SetForegroundColour(StateColor::darkModeColorFor(wxColour(144, 144, 144)));
         }
@@ -4990,7 +5008,7 @@ void PrintOptionItem::doRender(wxDC& dc)
 
         if (text_key == selected_key)
         {
-            const wxColour& clr = m_enable ? StateColor::darkModeColorFor("#009688") : StateColor::darkModeColorFor(wxColour(144, 144, 144));
+            const wxColour& clr = m_enable ? StateColor::darkModeColorFor("#3A3835") : StateColor::darkModeColorFor(wxColour(144, 144, 144));
             dc.SetPen(wxPen(clr));
             dc.SetTextForeground(clr);
 
@@ -5002,7 +5020,7 @@ void PrintOptionItem::doRender(wxDC& dc)
         }
         else
         {
-            const wxColour& clr = m_enable ? StateColor::darkModeColorFor("#262E30") : StateColor::darkModeColorFor(wxColour(144, 144, 144));
+            const wxColour& clr = m_enable ? StateColor::darkModeColorFor("#30302F") : StateColor::darkModeColorFor(wxColour(144, 144, 144));
             dc.SetPen(wxPen(clr));
             dc.SetTextForeground(clr);
 
@@ -5093,7 +5111,7 @@ void SendModeSwitchButton::doRender(wxDC &dc)
     if (is_selected) {
         dc.DrawBitmap(m_img_selected.bmp(), wxPoint(0, 0));
         dc.DrawBitmap(m_img_selected_tag.bmp(), wxPoint(left, (size.y - m_img_selected_tag.GetBmpSize().y) / 2));
-        dc.SetTextForeground("#009688");
+        dc.SetTextForeground("#3A3835");
     }else {
         dc.DrawBitmap(m_img_unselected.bmp(), wxPoint(0, 0));
         dc.DrawBitmap(m_img_unselected_tag.bmp(), wxPoint(left, (size.y - m_img_selected_tag.GetBmpSize().y) / 2));

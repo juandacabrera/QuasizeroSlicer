@@ -520,6 +520,39 @@ PresetsConfigSubstitutions PresetBundle::load_presets(AppConfig &config, Forward
 
     //BBS: add config related logs
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" enter, substitution_rule %1%, preferred printer_model_id %2%")%substitution_rule%preferred_selection.printer_model_id;
+    // Quasizero: the overlay vendor is registered in AppConfig on every load -
+    // the wizard rebuilds the vendors map from its own picks and would otherwise
+    // wipe Quasizero, leaving its presets invisible in all vendor-driven UI.
+    {
+        namespace qfs = boost::filesystem;
+        boost::system::error_code qec;
+        const qfs::path qz_machine_dir = qfs::path(resources_dir()) / "profiles" / "Quasizero" / "machine";
+        if (qfs::exists(qz_machine_dir, qec)) {
+            for (qfs::directory_iterator it(qz_machine_dir, qec), qend; it != qend; ++it) {
+                std::string stem = it->path().stem().string(); // e.g. "QZmini @ Bambu Lab A1 mini 4.0 nozzle"
+                const std::string tag = " nozzle";
+                if (stem.size() <= tag.size() || stem.compare(stem.size() - tag.size(), tag.size(), tag) != 0)
+                    continue; // model files carry no variant suffix
+                stem.erase(stem.size() - tag.size());
+                const size_t sp = stem.find_last_of(' ');
+                if (sp == std::string::npos) continue;
+                const std::string variant = stem.substr(sp + 1);
+                const std::string model   = stem.substr(0, sp);
+                if (!config.get_variant("Quasizero", model, variant))
+                    config.set_variant("Quasizero", model, variant, true);
+            }
+        }
+        // filament visibility rides on AppConfig's "filaments" section, which the
+        // wizard rewrites with its own picks - re-register every shipped Quasizero
+        // biomaterial (file stem == preset name) so they never drop out
+        const qfs::path qz_fil_dir = qfs::path(resources_dir()) / "profiles" / "Quasizero" / "filament";
+        if (qfs::exists(qz_fil_dir, qec)) {
+            for (qfs::directory_iterator it(qz_fil_dir, qec), qend; it != qend; ++it)
+                if (it->path().extension() == ".json")
+                    config.set(AppConfig::SECTION_FILAMENTS, it->path().stem().string(), "true");
+        }
+    }
+
     //BBS: change system config to json
     std::tie(substitutions, errors_cummulative) = this->load_system_presets_from_json(substitution_rule);
 
@@ -635,6 +668,14 @@ VendorType PresetBundle::get_current_vendor_type()
     if (!vendor_name.empty())
     {
         if(vendor_name.compare("BBL") == 0)
+            t = VendorType::Marlin_BBL;
+
+        // Quasizero: QZmini retrofits of Bambu Lab printers talk to the machine
+        // through the same officially supported network plugin as the stock BBL
+        // profiles (LAN access code / user-enabled modes). EXPERIMENTAL: device
+        // model matching and cold-extrusion behaviour are not hardware validated.
+        if (vendor_name.compare("Quasizero") == 0 &&
+            printer_model->value.find("Bambu Lab") != std::string::npos)
             t = VendorType::Marlin_BBL;
         
         if(vendor_name.compare("Qidi") == 0)
@@ -2200,6 +2241,49 @@ std::pair<PresetsConfigSubstitutions, std::string> PresetBundle::load_system_pre
     PresetsConfigSubstitutions  substitutions;
     std::string                 errors_cummulative;
     bool                        first = true;
+
+    // Quasizero: the Quasizero overlay vendor ships with the application and is
+    // ALWAYS installed - the user only ever picks their physical printer in the
+    // wizard; the QZmini replica family is synced silently from resources into
+    // the user's system dir before vendors are enumerated.
+    if (!validation_mode) {
+        try {
+            namespace qfs = boost::filesystem;
+            const qfs::path src_json = qfs::path(resources_dir()) / "profiles" / "Quasizero.json";
+            const qfs::path src_dir  = qfs::path(resources_dir()) / "profiles" / "Quasizero";
+            const qfs::path dst_json = dir / "Quasizero.json";
+            const qfs::path dst_dir  = dir / "Quasizero";
+            boost::system::error_code qec;
+            const bool have_src = qfs::exists(src_json, qec) && qfs::exists(src_dir, qec);
+            bool refresh = have_src && !qfs::exists(dst_json, qec);
+            if (have_src && !refresh) {
+                // content compare (mtime proved unreliable across installers):
+                // any change in the shipped vendor index forces a resync
+                auto read_all = [](const qfs::path &fp) -> std::string {
+                    boost::nowide::ifstream f(fp.string(), std::ios::binary);
+                    return std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+                };
+                refresh = read_all(src_json) != read_all(dst_json);
+            }
+            if (refresh) {
+                std::string qz_err;
+                qfs::create_directories(dst_dir, qec);
+                copy_file(src_json.string(), dst_json.string(), qz_err, false);
+                for (qfs::recursive_directory_iterator it(src_dir), qend; it != qend; ++it) {
+                    const qfs::path rel = qfs::relative(it->path(), src_dir, qec);
+                    const qfs::path dst = dst_dir / rel;
+                    if (qfs::is_directory(it->path()))
+                        qfs::create_directories(dst, qec);
+                    else
+                        copy_file(it->path().string(), dst.string(), qz_err, false);
+                }
+                BOOST_LOG_TRIVIAL(info) << "Quasizero vendor synced into " << dst_dir.string();
+            }
+        } catch (const std::exception &qe) {
+            BOOST_LOG_TRIVIAL(error) << "Quasizero vendor auto-install failed: " << qe.what();
+        }
+    }
+
     std::vector<std::string> vendor_names;
     // store all vendor names in vendor_names
     for (auto& dir_entry : boost::filesystem::directory_iterator(dir)) {
@@ -2654,7 +2738,7 @@ void PresetBundle::update_selections(AppConfig &config)
     if (!f_colors.empty()) {
         boost::algorithm::split(filament_colors, f_colors, boost::algorithm::is_any_of(","));
     }
-    filament_colors.resize(filament_presets.size(), "#26A69A");
+    filament_colors.resize(filament_presets.size(), "#C9A47E");
     project_config.option<ConfigOptionStrings>("filament_colour")->values = filament_colors;
 
     std::vector<std::string> multi_filament_colors;
@@ -2798,7 +2882,7 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
     if (!f_colors.empty()) {
         boost::algorithm::split(filament_colors, f_colors, boost::algorithm::is_any_of(","));
     }
-    filament_colors.resize(filament_presets.size(), "#26A69A");
+    filament_colors.resize(filament_presets.size(), "#C9A47E");
     project_config.option<ConfigOptionStrings>("filament_colour")->values = filament_colors;
 
     std::vector<std::string> multi_filament_colors;
@@ -2910,6 +2994,74 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
         physical_printers.select_printer(initial_physical_printer_name);
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": finished, preferred printer_model_id %1%")%preferred_selection.printer_model_id;
+
+    // Quasizero: the Quasizero vendor is always available regardless of the
+    // wizard choices - the user picks their PHYSICAL printer (official vendor)
+    // and the QZmini overlay presets must always be there to switch to.
+    {
+        for (Preset &pr : printers)  if (pr.vendor != nullptr && pr.vendor->id == "Quasizero") pr.is_visible = true;
+        for (Preset &pr : prints)    if (pr.vendor != nullptr && pr.vendor->id == "Quasizero") pr.is_visible = true;
+        for (Preset &pr : filaments) if (pr.vendor != nullptr && pr.vendor->id == "Quasizero") pr.is_visible = true;
+    }
+
+    // Quasizero: keep the selected material in the machine's family - a QZmini
+    // machine defaults to its biomaterial, a stock machine to its stock filament.
+    auto qz_sync_default_filament = [this]() {
+        const Preset &pp = printers.get_selected_preset();
+        const ConfigOptionBool *qe2 = pp.config.option<ConfigOptionBool>("qzmini_enable");
+        const auto *dfp = pp.config.option<ConfigOptionStrings>("default_filament_profile");
+        if (dfp == nullptr || dfp->values.empty()) return;
+        const Preset &cf = filaments.get_selected_preset();
+        const bool cf_qz      = cf.vendor != nullptr && cf.vendor->id == "Quasizero";
+        const bool machine_qz = qe2 != nullptr && qe2->value;
+        if (machine_qz != cf_qz && filaments.find_preset(dfp->values.front(), false) != nullptr) {
+            filaments.select_preset_by_name(dfp->values.front(), true);
+            if (!this->filament_presets.empty())
+                this->filament_presets.front() = filaments.get_selected_preset_name();
+        }
+    };
+
+    // Quasizero: the QZmini is the default extruder - if the selected printer is
+    // a stock machine that has a QZmini sibling, start on the QZmini overlay.
+    {
+        const Preset &sel = printers.get_selected_preset();
+        const std::string model = sel.config.opt_string("printer_model");
+        const ConfigOptionBool *qe = sel.config.option<ConfigOptionBool>("qzmini_enable");
+        if ((qe == nullptr || !qe->value) && !model.empty() && model.rfind("QZmini @ ", 0) != 0) {
+            const std::string want = std::string("QZmini @ ") + model;
+            const Preset *pick = nullptr;
+            for (const Preset &pr : printers) {
+                if (pr.config.opt_string("printer_model") != want) continue;
+                if (pick == nullptr || pr.config.opt_string("printer_variant") == "4.0") pick = &pr;
+            }
+            if (pick != nullptr) {
+                printers.select_preset_by_name(pick->name, true);
+                const auto *dpp = printers.get_selected_preset().config.option<ConfigOptionString>("default_print_profile");
+                if (dpp != nullptr && !dpp->value.empty() && prints.find_preset(dpp->value, false) != nullptr)
+                    prints.select_preset_by_name(dpp->value, true);
+            }
+        }
+        qz_sync_default_filament();
+    }
+
+    // Quasizero: QZmini printers default to the 4.0 nozzle variant (the physical
+    // primary nozzle); alphabetical selection would otherwise pick "2.0 nozzle".
+    {
+        const std::string cur = printers.get_selected_preset_name();
+        if (cur.find("QZmini") != std::string::npos && cur.find("2.0 nozzle") != std::string::npos) {
+            std::string alt = cur;
+            const size_t p_ = alt.find("2.0 nozzle");
+            alt.replace(p_, 3, "4.0");
+            if (printers.find_preset(alt, false) != nullptr) {
+                printers.select_preset_by_name(alt, true);
+                // and load that nozzle's default process too
+                const auto *dpp = printers.get_selected_preset().config.option<ConfigOptionString>("default_print_profile");
+                if (dpp != nullptr && !dpp->value.empty() && prints.find_preset(dpp->value, false) != nullptr)
+                    prints.select_preset_by_name(dpp->value, true);
+            }
+        }
+        qz_sync_default_filament();
+    }
 }
 
 // Export selections (current print, current filaments, current printer) into config.ini

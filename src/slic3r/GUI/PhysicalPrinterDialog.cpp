@@ -69,7 +69,7 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent) :
 
     wxStaticText *label_top = new wxStaticText(this, wxID_ANY, from_u8((boost::format(_utf8(L("Save %s as"))) % into_u8(tab->title())).str()));
     label_top->SetFont(::Label::Body_14);
-    label_top->SetForegroundColour(wxColour(38,46,48));
+    label_top->SetForegroundColour(wxColour(48, 43, 39));
 
     m_input_area = new RoundedRectangle(this, StateColor::darkModeColorFor(wxColour("#DBDBDB")), wxDefaultPosition, wxSize(-1,-1), 3, 1);
     m_input_area->SetMinSize(wxSize(FromDIP(360), FromDIP(32)));

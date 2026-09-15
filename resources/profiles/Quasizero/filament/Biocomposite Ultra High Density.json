@@ -1,0 +1,139 @@
+{
+ "type": "filament",
+ "filament_id": "QZF03",
+ "setting_id": "QZFS03",
+ "name": "Biocomposite Ultra High Density",
+ "from": "system",
+ "instantiation": "true",
+ "filament_vendor": [
+  "Quasizero"
+ ],
+ "filament_type": [
+  "PLA"
+ ],
+ "filament_diameter": [
+  "18.43"
+ ],
+ "filament_density": [
+  "1.50"
+ ],
+ "qzmini_paste_yield_stress": [
+  "550"
+ ],
+ "qzmini_paste_structuration_rate": [
+  "2.4"
+ ],
+ "qzmini_paste_elastic_modulus": [
+  "30"
+ ],
+ "qzmini_paste_stiffening_rate": [
+  "0.36"
+ ],
+ "qzmini_paste_poisson": [
+  "0.30"
+ ],
+ "qzmini_paste_yield_factor": [
+  "1.732"
+ ],
+ "filament_cost": [
+  "0"
+ ],
+ "filament_flow_ratio": [
+  "1"
+ ],
+ "enable_pressure_advance": [
+  "0"
+ ],
+ "pressure_advance": [
+  "0.02"
+ ],
+ "nozzle_temperature": [
+  "0"
+ ],
+ "nozzle_temperature_initial_layer": [
+  "0"
+ ],
+ "nozzle_temperature_range_low": [
+  "0"
+ ],
+ "nozzle_temperature_range_high": [
+  "50"
+ ],
+ "cool_plate_temp": [
+  "1"
+ ],
+ "cool_plate_temp_initial_layer": [
+  "1"
+ ],
+ "eng_plate_temp": [
+  "1"
+ ],
+ "eng_plate_temp_initial_layer": [
+  "1"
+ ],
+ "hot_plate_temp": [
+  "1"
+ ],
+ "hot_plate_temp_initial_layer": [
+  "1"
+ ],
+ "textured_plate_temp": [
+  "1"
+ ],
+ "textured_plate_temp_initial_layer": [
+  "1"
+ ],
+ "supertack_plate_temp": [
+  "1"
+ ],
+ "supertack_plate_temp_initial_layer": [
+  "1"
+ ],
+ "fan_min_speed": [
+  "0"
+ ],
+ "fan_max_speed": [
+  "0"
+ ],
+ "overhang_fan_speed": [
+  "0"
+ ],
+ "additional_cooling_fan_speed": [
+  "0"
+ ],
+ "full_fan_speed_layer": [
+  "0"
+ ],
+ "slow_down_layer_time": [
+  "0"
+ ],
+ "slow_down_min_speed": [
+  "20"
+ ],
+ "reduce_fan_stop_start_freq": [
+  "0"
+ ],
+ "filament_max_volumetric_speed": [
+  "66"
+ ],
+ "filament_start_gcode": [
+  "; QZ biomaterial: cold extrusion, no filament-specific thermal ops\n"
+ ],
+ "filament_end_gcode": [
+  "; QZ biomaterial end\n"
+ ],
+ "compatible_printers": [
+  "QZmini @ Artillery Sidewinder X2 4.0 nozzle",
+  "QZmini @ Artillery Sidewinder X2 2.0 nozzle",
+  "QZmini @ Bambu Lab A1 mini 4.0 nozzle",
+  "QZmini @ Bambu Lab A1 mini 2.0 nozzle",
+  "QZmini @ Bambu Lab P1S 4.0 nozzle",
+  "QZmini @ Bambu Lab P1S 2.0 nozzle"
+ ],
+ "default_filament_colour": [
+  "#1E1915"
+ ],
+ "filament_notes": [
+  "Quasizero Biocomposite Ultra High Density v2 - recalibrated after the two-profile experiment (same paste printed identically through the Sawdust profile at flow 100%). CONCLUSION: the true volumetric ratio of this paste is ~1.0; the earlier 3.75/9.6 ratios were pressure-startup crutches that overcommanded the plunger (silently stalling TMC motor absorbed the excess) and corrupted E/ml accounting. Flow stays at 100% = geometric truth. Max volumetric speed 66 mm3/s = the hardware-validated deposition point (5 x 2.75 x 4.35 mm/s = 59.8) + 10%. Startup pressure is handled by procedure, not flow: purge at manual level 3 until a steady bead, and the process runs 2 skirt loops as pressurization laps. VERIFY on first use: the first skirt loop may under-extrude while pressure builds - that is expected and no reason to raise flow."
+ ]
+}

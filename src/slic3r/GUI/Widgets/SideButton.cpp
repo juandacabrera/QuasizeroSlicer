@@ -26,24 +26,25 @@ SideButton::SideButton(wxWindow* parent, wxString text, wxString icon, long stly
     icon_offset = 0;
     text_orientation = HO_Left;
 
-    border_color.append(0x6B6B6B, StateColor::Disabled);
-    border_color.append(wxColour(0, 137, 123), StateColor::Pressed);
-    border_color.append(wxColour(38, 166, 154), StateColor::Hovered);
-    border_color.append(0x009688, StateColor::Normal);
+    // Quasizero (Tesla reference): light gray pill, dark label; hover/press darken subtly.
+    border_color.append(0xF5F5F4, StateColor::Disabled);
+    border_color.append(wxColour(216, 214, 211), StateColor::Pressed);
+    border_color.append(wxColour(236, 235, 233), StateColor::Hovered);
+    border_color.append(0xFFFFFF, StateColor::Normal);
     border_color.setTakeFocusedAsHovered(false);
 
-    text_color.append(0xACACAC, StateColor::Disabled);
-    text_color.append(0xFEFEFE, StateColor::Pressed);
-    text_color.append(0xFEFEFE, StateColor::Hovered);
-    text_color.append(0xFEFEFE, StateColor::Normal);
+    text_color.append(0xB0AFAD, StateColor::Disabled);
+    text_color.append(0x1F1F1F, StateColor::Pressed);
+    text_color.append(0x1F1F1F, StateColor::Hovered);
+    text_color.append(0x1F1F1F, StateColor::Normal);
 
-    background_color.append(0x6B6B6B, StateColor::Disabled);
-    background_color.append(wxColour(0, 137, 123), StateColor::Pressed);
-    background_color.append(wxColour(38, 166, 154), StateColor::Hovered);
-    background_color.append(0x009688, StateColor::Normal);
+    background_color.append(0xF5F5F4, StateColor::Disabled);
+    background_color.append(wxColour(216, 214, 211), StateColor::Pressed);
+    background_color.append(wxColour(236, 235, 233), StateColor::Hovered);
+    background_color.append(0xFFFFFF, StateColor::Normal);
     background_color.setTakeFocusedAsHovered(false);
 
-    SetBottomColour(wxColour("#3B4446"));
+    SetBottomColour(wxColour(245, 245, 244)); // Quasizero: exact tab-strip gray, corners invisible
 
     state_handler.attach({ &border_color, &text_color, &background_color });
     state_handler.update_binds();

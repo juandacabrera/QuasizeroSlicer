@@ -167,6 +167,30 @@ option(SLIC3R_BUILD_SANDBOXES   "Build development sandboxes" OFF)
 option(BUILD_TESTS       "Build unit tests" OFF)
 option(ORCA_TOOLS       "Build Orca tools" OFF)
 
+# Quasizero editions. LITE (the public fork) ships the Stability panel (Level 0/1) and
+# builds from this tree alone. PRO adds the deformation view of the preview (stack
+# simulation, collapse kinematics, post-collapse bead), which lives in the Quasizero
+# simulation engine checked out as the `engine/` submodule (private repository).
+# Default: PRO when the engine is present, LITE otherwise; -DQZ_PRO=OFF builds LITE from
+# the private tree to test both editions from one checkout.
+set(QZ_ENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/engine" CACHE PATH "Checkout of the Quasizero simulation engine (qz-sim-engine)")
+if (EXISTS "${QZ_ENGINE_DIR}/src/QzStackSim.cpp")
+    set(_qz_pro_default ON)
+else ()
+    set(_qz_pro_default OFF)
+endif ()
+option(QZ_PRO "Build the Quasizero PRO edition (deformation view; needs the simulation engine in engine/)" ${_qz_pro_default})
+if (QZ_PRO)
+    if (NOT EXISTS "${QZ_ENGINE_DIR}/src/QzStackSim.cpp")
+        message(FATAL_ERROR "QZ_PRO=ON but the Quasizero simulation engine is not at ${QZ_ENGINE_DIR}. "
+                            "Run `git submodule update --init engine` (private repository, needs access) "
+                            "or point QZ_ENGINE_DIR at a checkout of qz-sim-engine; -DQZ_PRO=OFF builds the LITE edition.")
+    endif ()
+    message(STATUS "Quasizero: PRO edition (simulation engine: ${QZ_ENGINE_DIR})")
+else ()
+    message(STATUS "Quasizero: LITE edition (Stability panel only)")
+endif ()
+
 if (FLATPAK)
     set(SLIC3R_FHS ON CACHE BOOL "" FORCE)
     set(SLIC3R_DESKTOP_INTEGRATION OFF CACHE BOOL "" FORCE)
@@ -928,12 +952,12 @@ endif ()
 install(FILES ${CMAKE_SOURCE_DIR}/LICENSE.txt DESTINATION ".")
 configure_file(${LIBDIR}/dev-utils/platform/unix/fhs.hpp.in ${LIBDIR_BIN}/dev-utils/platform/unix/fhs.hpp)
 
-set (CPACK_PACKAGE_NAME "OrcaSlicer")
-set (CPACK_PACKAGE_VENDOR "SoftFever")
+set (CPACK_PACKAGE_NAME "QuasizeroSlicer")
+set (CPACK_PACKAGE_VENDOR "Quasizero")
 set (CPACK_PACKAGE_VERSION_MAJOR "${ORCA_VERSION_MAJOR}")
 set (CPACK_PACKAGE_VERSION_MINOR "${ORCA_VERSION_MINOR}")
 set (CPACK_PACKAGE_VERSION_PATCH "${ORCA_VERSION_PATCH}")
-set (CPACK_PACKAGE_FILE_NAME "OrcaSlicer_Windows_Installer_V${SoftFever_VERSION}")
+set (CPACK_PACKAGE_FILE_NAME "QuasizeroSlicer_Windows_Installer_V${SoftFever_VERSION}")
 # Suffix the Windows installer with its target arch so the x64 and arm64 builds
 # produce distinct filenames (matches ARCH_SUFFIX in build_orca.yml). Same
 # CMAKE_SYSTEM_PROCESSOR mapping used by orcaslicer_copy_dlls() above.
@@ -944,7 +968,7 @@ if (WIN32)
         string (APPEND CPACK_PACKAGE_FILE_NAME "_x64")
     endif ()
 endif ()
-set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Orca Slicer is an open source slicer for FDM printers")
+set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Quasizero Slicer is an open source biomaterial slicer based on OrcaSlicer")
 set (CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/OrcaSlicer/OrcaSlicer")
 set (CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
 set (CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/resources/images\\\\OrcaSlicer.ico")
@@ -952,14 +976,14 @@ set (CPACK_NSIS_MUI_ICON "${CPACK_PACKAGE_ICON}")
 set (CPACK_NSIS_MUI_UNIICON "${CPACK_PACKAGE_ICON}")
 set (CPACK_NSIS_INSTALLED_ICON_NAME  "$INSTDIR\\\\orca-slicer.exe")
 set (CPACK_PACKAGE_CHECKSUM SHA256)
-set (CPACK_PACKAGE_INSTALL_REGISTRY_KEY "OrcaSlicer")
+set (CPACK_PACKAGE_INSTALL_REGISTRY_KEY "QuasizeroSlicer")
 set (CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set (CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 # set (CPACK_NSIS_MODIFY_PATH "ON")
-set(CPACK_PACKAGE_EXECUTABLES "orca-slicer;OrcaSlicer")
+set(CPACK_PACKAGE_EXECUTABLES "orca-slicer;Quasizero Slicer")
 set(CPACK_CREATE_DESKTOP_LINKS "orca-slicer")
 set (CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.txt) # must also include in install command
 
-set(CPACK_WIX_UPGRADE_GUID "058245e8-20e0-4a95-9ab7-1acfe17ad511")
+set(CPACK_WIX_UPGRADE_GUID "7c2e6b41-93ff-4a21-8d0e-5b1a2f9c4d63") # Quasizero-specific GUID; must not collide with OrcaSlicer
 set(CPACK_GENERATOR NSIS)
 include(CPack)

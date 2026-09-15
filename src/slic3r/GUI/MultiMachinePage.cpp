@@ -140,7 +140,7 @@ void DevicePickItem::DrawTextWithEllipsis(wxDC& dc, const wxString& text, int ma
     wxFont font = dc.GetFont();
 
     wxSize textSize = dc.GetTextExtent(text);
-    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour(50, 58, 61)));
+    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour(61, 55, 51)));
     int textWidth = textSize.GetWidth();
 
     if (textWidth > maxWidth) {

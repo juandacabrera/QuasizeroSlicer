@@ -2479,6 +2479,9 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     m_role_based_fan_marker_layer.fill(-1);
 
     m_fan_mover.release();
+    m_qz_refill.reset();
+    m_qz_ssa.reset();
+    m_qz_subdiv.reset();
     
     m_writer.set_is_bbl_machine(is_bbl_printers);
 
@@ -3720,6 +3723,81 @@ void GCode::process_layers(
             }
         );
     
+    const auto qz_refill = tbb::make_filter<std::string, std::string>(slic3r_tbb_filtermode::serial_in_order,
+            [&qz = this->m_qz_refill, &ssa = this->m_qz_ssa, &sub = this->m_qz_subdiv, &config = this->config()](std::string in) -> std::string {
+        // segment subdivision first: downstream stages see fine-grained moves
+        if (config.qzmini_enable.value && config.qzmini_max_segment_mm.value > 0.001) {
+            if (sub.get() == nullptr)
+                sub = std::make_unique<QuasiZero::QzSegmentSubdivider>(
+                    config.qzmini_max_segment_mm.value, config.use_relative_e_distances.value);
+            in = sub->process(std::move(in));
+        }
+        // Short-Segment Anchoring runs for any QZmini machine, refill or not
+        if (config.qzmini_enable.value && config.qzmini_ssa_enable.value) {
+            if (ssa.get() == nullptr) {
+                QuasiZero::QzSsaOptions so;
+                so.max_length_mm      = config.qzmini_ssa_max_length.value;
+                so.dwell_ms           = config.qzmini_ssa_dwell_ms.value;
+                so.extra_prime_e      = config.qzmini_ssa_extra_prime_e.value;
+                so.depart_speed_mms   = config.qzmini_ssa_depart_speed.value;
+                so.initial_e_relative = config.use_relative_e_distances.value;
+                ssa = std::make_unique<QuasiZero::QzShortSegmentAnchor>(so);
+            }
+            in = ssa->process(std::move(in));
+        }
+        if (!config.qzmini_enable.value || !config.qzmini_refill_enable.value)
+            return in;
+        if (qz.get() == nullptr) {
+            using namespace Slic3r::QuasiZero;
+            QzVolumetricParams p;
+            p.barrel_inner_diameter_mm    = config.qzmini_barrel_inner_diameter.value;
+            p.nominal_syringe_capacity_ml = config.qzmini_nominal_syringe_capacity_ml.value;
+            p.usable_syringe_capacity_ml  = config.qzmini_usable_syringe_capacity_ml.value;
+            p.usable_plunger_stroke_mm    = config.qzmini_usable_plunger_stroke_mm.value;
+            p.plunger_mm_per_e_unit       = config.qzmini_plunger_mm_per_e_unit.value;
+            QzRefillOptions o;
+            o.refill_threshold_ml    = config.qzmini_refill_threshold_ml.value;
+            o.usable_capacity_ml     = config.qzmini_usable_syringe_capacity_ml.value;
+            o.park_x                 = config.qzmini_park_x.value;
+            o.park_y                 = config.qzmini_park_y.value;
+            o.park_z_lift            = config.qzmini_park_z_lift.value;
+            o.plunger_reset          = config.qzmini_plunger_reset_enable.value;
+            o.plunger_reset_feedrate = config.qzmini_plunger_reset_feedrate.value;
+            o.prime_after_refill     = config.qzmini_prime_after_refill_enable.value;
+            o.prime_ml               = config.qzmini_prime_after_refill_ml.value;
+            o.prime_feedrate         = config.qzmini_prime_feedrate.value;
+            o.emit_preview_tag       = config.qzmini_refill_show_in_preview.value;
+            o.travel_feedrate_mm_min = config.travel_speed.value * 60.0;
+            o.initial_e_relative     = config.use_relative_e_distances.value;
+            switch (config.gcode_flavor.value) {
+            case gcfKlipper:        o.family = QzFirmwareFamily::Klipper; break;
+            case gcfRepRapFirmware: o.family = QzFirmwareFamily::RepRapFirmware; break;
+            case gcfMarlinLegacy:
+            case gcfMarlinFirmware: o.family = QzFirmwareFamily::Marlin; break;
+            default:                o.family = QzFirmwareFamily::Unknown; break;
+            }
+            o.pause_gcode = qz_pause_command(o.family,
+                                             config.qzmini_pause_strategy.value,
+                                             config.machine_pause_gcode.value,
+                                             config.qzmini_pause_custom_gcode.value);
+            qz.reset(new QzRefillProcessor(p, o));
+        }
+        std::string out = qz->process(std::move(in));
+        if (qz->failed()) {
+            std::string qz_msg = qz->error();
+            const double qz_fd = config.filament_diameter.get_at(0);
+            if (qz_fd < 5.0) {
+                char qz_buf[160];
+                ::snprintf(qz_buf, sizeof(qz_buf),
+                    "\n\nHint: the selected material has a stock FDM filament diameter (%.2f mm), which breaks the "
+                    "QZmini volumetric model. Select a QZmini biomaterial preset and reslice.", qz_fd);
+                qz_msg += qz_buf;
+            }
+            throw Slic3r::RuntimeError(qz_msg);
+        }
+        return out;
+    });
+
     const auto output = tbb::make_filter<std::string, void>(slic3r_tbb_filtermode::serial_in_order,
         [&output_stream](std::string s) { output_stream.write(s); }
     );
@@ -3746,13 +3824,13 @@ void GCode::process_layers(
 
     // The pipeline elements are joined using const references, thus no copying is performed.
     if (m_spiral_vase && m_pressure_equalizer)
-        tbb::parallel_pipeline(12, generator & spiral_mode & pressure_equalizer & cooling & fan_mover & output);
+        tbb::parallel_pipeline(12, generator & spiral_mode & pressure_equalizer & cooling & fan_mover & qz_refill & output);
     else if (m_spiral_vase)
-    	tbb::parallel_pipeline(12, generator & spiral_mode & cooling & fan_mover & output);
+    	tbb::parallel_pipeline(12, generator & spiral_mode & cooling & fan_mover & qz_refill & output);
     else if	(m_pressure_equalizer)
-        tbb::parallel_pipeline(12, generator & pressure_equalizer & cooling & fan_mover & pa_processor_filter & output);
+        tbb::parallel_pipeline(12, generator & pressure_equalizer & cooling & fan_mover & pa_processor_filter & qz_refill & output);
     else
-    	tbb::parallel_pipeline(12, generator & cooling & fan_mover & pa_processor_filter & output);
+    	tbb::parallel_pipeline(12, generator & cooling & fan_mover & pa_processor_filter & qz_refill & output);
 
 }
 
@@ -3820,6 +3898,81 @@ void GCode::process_layers(
         }
     );
     
+    const auto qz_refill = tbb::make_filter<std::string, std::string>(slic3r_tbb_filtermode::serial_in_order,
+            [&qz = this->m_qz_refill, &ssa = this->m_qz_ssa, &sub = this->m_qz_subdiv, &config = this->config()](std::string in) -> std::string {
+        // segment subdivision first: downstream stages see fine-grained moves
+        if (config.qzmini_enable.value && config.qzmini_max_segment_mm.value > 0.001) {
+            if (sub.get() == nullptr)
+                sub = std::make_unique<QuasiZero::QzSegmentSubdivider>(
+                    config.qzmini_max_segment_mm.value, config.use_relative_e_distances.value);
+            in = sub->process(std::move(in));
+        }
+        // Short-Segment Anchoring runs for any QZmini machine, refill or not
+        if (config.qzmini_enable.value && config.qzmini_ssa_enable.value) {
+            if (ssa.get() == nullptr) {
+                QuasiZero::QzSsaOptions so;
+                so.max_length_mm      = config.qzmini_ssa_max_length.value;
+                so.dwell_ms           = config.qzmini_ssa_dwell_ms.value;
+                so.extra_prime_e      = config.qzmini_ssa_extra_prime_e.value;
+                so.depart_speed_mms   = config.qzmini_ssa_depart_speed.value;
+                so.initial_e_relative = config.use_relative_e_distances.value;
+                ssa = std::make_unique<QuasiZero::QzShortSegmentAnchor>(so);
+            }
+            in = ssa->process(std::move(in));
+        }
+        if (!config.qzmini_enable.value || !config.qzmini_refill_enable.value)
+            return in;
+        if (qz.get() == nullptr) {
+            using namespace Slic3r::QuasiZero;
+            QzVolumetricParams p;
+            p.barrel_inner_diameter_mm    = config.qzmini_barrel_inner_diameter.value;
+            p.nominal_syringe_capacity_ml = config.qzmini_nominal_syringe_capacity_ml.value;
+            p.usable_syringe_capacity_ml  = config.qzmini_usable_syringe_capacity_ml.value;
+            p.usable_plunger_stroke_mm    = config.qzmini_usable_plunger_stroke_mm.value;
+            p.plunger_mm_per_e_unit       = config.qzmini_plunger_mm_per_e_unit.value;
+            QzRefillOptions o;
+            o.refill_threshold_ml    = config.qzmini_refill_threshold_ml.value;
+            o.usable_capacity_ml     = config.qzmini_usable_syringe_capacity_ml.value;
+            o.park_x                 = config.qzmini_park_x.value;
+            o.park_y                 = config.qzmini_park_y.value;
+            o.park_z_lift            = config.qzmini_park_z_lift.value;
+            o.plunger_reset          = config.qzmini_plunger_reset_enable.value;
+            o.plunger_reset_feedrate = config.qzmini_plunger_reset_feedrate.value;
+            o.prime_after_refill     = config.qzmini_prime_after_refill_enable.value;
+            o.prime_ml               = config.qzmini_prime_after_refill_ml.value;
+            o.prime_feedrate         = config.qzmini_prime_feedrate.value;
+            o.emit_preview_tag       = config.qzmini_refill_show_in_preview.value;
+            o.travel_feedrate_mm_min = config.travel_speed.value * 60.0;
+            o.initial_e_relative     = config.use_relative_e_distances.value;
+            switch (config.gcode_flavor.value) {
+            case gcfKlipper:        o.family = QzFirmwareFamily::Klipper; break;
+            case gcfRepRapFirmware: o.family = QzFirmwareFamily::RepRapFirmware; break;
+            case gcfMarlinLegacy:
+            case gcfMarlinFirmware: o.family = QzFirmwareFamily::Marlin; break;
+            default:                o.family = QzFirmwareFamily::Unknown; break;
+            }
+            o.pause_gcode = qz_pause_command(o.family,
+                                             config.qzmini_pause_strategy.value,
+                                             config.machine_pause_gcode.value,
+                                             config.qzmini_pause_custom_gcode.value);
+            qz.reset(new QzRefillProcessor(p, o));
+        }
+        std::string out = qz->process(std::move(in));
+        if (qz->failed()) {
+            std::string qz_msg = qz->error();
+            const double qz_fd = config.filament_diameter.get_at(0);
+            if (qz_fd < 5.0) {
+                char qz_buf[160];
+                ::snprintf(qz_buf, sizeof(qz_buf),
+                    "\n\nHint: the selected material has a stock FDM filament diameter (%.2f mm), which breaks the "
+                    "QZmini volumetric model. Select a QZmini biomaterial preset and reslice.", qz_fd);
+                qz_msg += qz_buf;
+            }
+            throw Slic3r::RuntimeError(qz_msg);
+        }
+        return out;
+    });
+
     const auto output = tbb::make_filter<std::string, void>(slic3r_tbb_filtermode::serial_in_order,
         [&output_stream](std::string s) { output_stream.write(s); }
     );
@@ -3844,13 +3997,13 @@ void GCode::process_layers(
 
     // The pipeline elements are joined using const references, thus no copying is performed.
     if (m_spiral_vase && m_pressure_equalizer)
-        tbb::parallel_pipeline(12, generator & spiral_mode & pressure_equalizer & cooling & fan_mover & output);
+        tbb::parallel_pipeline(12, generator & spiral_mode & pressure_equalizer & cooling & fan_mover & qz_refill & output);
     else if (m_spiral_vase)
-    	tbb::parallel_pipeline(12, generator & spiral_mode & cooling & fan_mover & output);
+    	tbb::parallel_pipeline(12, generator & spiral_mode & cooling & fan_mover & qz_refill & output);
     else if	(m_pressure_equalizer)
-        tbb::parallel_pipeline(12, generator & pressure_equalizer & cooling & fan_mover & pa_processor_filter & output);
+        tbb::parallel_pipeline(12, generator & pressure_equalizer & cooling & fan_mover & pa_processor_filter & qz_refill & output);
     else
-    	tbb::parallel_pipeline(12, generator & cooling & fan_mover & pa_processor_filter & output);
+    	tbb::parallel_pipeline(12, generator & cooling & fan_mover & pa_processor_filter & qz_refill & output);
 }
 
 std::string GCode::placeholder_parser_process(const std::string &name, const std::string &templ, unsigned int current_filament_id, const DynamicConfig *config_override)

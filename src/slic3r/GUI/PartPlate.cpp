@@ -76,15 +76,15 @@ namespace GUI {
 
 class Bed3D;
 
-ColorRGBA PartPlate::SELECT_COLOR		= { 0.2666f, 0.2784f, 0.2784f, 1.0f }; //{ 0.4196f, 0.4235f, 0.4235f, 1.0f };
-ColorRGBA PartPlate::UNSELECT_COLOR		= { 0.82f, 0.82f, 0.82f, 1.0f };
+ColorRGBA PartPlate::SELECT_COLOR		= { 0.945f, 0.937f, 0.922f, 1.0f }; // Quasizero light plate
+ColorRGBA PartPlate::UNSELECT_COLOR		= { 0.905f, 0.897f, 0.882f, 1.0f }; // Quasizero
 ColorRGBA PartPlate::UNSELECT_DARK_COLOR		= { 0.384f, 0.384f, 0.412f, 1.0f };
-ColorRGBA PartPlate::DEFAULT_COLOR		= { 0.5f, 0.5f, 0.5f, 1.0f };
-ColorRGBA PartPlate::LINE_TOP_COLOR		= { 0.89f, 0.89f, 0.89f, 1.0f };
+ColorRGBA PartPlate::DEFAULT_COLOR		= { 0.92f, 0.912f, 0.898f, 1.0f }; // Quasizero
+ColorRGBA PartPlate::LINE_TOP_COLOR		= { 0.845f, 0.836f, 0.820f, 1.0f }; // Quasizero soft grid
 ColorRGBA PartPlate::LINE_TOP_DARK_COLOR		= { 0.431f, 0.431f, 0.463f, 1.0f };
-ColorRGBA PartPlate::LINE_TOP_SEL_COLOR  = { 0.5294f, 0.5451, 0.5333f, 1.0f};
+ColorRGBA PartPlate::LINE_TOP_SEL_COLOR  = { 0.800f, 0.790f, 0.772f, 1.0f}; // Quasizero
 ColorRGBA PartPlate::LINE_TOP_SEL_DARK_COLOR = { 0.298f, 0.298f, 0.3333f, 1.0f};
-ColorRGBA PartPlate::LINE_BOTTOM_COLOR	= { 0.8f, 0.8f, 0.8f, 0.4f };
+ColorRGBA PartPlate::LINE_BOTTOM_COLOR	= { 0.85f, 0.84f, 0.825f, 0.35f }; // Quasizero
 ColorRGBA PartPlate::HEIGHT_LIMIT_TOP_COLOR		= { 0.6f, 0.6f, 1.0f, 1.0f };
 ColorRGBA PartPlate::HEIGHT_LIMIT_BOTTOM_COLOR	= { 0.4f, 0.4f, 1.0f, 1.0f };
 
@@ -1097,7 +1097,9 @@ void PartPlate::show_tooltip(const std::string tooltip)
     ImGui::PushStyleColor(ImGuiCol_Border, {0, 0, 0, 0});
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
     ImGui::BeginTooltip();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f)); // Quasizero: readable dark text
     ImGui::TextUnformatted(tooltip.c_str());
+    ImGui::PopStyleColor();
     ImGui::EndTooltip();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(2);
@@ -2427,14 +2429,14 @@ void PartPlate::generate_plate_name_texture()
 
 	// generate m_name_texture texture from m_name with generate_from_text_string
 	m_name_texture.reset();
-	auto text = m_name.empty()? _L("Untitled") : from_u8(m_name);
+	auto text = m_name.empty()? wxString("Quasizero") : from_u8(m_name); // Quasizero default plate name
 
     // ORCA also scale font size to prevent low res texture
     int size = wxGetApp().em_unit() * PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE;
     auto l = Label::sysFont(size, true);
     wxFont* font = &l;
 
-	wxColour foreground(0xf2, 0x75, 0x4e, 0xff);
+	wxColour foreground(0xff, 0xff, 0xff, 0xff); // Quasizero: white plate texts
 	if (!m_name_texture.generate_from_text_string(text.ToUTF8().data(), *font, *wxBLACK, foreground)) {
 		BOOST_LOG_TRIVIAL(error) << "PartPlate::generate_plate_name_texture(): generate_from_text_string() failed";
 		return;
@@ -4145,7 +4147,7 @@ void PartPlateList::generate_icon_textures()
 			else
 				file_name = std::to_string(i+1);
 
-			wxColour foreground(0xf2, 0x75, 0x4e, 0xff);
+			wxColour foreground(0xff, 0xff, 0xff, 0xff); // Quasizero: white plate texts
 			if (!m_idx_textures[i].generate_from_text_string(file_name, *font, *wxBLACK, foreground)) {
 				BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(":load file %1% failed") % file_name;
 			}

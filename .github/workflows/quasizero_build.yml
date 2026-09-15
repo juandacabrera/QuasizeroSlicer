@@ -1,0 +1,113 @@
+name: Quasizero Build
+
+# Fork-specific workflow for the Quasizero Slicer MVP branch.
+# Reuses OrcaSlicer's upstream build chain (build_check_cache -> build_deps ->
+# build_orca), which produces the Windows x64 portable zip and NSIS installer.
+
+# Private-repository budget (GitHub Free: 2 000 min/month, Windows runners count
+# double, 500 MB of artifact storage): every push runs the standalone tests and the
+# Linux compile gate (add "[skip gate]" to the commit message to skip it); the Windows
+# build is on demand only (Actions -> Quasizero Build -> Run workflow), on GitHub's
+# runner or on a self-hosted Windows runner (see BUILD_WINDOWS.md, option C).
+#
+# PRO edition: the simulation engine is the private submodule engine/ (qz-sim-engine).
+# The default GITHUB_TOKEN cannot read another private repository, so every checkout
+# uses the repository secret QZ_ENGINE_TOKEN (fine-grained PAT, Contents: read on
+# QuasizeroSlicer-dev and qz-sim-engine) and falls back to GITHUB_TOKEN where the
+# secret is not defined (the public LITE repository has no submodule).
+on:
+  push:
+    branches:
+      - pro            # private development repository (PRO)
+      - main           # public repository (LITE)
+      - 'feature/**'
+  workflow_dispatch:
+    inputs:
+      windows:
+        description: 'Build Windows x64 (portable + installer)'
+        type: boolean
+        default: true
+      windows_runner:
+        description: 'Runner for the Windows build'
+        type: choice
+        options:
+          - windows-latest
+          - self-hosted
+        default: windows-latest
+      linux_gate:
+        description: 'Run the Linux compile gate'
+        type: boolean
+        default: true
+
+concurrency:
+  group: quasizero-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qz_core_tests:
+    name: QZmini core tests (standalone)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            .github
+            src/libslic3r/QuasiZero
+            tests/qzmini
+            engine
+          submodules: true
+          token: ${{ secrets.QZ_ENGINE_TOKEN || github.token }}
+      - name: Verify the simulation engine submodule (PRO)
+        run: bash .github/qz_edition_check.sh
+      - name: Build and run QuasiZero standalone tests
+        run: |
+          if [ -f tests/qzmini/standalone/run_standalone.sh ]; then
+            bash tests/qzmini/standalone/run_standalone.sh
+          else
+            echo "standalone tests not present yet"; exit 1
+          fi
+
+  # Fast-fail gate: COMPILE ONLY on Linux (GCC, faster toolchain, cached deps).
+  # Catches the same C++ errors as the Windows build in a fraction of the time.
+  # Deliberately does NOT build the AppImage (-i) or package anything — Linux is
+  # not a delivery target here, and AppImage packaging depends on Linux-only
+  # icon/desktop assets that are irrelevant to catching compile errors.
+  linux_compile_gate:
+    name: Linux compile gate (fast fail)
+    needs: qz_core_tests
+    if: ${{ (github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip gate]')) || (github.event_name == 'workflow_dispatch' && inputs.linux_gate) }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          lfs: 'false'
+          submodules: true
+          token: ${{ secrets.QZ_ENGINE_TOKEN || github.token }}
+      - name: Verify the simulation engine submodule (PRO)
+        run: bash .github/qz_edition_check.sh
+      - name: Dependency cache (restore + save; self-healing when GitHub evicts it)
+        uses: actions/cache@v5
+        with:
+          path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep
+          key: linux-clang-cache-orcaslicer_deps-build-${{ hashFiles('deps/**') }}
+      - name: Apt-Install Dependencies
+        uses: ./.github/actions/apt-install-deps
+      - name: Compile slicer (no AppImage, no packaging)
+        shell: bash
+        run: |
+          # -d ensures deps exist: with a restored cache it is a quick stamp check;
+          # on a cache miss (GitHub evicts caches beyond the 10 GB repo quota) it
+          # rebuilds them and the cache step above saves them again.
+          # -s build slicer, -r skip RAM/disk checks, -l Clang, -L lld. No -i (AppImage).
+          ./build_linux.sh -dsrlL
+
+  build_windows_x64:
+    name: Build Windows x64 (portable + installer)
+    needs: qz_core_tests   # run in PARALLEL with the Linux gate (fast fail signal), not after it
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.windows }}
+    uses: ./.github/workflows/build_check_cache.yml
+    with:
+      os: ${{ inputs.windows_runner }}
+      arch: x64
+    secrets: inherit

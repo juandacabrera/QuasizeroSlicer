@@ -1,0 +1,73 @@
+// Quasizero Slicer — QZmini syringe status widget for the Device page.
+// Part of Quasizero Slicer, a fork of OrcaSlicer. GNU AGPLv3.
+#pragma once
+
+#include <wx/panel.h>
+#include <wx/colour.h>
+#include <wx/timer.h>
+#include <functional>
+#include "slic3r/GUI/wxExtensions.hpp"
+
+class wxStaticText;
+class Button; // global Widgets/Button.hpp
+
+class TextInput;
+
+namespace Slic3r { namespace GUI {
+
+class QzSyringePanel : public wxPanel
+{
+public:
+    QzSyringePanel(wxWindow *parent);
+
+    void   set_remaining_fraction(double f);
+    double remaining_fraction() const { return m_fraction; }
+    void   set_material_colour(const wxColour &c);
+    void   set_nominal_capacity_ml(double ml) { m_nominal_ml = ml; }
+
+    // Called for each firm jog step: (delta_e_units, feedrate_mm_min).
+    // Positive pushes the plunger DOWN (extrude); negative pulls it UP (retract).
+    std::function<void(double /*delta_e*/, int /*feedrate*/)> on_manual_extrude;
+    // sends one raw G-code line over the official LAN channel (live tuning)
+    std::function<void(const std::string &)> on_send_gcode;
+
+private:
+    ScalableBitmap m_outline;
+    wxColour m_material_colour{0xC9, 0xA4, 0x7E};
+    double   m_fraction   = 1.0;
+    double   m_nominal_ml = 150.0;
+
+    // Continuous jog (start with an arrow, stop with the play/stop button).
+    wxTimer  m_timer;
+    int      m_dir = 0;            // -1 up/retract, +1 down/extrude, 0 idle
+    double   m_step_e     = 4.0;   // firm step per tick (E units)
+    ::TextInput *m_speed_ctrl = nullptr;
+    ::TextInput *m_flow_ctrl  = nullptr;
+    class wxStaticText *m_zoff_label = nullptr;
+    double       m_z_off      = 0.0;   // accumulated live baby-step vs the sliced Z
+    bool         m_was_printing = false;
+public:
+    // auto-unwind the babystep when a print ends or is cancelled (M290 persists
+    // in firmware across jobs and would shift the next print's Z)
+    void update_print_state(bool printing);
+    void reset_z_offset();
+private:
+    int      m_level      = 1;     // 1..3: each press of the active direction adds force
+                                   // (slower plunger = more torque on the speed-torque curve)
+    int      m_feedrate   = 600;   // mm/min, firm (near native jog feel)
+    int      m_tick_ms    = 900;   // wider spacing -> shallow queue -> responsive stop
+
+    wxWindow    *m_draw_area  = nullptr;
+    wxStaticText *m_pct_label = nullptr;
+    wxStaticText *m_ml_label  = nullptr;
+    ::Button    *m_btn_up     = nullptr;
+    ::Button    *m_btn_down   = nullptr;
+    ::Button    *m_btn_play   = nullptr;
+
+    void start_jog(int dir);
+    void stop_jog();
+    void on_tick(wxTimerEvent &);
+    void paint_syringe(wxDC &dc, const wxSize &sz);
+};
+
+}} // namespace Slic3r::GUI

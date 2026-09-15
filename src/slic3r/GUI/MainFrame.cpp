@@ -1,4 +1,5 @@
 #include "MainFrame.hpp"
+#include "slic3r/GUI/QuasiZero/QzCalibrationDialog.hpp"
 
 #include <wx/panel.h>
 #include <wx/notebook.h>
@@ -350,7 +351,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     m_topbar         = new BBLTopbar(this);
 #else
     auto panel_topbar = new wxPanel(this, wxID_ANY);
-    panel_topbar->SetBackgroundColour(wxColour(38, 46, 48));
+    panel_topbar->SetBackgroundColour(wxColour(48, 43, 39));
     auto sizer_tobar = new wxBoxSizer(wxVERTICAL);
     panel_topbar->SetSizer(sizer_tobar);
     panel_topbar->Layout();
@@ -394,7 +395,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     default:
     case GUI_App::EAppMode::Editor:
         m_taskbar_icon = std::make_unique<OrcaSlicerTaskBarIcon>(wxTBI_DOCK);
-        m_taskbar_icon->SetIcon(wxIcon(Slic3r::var("OrcaSlicer-mac_256px.ico"), wxBITMAP_TYPE_ICO), "OrcaSlicer");
+        m_taskbar_icon->SetIcon(wxIcon(Slic3r::var("OrcaSlicer-mac_256px.ico"), wxBITMAP_TYPE_ICO), "Quasizero Slicer");
         break;
     case GUI_App::EAppMode::GCodeViewer:
         break;
@@ -1015,8 +1016,8 @@ void MainFrame::update_layout()
     case ESettingsLayout::Old:
     {
         m_plater->Reparent(m_tabpanel);
-        m_tabpanel->InsertPage(tp3DEditor, m_plater, _L("Prepare"), std::string("tab_3d_active"), std::string("tab_3d_active"), false);
-        m_tabpanel->InsertPage(tpPreview, m_plater, _L("Preview"), std::string("tab_preview_active"), std::string("tab_preview_active"), false);
+        m_tabpanel->InsertPage(tp3DEditor, m_plater, _L("Prepare"), std::string("tab_3d_active"), std::string("tab_3d_inactive"), false);
+        m_tabpanel->InsertPage(tpPreview, m_plater, _L("Preview"), std::string("tab_preview_active"), std::string("tab_preview_inactive"), false);
         m_main_sizer->Add(m_tabpanel, 1, wxEXPAND | wxTOP, 0);
 
         m_tabpanel->Bind(wxCUSTOMEVT_NOTEBOOK_SEL_CHANGED, [this](wxCommandEvent& evt)
@@ -1311,7 +1312,7 @@ void MainFrame::init_tabpanel() {
             select_tab(MainFrame::tpHome);
             m_webview->load_url(url);
         });
-        m_tabpanel->AddPage(m_webview, "", "tab_home_active", "tab_home_active", false);
+        m_tabpanel->AddPage(m_webview, "", "tab_home_active", "tab_home_inactive", false);
         m_param_panel = new ParamsPanel(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBK_LEFT | wxTAB_TRAVERSAL);
     }
 
@@ -1326,7 +1327,7 @@ void MainFrame::init_tabpanel() {
         //BBS add pages
     m_monitor = new MonitorPanel(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     m_monitor->SetBackgroundColour(*wxWHITE);
-    m_tabpanel->AddPage(m_monitor, _L("Device"), std::string("tab_monitor_active"), std::string("tab_monitor_active"), false);
+    m_tabpanel->AddPage(m_monitor, _L("Device"), std::string("tab_monitor_active"), std::string("tab_monitor_inactive"), false);
 
     m_printer_view = new PrinterWebView(m_tabpanel);
     Bind(EVT_LOAD_PRINTER_URL, [this](LoadPrinterViewEvent &evt) {
@@ -1341,16 +1342,16 @@ void MainFrame::init_tabpanel() {
         m_multi_machine = new MultiMachinePage(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
         m_multi_machine->SetBackgroundColour(*wxWHITE);
         // TODO: change the bitmap
-        m_tabpanel->AddPage(m_multi_machine, _L("Multi-device"), std::string("tab_multi_active"), std::string("tab_multi_active"), false);
+        m_tabpanel->AddPage(m_multi_machine, _L("Multi-device"), std::string("tab_multi_active"), std::string("tab_multi_inactive"), false);
     }
 
     m_project = new ProjectPanel(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     m_project->SetBackgroundColour(*wxWHITE);
-    m_tabpanel->AddPage(m_project, _L("Project"), std::string("tab_auxiliary_active"), std::string("tab_auxiliary_active"), false);
+    m_tabpanel->AddPage(m_project, _L("Project"), std::string("tab_auxiliary_active"), std::string("tab_auxiliary_inactive"), false);
 
     m_calibration = new CalibrationPanel(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     m_calibration->SetBackgroundColour(*wxWHITE);
-    m_tabpanel->AddPage(m_calibration, _L("Calibration"), std::string("tab_calibration_active"), std::string("tab_calibration_active"), false);
+    m_tabpanel->AddPage(m_calibration, _L("Calibration"), std::string("tab_calibration_active"), std::string("tab_calibration_inactive"), false);
 
     if (m_plater) {
         // load initial config
@@ -1386,7 +1387,7 @@ void MainFrame::show_device(bool bBBLPrinter) {
             m_monitor->SetBackgroundColour(*wxWHITE);
         }
         m_monitor->Show(false);
-        m_tabpanel->InsertPage(tpMonitor, m_monitor, _L("Device"), std::string("tab_monitor_active"), std::string("tab_monitor_active"));
+        m_tabpanel->InsertPage(tpMonitor, m_monitor, _L("Device"), std::string("tab_monitor_active"), std::string("tab_monitor_inactive"));
 
         if (wxGetApp().is_enable_multi_machine()) {
             if (!m_multi_machine) {
@@ -1406,7 +1407,7 @@ void MainFrame::show_device(bool bBBLPrinter) {
         // Calibration is always the last page, so don't use InsertPage here. Otherwise, if multi_machine page is not enabled,
         // the calibration tab won't be properly added as well, due to the TabPosition::tpCalibration no longer matches the real tab position.
         m_tabpanel->AddPage(m_calibration, _L("Calibration"), std::string("tab_calibration_active"),
-                               std::string("tab_calibration_active"), false);
+                               std::string("tab_calibration_inactive"), false);
 
 #ifdef _MSW_DARK_MODE
         wxGetApp().UpdateDarkUIWin(this);
@@ -1826,8 +1827,8 @@ wxBoxSizer* MainFrame::create_side_tools()
 
     auto slice_panel = new wxPanel(this,wxID_ANY,wxDefaultPosition,wxDefaultSize);
     auto print_panel = new wxPanel(this,wxID_ANY,wxDefaultPosition,wxDefaultSize);
-    slice_panel->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#3B4446")));
-    print_panel->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#3B4446")));
+    slice_panel->SetBackgroundColour(wxColour(245, 245, 244)); // Quasizero: tab-strip gray
+    print_panel->SetBackgroundColour(wxColour(245, 245, 244)); // Quasizero
 
     m_slice_btn = new SideButton(slice_panel, _L("Slice plate"), "");
     m_slice_option_btn = new SideButton(slice_panel, "", "sidebutton_dropdown", 0, 14);
@@ -1835,13 +1836,13 @@ wxBoxSizer* MainFrame::create_side_tools()
     m_print_option_btn = new SideButton(print_panel, "", "sidebutton_dropdown", 0, 14);
 
     auto slice_sizer = new wxBoxSizer(wxHORIZONTAL);
-    slice_sizer->Add(m_slice_option_btn, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, FromDIP(1));
-    slice_sizer->Add(m_slice_btn, 0, wxLEFT | wxALIGN_CENTER_VERTICAL, FromDIP(1));
+    slice_sizer->Add(m_slice_option_btn, 0, wxALIGN_CENTER_VERTICAL, 0); // Quasizero: continuous pill, no seam
+    slice_sizer->Add(m_slice_btn, 0, wxALIGN_CENTER_VERTICAL, 0);
     slice_panel->SetSizer(slice_sizer);
 
     auto print_sizer = new wxBoxSizer(wxHORIZONTAL);
-    print_sizer->Add(m_print_option_btn, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, FromDIP(1));
-    print_sizer->Add(m_print_btn, 0, wxLEFT | wxALIGN_CENTER_VERTICAL, FromDIP(1));
+    print_sizer->Add(m_print_option_btn, 0, wxALIGN_CENTER_VERTICAL, 0);
+    print_sizer->Add(m_print_btn, 0, wxALIGN_CENTER_VERTICAL, 0);
     print_panel->SetSizer(print_sizer);
 
     update_side_button_style();
@@ -2347,16 +2348,16 @@ void MainFrame::update_side_button_style()
     m_slice_btn->SetExtraSize(wxSize(FromDIP(38), FromDIP(10)));
     m_slice_btn->SetBottomColour(wxColour(0x3B4446));*/
     StateColor m_btn_bg_enable = StateColor(
-        std::pair<wxColour, int>(wxColour(0, 137, 123), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(48, 221, 112), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(0, 150, 136), StateColor::Normal)
+        std::pair<wxColour, int>(wxColour(45, 44, 42), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(221, 128, 62), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(58, 56, 53), StateColor::Normal)
     );
 
     // m_publish_btn->SetMinSize(wxSize(FromDIP(125), FromDIP(24)));
     // m_publish_btn->SetCornerRadius(FromDIP(12));
     // m_publish_btn->SetBackgroundColor(m_btn_bg_enable);
     // m_publish_btn->SetBorderColor(m_btn_bg_enable);
-    // m_publish_btn->SetBackgroundColour(wxColour(59,68,70));
+    // m_publish_btn->SetBackgroundColour(wxColour(70, 64, 60));
     // m_publish_btn->SetTextColor(StateColor::darkModeColorFor("#FFFFFE"));
 
     m_slice_btn->SetTextLayout(SideButton::EHorizontalOrientation::HO_Left, FromDIP(15));
@@ -2381,8 +2382,8 @@ void MainFrame::update_side_button_style()
     m_print_option_btn->SetIconOffset(FromDIP(2));
     m_print_option_btn->SetMinSize(wxSize(FromDIP(24), FromDIP(24)));
 
-    // Keep panel backgrounds in sync with SideButton's darkModeColorFor(#3B4446) bottom strip
-    auto bg = StateColor::darkModeColorFor(wxColour("#3B4446"));
+    // Keep panel backgrounds in sync with SideButton's darkModeColorFor(#454544) bottom strip
+    auto bg = StateColor::darkModeColorFor(wxColour("#454544"));
     m_slice_btn->GetParent()->SetBackgroundColour(bg);
     m_print_btn->GetParent()->SetBackgroundColour(bg);
 }
@@ -3321,6 +3322,14 @@ void MainFrame::init_menubar_as_editor()
     //m_topbar->AddDropDownMenuItem(language_item);
     //m_topbar->AddDropDownMenuItem(config_item);
     m_topbar->AddDropDownSubMenu(helpMenu, _L("Help"));
+
+    // Quasizero QZmini calibration
+    append_menu_item(m_topbar->GetCalibMenu(), wxID_ANY, _L("QZmini Calibration"), _L("QZmini syringe-plunger mechanical calibration"),
+        [this](wxCommandEvent&) {
+            Slic3r::GUI::QzCalibrationDialog dlg((wxWindow*)this);
+            dlg.ShowModal();
+        }, "", nullptr,
+        [this]() { return true; }, this);
 
     // SoftFever calibrations
 

@@ -55,7 +55,7 @@ SavePresetDialog::Item::Item(Preset::Type type, const std::string &suffix, wxBox
 
     wxStaticText *label_top = new wxStaticText(m_parent, wxID_ANY, from_u8((boost::format(_utf8(L("Save %s as"))) % into_u8(tab->title())).str()));
     label_top->SetFont(::Label::Body_14);
-    label_top->SetForegroundColour(wxColour(38,46,48));
+    label_top->SetForegroundColour(wxColour(48, 43, 39));
 
 
     //    m_valid_bmp = new wxStaticBitmap(m_parent, wxID_ANY, create_scaled_bitmap("blank_16", m_parent));

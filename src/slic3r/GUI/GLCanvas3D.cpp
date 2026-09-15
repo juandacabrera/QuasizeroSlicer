@@ -20,10 +20,22 @@
 #include "GLShader.hpp"
 #include "GUI.hpp"
 #include "Tab.hpp"
+#include "GLTexture.hpp"
+#include "ParamsDialog.hpp"
+#include "ParamsPanel.hpp"
+#include "libslic3r/PlaceholderParser.hpp"
+#include "libslic3r/LocalesUtils.hpp"
+#include "libslic3r/QuasiZero/QzRefillPlanner.hpp"
+#include "libslic3r/QuasiZero/QzShortSegmentAnchor.hpp"
+#include "libslic3r/QuasiZero/QzFirmwareAdapter.hpp"
+#include <boost/nowide/fstream.hpp>
 #include "GUI_Preview.hpp"
 #include "OpenGLManager.hpp"
 #include "Plater.hpp"
 #include "MainFrame.hpp"
+#include <wx/msgdlg.h>
+#include <wx/clipbrd.h>
+#include <wx/dataobj.h>
 #include "WipeTowerDialog.hpp"
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
@@ -90,7 +102,7 @@ extern wxPopupWindow* wxCurrentPopupWindow;
 
 static constexpr const float TRACKBALLSIZE = 0.8f;
 
-static Slic3r::ColorRGBA DEFAULT_BG_LIGHT_COLOR      = { 0.906f, 0.906f, 0.906f, 1.0f };
+static Slic3r::ColorRGBA DEFAULT_BG_LIGHT_COLOR      = { 0.965f, 0.958f, 0.947f, 1.0f }; // Quasizero near-white warm
 static Slic3r::ColorRGBA DEFAULT_BG_LIGHT_COLOR_DARK = { 0.329f, 0.329f, 0.353f, 1.0f };
 static Slic3r::ColorRGBA ERROR_BG_LIGHT_COLOR        = { 0.753f, 0.192f, 0.039f, 1.0f };
 static Slic3r::ColorRGBA ERROR_BG_LIGHT_COLOR_DARK   = { 0.753f, 0.192f, 0.039f, 1.0f };
@@ -904,8 +916,10 @@ void GLCanvas3D::Tooltip::render(const Vec2d& mouse_position, GLCanvas3D& canvas
     const Vec2f position = validate_position(mouse_position, canvas, size);
 
     ImGuiWrapper& imgui = *wxGetApp().imgui();
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 0.98f)); // Quasizero: readable tooltip
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
     imgui.set_next_window_pos(position.x(), position.y(), ImGuiCond_Always, 0.0f, 0.0f);
 
     imgui.begin(wxString("canvas_tooltip"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing);
@@ -924,6 +938,7 @@ void GLCanvas3D::Tooltip::render(const Vec2d& mouse_position, GLCanvas3D& canvas
     size = ImGui::GetWindowSize();
 
     imgui.end();
+    ImGui::PopStyleColor(2);
     ImGui::PopStyleVar(2);
 }
 
@@ -2210,6 +2225,8 @@ void GLCanvas3D::render(bool only_init)
             right_margin = SLIDER_RIGHT_MARGIN * scale_factor * GCODE_VIEWER_SLIDER_SCALE;
             bottom_margin = SLIDER_BOTTOM_MARGIN * scale_factor * GCODE_VIEWER_SLIDER_SCALE;
         }
+        // Quasizero: transient notifications live top-right, under Slice/Print
+        bottom_margin = std::max(60.0f, (float)get_canvas_size().get_height() - 150.0f * get_scale());
         wxGetApp().plater()->get_notification_manager()->render_notifications(*this, get_overlay_window_width(), bottom_margin, right_margin);
         wxGetApp().plater()->get_dailytips()->render();
     }
@@ -6626,14 +6643,18 @@ void GLCanvas3D::_update_slice_error_status()
 void GLCanvas3D::_switch_toolbars_icon_filename()
 {
     BackgroundTexture::Metadata background_data;
-    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
     background_data.left = 16;
     background_data.top = 16;
     background_data.right = 16;
     background_data.bottom = 16;
+    // Quasizero: continuous bar - rounded only at the outer extremes
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_left.png";
     m_main_toolbar.init(background_data);
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_right.png";
     m_assemble_view_toolbar.init(background_data);
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_mid.png";
     m_separator_toolbar.init(background_data);
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
     wxGetApp().plater()->get_collapse_toolbar().init(background_data);
 
     // main toolbar
@@ -6713,7 +6734,7 @@ bool GLCanvas3D::_init_main_toolbar()
         return true;
 
     BackgroundTexture::Metadata background_data;
-    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_left.png"; // Quasizero: left end of the continuous bar
     background_data.left = 16;
     background_data.top = 16;
     background_data.right = 16;
@@ -6939,7 +6960,7 @@ bool GLCanvas3D::_init_assemble_view_toolbar()
         return true;
 
     BackgroundTexture::Metadata background_data;
-    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_right.png"; // Quasizero: right end of the continuous bar
     background_data.left = 16;
     background_data.top = 16;
     background_data.right = 16;
@@ -6996,7 +7017,7 @@ bool GLCanvas3D::_init_separator_toolbar()
         return true;
 
     BackgroundTexture::Metadata background_data;
-    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "toolbar_background.png";
+    background_data.filename = m_is_dark ? "toolbar_background_dark.png" : "qz_tb_bg_mid.png"; // Quasizero: square middle section
     background_data.left = 0;
     background_data.top = 0;
     background_data.right = 0;
@@ -8392,6 +8413,8 @@ void GLCanvas3D::_render_overlays()
     // BBS
     //_render_view_toolbar();
     _render_paint_toolbar();
+
+    _render_qz_quick_cards(); // Quasizero: floating quick-access cards
 
     //BBS: GUI refactor: GLToolbar
     //move gizmos behind of main
@@ -10821,6 +10844,1125 @@ ModelInstance *get_model_instance(const GLVolume &gl_volume, const ModelObject &
     if (instance_idx >= object.instances.size())
         return nullptr;
     return object.instances[instance_idx];
+}
+
+
+// Quasizero G-code Editor: wraps a pasted custom body (e.g. Grasshopper paths)
+// with the SELECTED machine's start/end G-code (placeholders resolved against
+// the live config) and runs the QZ pipeline (segment subdivision, short-segment
+// anchoring, Refill Assist) - then hands the result to the existing
+// load-gcode preview machinery.
+static int qz_gcode_text_cb(ImGuiInputTextCallbackData *data)
+{
+    if (data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
+        auto *str = (std::string *) data->UserData;
+        str->resize(data->BufTextLen);
+        data->Buf = (char *) str->c_str();
+    }
+    return 0;
+}
+
+static bool qz_process_custom_gcode(const std::string &body, std::string &out_path, std::string &err)
+{
+    try {
+        PresetBundle &pb = *wxGetApp().preset_bundle;
+        DynamicPrintConfig full = pb.full_config();
+        const ConfigOptionBool *qe = full.option<ConfigOptionBool>("qzmini_enable");
+        if (qe == nullptr || !qe->value) { err = _u8L("Select a QZmini printer first - the editor wraps your G-code with its start/end sequences."); return false; }
+
+        // The preview derives line type, bead geometry, layers and the player
+        // from slicer metadata comments the authored body does not carry. Scan
+        // the body and annotate it: role = Custom, bead width/height from the
+        // live process (the quickbar values), and a LAYER_CHANGE block on every
+        // extrusion-Z transition - mid-air Z jumps included (non-planar bodies
+        // are first-class here; only the BEAD height comes from the process).
+        const double qz_lh = std::max(0.1, full.opt_float("layer_height"));
+        double qz_lw = 4.0;
+        if (const ConfigOptionFloatOrPercent *lwo = full.option<ConfigOptionFloatOrPercent>("line_width")) {
+            double noz = 4.0;
+            if (const ConfigOptionFloats *nd = full.option<ConfigOptionFloats>("nozzle_diameter"); nd && !nd->values.empty()) noz = nd->values.front();
+            qz_lw = lwo->percent ? noz * lwo->value * 0.01 : lwo->value;
+            if (qz_lw <= 0.01) qz_lw = noz;
+        }
+        // authored metadata wins: if the body carries its own slicer comments,
+        // do not override them with quickbar values (quickbar = fallback only)
+        const bool user_width  = body.find(";WIDTH:")  != std::string::npos;
+        const bool user_height = body.find(";HEIGHT:") != std::string::npos;
+        const bool user_layers = body.find(";LAYER_CHANGE") != std::string::npos;
+        std::string abody;
+        abody.reserve(body.size() + body.size() / 4);
+        {
+            // role must NOT be Custom: libvgcode Layers::update() only assigns a Z to
+            // layers whose extrusions have a real role - Custom layers stay at Z=0 and
+            // the view-range filter then culls everything above the first layer
+            abody += "; FEATURE: Outer wall\n;TYPE:Outer wall\n";
+            if (!user_width) {
+                const std::string w = Slic3r::float_to_string_decimal_point(qz_lw, 3);
+                abody += ";WIDTH:" + w + "\n; LINE_WIDTH: " + w + "\n";
+            }
+        }
+        double max_z = 0.0, first_z = -1.0, cur_z = -1.0, last_layer_z = -1e9; size_t emoves = 0;
+        std::string first_line_seen;
+        {
+            size_t pos = 0;
+            while (pos < body.size()) {
+                size_t nl = body.find('\n', pos);
+                const bool last = (nl == std::string::npos);
+                if (last) nl = body.size();
+                std::string line = body.substr(pos, nl - pos);
+                // tolerate CR endings, leading whitespace/BOM and lowercase g
+                while (!line.empty() && (line.back() == '\r' || line.back() == ' ' || line.back() == '\t')) line.pop_back();
+                size_t b0 = 0;
+                while (b0 < line.size() && (line[b0] == ' ' || line[b0] == '\t' || (unsigned char) line[b0] >= 0x80)) ++b0;
+                if (b0 > 0) line.erase(0, b0);
+                if (!line.empty() && line[0] == 'g') line[0] = 'G';
+                if (first_line_seen.empty() && !line.empty()) first_line_seen = line.substr(0, 48);
+                const bool is_move = line.rfind("G1", 0) == 0 || line.rfind("G0", 0) == 0;
+                bool is_extru = false;
+                if (is_move) {
+                    const size_t zp = line.find('Z');
+                    if (zp != std::string::npos) {
+                        cur_z = Slic3r::string_to_double_decimal_point(std::string_view(line).substr(zp + 1));
+                        if (cur_z > max_z) max_z = cur_z;
+                        if (first_z < 0.0) first_z = cur_z;
+                    }
+                    const size_t ep = line.find('E');
+                    if (ep != std::string::npos && Slic3r::string_to_double_decimal_point(std::string_view(line).substr(ep + 1)) > 1e-9 &&
+                        (line.find('X') != std::string::npos || line.find('Y') != std::string::npos)) {
+                        is_extru = true;
+                        ++emoves;
+                    }
+                }
+                if (!user_layers && is_extru && cur_z >= 0.0 && std::abs(cur_z - last_layer_z) > 1e-6) {
+                    const std::string zs = Slic3r::float_to_string_decimal_point(cur_z, 3);
+                    abody += ";LAYER_CHANGE\n; CHANGE_LAYER\n;Z:" + zs + "\n; Z_HEIGHT: " + zs + "\n";
+                    if (!user_height) {
+                        const std::string hs = Slic3r::float_to_string_decimal_point(qz_lh, 3);
+                        abody += ";HEIGHT:" + hs + "\n; LAYER_HEIGHT: " + hs + "\n";
+                    }
+                    last_layer_z = cur_z;
+                }
+                abody += line;
+                abody += "\n";
+                if (line.rfind(";WIDTH:", 0) == 0) {
+                    abody += "; LINE_WIDTH: " + Slic3r::float_to_string_decimal_point(Slic3r::string_to_double_decimal_point(std::string_view(line).substr(7)), 3) + "\n";
+                } else if (line.rfind(";HEIGHT:", 0) == 0) {
+                    abody += "; LAYER_HEIGHT: " + Slic3r::float_to_string_decimal_point(Slic3r::string_to_double_decimal_point(std::string_view(line).substr(8)), 3) + "\n";
+                } else if (line.rfind(";TYPE:", 0) == 0) {
+                    abody += "; FEATURE: " + line.substr(6) + "\n";
+                } else if (line.rfind(";LAYER_CHANGE", 0) == 0) {
+                    abody += "; CHANGE_LAYER\n";
+                }
+                if (last) break;
+                pos = nl + 1;
+            }
+        }
+        if (emoves == 0) {
+            err = _u8L("No extrusion moves (G1 with E) found in the pasted G-code.") +
+                  std::string(" | first line read: \"") + first_line_seen + "\"";
+            return false;
+        }
+
+        PlaceholderParser pp;
+        pp.apply_config(full);
+        pp.set("max_layer_z",       new ConfigOptionFloat(max_z));
+        pp.set("layer_z",           new ConfigOptionFloat(first_z > 0.0 ? first_z : max_z));
+        pp.set("layer_num",         new ConfigOptionInt(0));
+        pp.set("total_layer_count", new ConfigOptionInt(1));
+
+        std::string g;
+        g  = "; generated by QuasizeroSlicer (G-code Editor)\n"; // matches SLIC3R_APP_NAME: enables producer tags + config-block loading
+        g += "; Quasizero Slicer - custom G-code job\n";
+        g += pp.process(full.opt_string("machine_start_gcode"), 0);
+        g += "\n; QZ CUSTOM BODY BEGIN\n";
+        g += abody;
+        g += "; QZ CUSTOM BODY END\n";
+        g += pp.process(full.opt_string("machine_end_gcode"), 0);
+        if (!g.empty() && g.back() != '\n') g += "\n";
+        // config block: gives the viewer the real (virtual) filament diameter and
+        // material data, so ml stats, flow and computed widths use QZ geometry
+        g += "; CONFIG_BLOCK_START\n";
+        // full dump, like a real sliced file: the loader rejects blocks with < 80 keys
+        for (const std::string &k : full.keys()) {
+            try { g += "; " + k + " = " + full.opt_serialize(k) + "\n"; } catch (...) {}
+        }
+        g += "; CONFIG_BLOCK_END\n";
+        g += "\n";
+
+        const bool e_rel = full.opt_bool("use_relative_e_distances");
+        if (full.opt_float("qzmini_max_segment_mm") > 0.001) {
+            QuasiZero::QzSegmentSubdivider sub(full.opt_float("qzmini_max_segment_mm"), e_rel);
+            g = sub.process(g);
+        }
+        if (full.opt_bool("qzmini_ssa_enable")) {
+            QuasiZero::QzSsaOptions so;
+            so.max_length_mm      = full.opt_float("qzmini_ssa_max_length");
+            so.dwell_ms           = full.opt_int("qzmini_ssa_dwell_ms");
+            so.extra_prime_e      = full.opt_float("qzmini_ssa_extra_prime_e");
+            so.depart_speed_mms   = full.opt_float("qzmini_ssa_depart_speed");
+            so.initial_e_relative = e_rel;
+            QuasiZero::QzShortSegmentAnchor ssa(so);
+            g = ssa.process(g);
+        }
+        if (full.opt_bool("qzmini_refill_enable")) {
+            QuasiZero::QzVolumetricParams vp;
+            vp.barrel_inner_diameter_mm    = full.opt_float("qzmini_barrel_inner_diameter");
+            vp.nominal_syringe_capacity_ml = full.opt_float("qzmini_nominal_syringe_capacity_ml");
+            vp.usable_syringe_capacity_ml  = full.opt_float("qzmini_usable_syringe_capacity_ml");
+            vp.usable_plunger_stroke_mm    = full.opt_float("qzmini_usable_plunger_stroke_mm");
+            vp.plunger_mm_per_e_unit       = full.opt_float("qzmini_plunger_mm_per_e_unit");
+            QuasiZero::QzRefillOptions ro;
+            ro.refill_threshold_ml    = full.opt_float("qzmini_refill_threshold_ml");
+            ro.usable_capacity_ml     = full.opt_float("qzmini_usable_syringe_capacity_ml");
+            ro.park_x                 = full.opt_float("qzmini_park_x");
+            ro.park_y                 = full.opt_float("qzmini_park_y");
+            ro.park_z_lift            = full.opt_float("qzmini_park_z_lift");
+            ro.plunger_reset          = full.opt_bool("qzmini_plunger_reset_enable");
+            ro.plunger_reset_feedrate = full.opt_float("qzmini_plunger_reset_feedrate");
+            ro.prime_after_refill     = full.opt_bool("qzmini_prime_after_refill_enable");
+            ro.prime_ml               = full.opt_float("qzmini_prime_after_refill_ml");
+            ro.prime_feedrate         = full.opt_float("qzmini_prime_feedrate");
+            ro.emit_preview_tag       = full.opt_bool("qzmini_refill_show_in_preview");
+            ro.travel_feedrate_mm_min = full.opt_float("travel_speed") * 60.0;
+            ro.initial_e_relative     = e_rel;
+            switch (full.option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value) {
+            case gcfKlipper:        ro.family = QuasiZero::QzFirmwareFamily::Klipper; break;
+            case gcfRepRapFirmware: ro.family = QuasiZero::QzFirmwareFamily::RepRapFirmware; break;
+            case gcfMarlinLegacy:
+            case gcfMarlinFirmware: ro.family = QuasiZero::QzFirmwareFamily::Marlin; break;
+            default:                ro.family = QuasiZero::QzFirmwareFamily::Unknown; break;
+            }
+            ro.pause_gcode = QuasiZero::qz_pause_command(ro.family,
+                                                         full.opt_string("qzmini_pause_strategy"),
+                                                         full.opt_string("machine_pause_gcode"),
+                                                         full.opt_string("qzmini_pause_custom_gcode"));
+            QuasiZero::QzRefillProcessor rp(vp, ro);
+            g = rp.process(g);
+            if (rp.failed()) { err = rp.error(); return false; }
+        }
+
+        out_path = (boost::filesystem::path(Slic3r::data_dir()) / "qz_custom_gcode.gcode").string();
+        boost::nowide::ofstream f(out_path, std::ios::binary);
+        f << g;
+        f.close();
+        return true;
+    } catch (const std::exception &e) {
+        err = e.what();
+        return false;
+    }
+}
+
+// Quasizero: floating quick-access cards (Process + Printer), bottom-left, folded
+// by default - the fast path that replaces the hidden wx sidebar for QZmini users.
+void GLCanvas3D::_render_qz_quick_cards()
+{
+    if (m_canvas_type != CanvasView3D && m_canvas_type != CanvasPreview)
+        return;
+    PresetBundle &bundle = *wxGetApp().preset_bundle;
+    const DynamicPrintConfig &prcfg = bundle.printers.get_edited_preset().config;
+    const ConfigOptionBool *qz_en = prcfg.option<ConfigOptionBool>("qzmini_enable");
+    const bool is_qz_printer = (qz_en != nullptr && qz_en->value);
+    const std::string cur_model_top = prcfg.opt_string("printer_model");
+    const std::string base_model = (cur_model_top.rfind("QZmini @ ", 0) == 0) ? cur_model_top.substr(9) : cur_model_top;
+    // stock printer with a QZmini sibling still shows the cards, so the user can
+    // switch the extruder back and forth without leaving the ecosystem
+    bool has_qz_sibling = false;
+    {
+        const std::string want = std::string("QZmini @ ") + base_model;
+        for (const Preset &pr : bundle.printers.get_presets()) {
+            if (pr.is_default) continue;
+            if (pr.config.opt_string("printer_model") == want) { has_qz_sibling = true; break; }
+        }
+    }
+    (void)has_qz_sibling; // cards show for every printer - the Extruder combo
+                          // simply disables QZmini when no overlay exists
+
+    ImGuiWrapper &imgui = *wxGetApp().imgui();
+    const float scale = get_scale();
+    const Size cnv_size = get_canvas_size();
+    const float cw = (float)cnv_size.get_width();
+    const float ch = (float)cnv_size.get_height();
+    if (cw < 700.0f * scale || ch < 300.0f * scale)
+        return; // too small: the model view has priority
+
+    // shared style, matching the preview quickbar capsules
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4(1.0f, 1.0f, 1.0f, 0.96f));
+    ImGui::PushStyleColor(ImGuiCol_Text,            ImVec4(0.10f, 0.10f, 0.10f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,         ImVec4(0.937f, 0.933f, 0.925f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,  ImVec4(0.906f, 0.902f, 0.894f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,   ImVec4(0.882f, 0.878f, 0.870f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Border,          ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_CheckMark,       ImVec4(0.227f, 0.220f, 0.208f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg,         ImVec4(1.0f, 1.0f, 1.0f, 0.98f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4(0.918f, 0.914f, 0.906f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive,    ImVec4(0.882f, 0.878f, 0.870f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Header,          ImVec4(0.918f, 0.914f, 0.906f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Button,          ImVec4(0.937f, 0.933f, 0.925f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,   ImVec4(0.906f, 0.902f, 0.894f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,    ImVec4(0.882f, 0.878f, 0.870f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg,  ImVec4(0.878f, 0.874f, 0.866f, 1.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding,   14.0f * scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,    ImVec2(16.0f * scale, 12.0f * scale));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding,    7.0f * scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,  0.0f);
+
+    static bool   s_open_process  = false;   // folded by default, like the reference
+    static bool   s_open_printer  = false;
+    static ImVec2 s_printer_size(0.0f, 0.0f);
+
+    const float left   = 200.0f * scale; // clear of the nav cube / burger / search icons
+    const float bottom = ch - 20.0f * scale; // same bottom line as quickbar / legend
+    const float gap    = 10.0f * scale;
+    // compact mode: not enough width for the vertical stack next to the centered
+    // quickbar - the three cards become one row of pills on the bottom line and
+    // the quickbar lifts above them (mirrored in GCodeViewer)
+    const bool qz_compact = cw < 1250.0f * scale;
+    const ImVec4 lbl_col(0.55f, 0.55f, 0.54f, 1.0f);
+
+    // clickable title row with a thin stroked chevron (Line Type selector style);
+    // in compact mode the text is replaced by the native sidebar icon
+    auto title_row = [&](const char *label, bool *open, const char *icon_svg = nullptr) {
+        ImGui::PushID(label);
+        const ImVec2 p0 = ImGui::GetCursorScreenPos();
+        const float  h  = ImGui::GetFontSize() + 10.0f * scale;
+        float avail = ImGui::GetContentRegionAvail().x;
+        if (qz_compact && !*open && icon_svg != nullptr) {
+            // icon pill: icon + chevron, no text
+            const float w = 44.0f * scale;
+            const bool clicked = ImGui::InvisibleButton("##hdr", ImVec2(w, h));
+            const bool hov = ImGui::IsItemHovered();
+            ImDrawList *dl = ImGui::GetWindowDrawList();
+            const ImU32 col = hov ? IM_COL32(20, 20, 20, 255) : IM_COL32(60, 58, 55, 255);
+            static std::map<std::string, ImTextureID> s_qz_pill_icons;
+            ImTextureID &tex = s_qz_pill_icons[icon_svg];
+            if (tex == nullptr)
+                IMTexture::load_from_svg_file(resources_dir() + "/images/" + icon_svg + ".svg", 32, 32, tex);
+            const float isz = 16.0f * scale;
+            if (tex != nullptr)
+                dl->AddImage(tex, ImVec2(p0.x + 2.0f * scale, p0.y + (h - isz) * 0.5f),
+                             ImVec2(p0.x + 2.0f * scale + isz, p0.y + (h - isz) * 0.5f + isz));
+            const float cx = p0.x + w - 9.0f * scale;
+            const float cy = p0.y + h * 0.5f;
+            const float cw2 = 3.5f * scale;
+            dl->AddLine(ImVec2(cx - cw2, cy + cw2 * 0.5f), ImVec2(cx, cy - cw2 * 0.5f), col, 1.5f * scale);
+            dl->AddLine(ImVec2(cx, cy - cw2 * 0.5f), ImVec2(cx + cw2, cy + cw2 * 0.5f), col, 1.5f * scale);
+            if (clicked) *open = !*open;
+            ImGui::PopID();
+            return;
+        }
+        if (!*open) avail = 130.0f * scale;              // a closed pill never inherits the open width
+        else if (avail < 130.0f * scale) avail = 130.0f * scale;
+        const bool clicked = ImGui::InvisibleButton("##hdr", ImVec2(avail, h));
+        const bool hov = ImGui::IsItemHovered();
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+        const ImU32 col = hov ? IM_COL32(20, 20, 20, 255) : IM_COL32(60, 58, 55, 255);
+        const float cx = p0.x + 7.0f * scale;
+        const float cy = p0.y + h * 0.5f;
+        const float w  = 4.0f * scale;
+        if (*open) { // chevron down
+            dl->AddLine(ImVec2(cx - w, cy - w * 0.5f), ImVec2(cx, cy + w * 0.5f), col, 1.5f * scale);
+            dl->AddLine(ImVec2(cx, cy + w * 0.5f), ImVec2(cx + w, cy - w * 0.5f), col, 1.5f * scale);
+        } else {     // chevron up (card expands upward)
+            dl->AddLine(ImVec2(cx - w, cy + w * 0.5f), ImVec2(cx, cy - w * 0.5f), col, 1.5f * scale);
+            dl->AddLine(ImVec2(cx, cy - w * 0.5f), ImVec2(cx + w, cy + w * 0.5f), col, 1.5f * scale);
+        }
+        dl->AddText(ImVec2(p0.x + 20.0f * scale, p0.y + (h - ImGui::GetFontSize()) * 0.5f), col, label);
+        if (clicked) *open = !*open;
+        ImGui::PopID();
+    };
+
+    auto section = [&](const char *name) {
+        ImGui::Dummy(ImVec2(0.0f, 3.0f * scale));
+        ImGui::SetWindowFontScale(0.8f);
+        ImGui::TextColored(lbl_col, "%s", name);
+        ImGui::SetWindowFontScale(1.0f);
+    };
+
+    const float label_w = 128.0f * scale;
+    const float input_w = 76.0f * scale;
+
+    auto row_label = [&](const char *label) {
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted(label);
+        ImGui::SameLine(label_w);
+        ImGui::SetNextItemWidth(input_w);
+    };
+
+    Tab *print_tab = wxGetApp().get_tab(Preset::TYPE_PRINT);
+    const DynamicPrintConfig &pcfg = bundle.prints.get_edited_preset().config;
+    const DynamicPrintConfig &saved_pcfg = bundle.prints.get_selected_preset().config;
+    const ImVec4 qz_mod_bg(0.788f, 0.643f, 0.494f, 0.35f); // sand tint marks unsaved edits
+
+    // small counterclockwise-arrow undo button (per-parameter reset)
+    auto undo_button = [&](const char *id) -> bool {
+        const float uh = ImGui::GetFrameHeight();
+        const ImVec2 up = ImGui::GetCursorScreenPos();
+        const bool clk = ImGui::InvisibleButton(id, ImVec2(uh, uh));
+        const bool hov = ImGui::IsItemHovered();
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+        const ImU32 col = hov ? IM_COL32(20, 20, 20, 255) : IM_COL32(110, 108, 105, 255);
+        const ImVec2 c(up.x + uh * 0.5f, up.y + uh * 0.5f);
+        const float r = uh * 0.30f;
+        dl->PathArcTo(c, r, 0.25f * 3.1415926f, 1.80f * 3.1415926f, 24);
+        dl->PathStroke(col, 0, 1.5f * scale);
+        const ImVec2 tip(c.x + r * 0.7071f, c.y + r * 0.7071f);
+        dl->AddTriangleFilled(tip, ImVec2(tip.x + 3.2f * scale, tip.y - 0.8f * scale),
+                              ImVec2(tip.x - 0.8f * scale, tip.y + 3.2f * scale), col);
+        return clk;
+    };
+
+    // integer row: applies on +/- click immediately, on typing when the field loses
+    // focus; unsaved edits get a sand-tinted field and their own undo button
+    auto int_row = [&](const char *label, const char *id, const char *key, int vmin, int vmax) {
+        int cur = 0;
+        if (const ConfigOption *o = pcfg.option(key)) cur = (int)o->getInt();
+        int sv = cur; bool has_saved = false;
+        if (const ConfigOption *o = saved_pcfg.option(key)) { sv = (int)o->getInt(); has_saved = true; }
+        const bool modified = has_saved && sv != cur;
+        int v = cur;
+        row_label(label);
+        if (modified) {
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, qz_mod_bg);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.788f, 0.643f, 0.494f, 0.50f));
+        }
+        ImGui::InputInt(id, &v, 1, 1);
+        if (modified) ImGui::PopStyleColor(2);
+        if (v != cur && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+            v = std::min(vmax, std::max(vmin, v));
+            if (v != cur && print_tab != nullptr) {
+                DynamicPrintConfig nf;
+                nf.set_key_value(key, new ConfigOptionInt(v));
+                print_tab->load_config(nf);
+            }
+        }
+        if (modified) {
+            ImGui::SameLine(0.0f, 4.0f * scale);
+            if (undo_button((std::string("##qzundo_") + key).c_str()) && print_tab != nullptr) {
+                DynamicPrintConfig nf;
+                nf.set_key_value(key, new ConfigOptionInt(sv));
+                print_tab->load_config(nf);
+            }
+        }
+    };
+
+    auto bool_row = [&](const char *label, const char *id, const char *key) {
+        bool cur = false;
+        if (const ConfigOption *o = pcfg.option(key)) cur = o->getBool();
+        bool sv = cur; bool has_saved = false;
+        if (const ConfigOption *o = saved_pcfg.option(key)) { sv = o->getBool(); has_saved = true; }
+        const bool modified = has_saved && sv != cur;
+        bool v = cur;
+        row_label(label);
+        if (modified) ImGui::PushStyleColor(ImGuiCol_FrameBg, qz_mod_bg);
+        if (ImGui::Checkbox(id, &v) && v != cur && print_tab != nullptr) {
+            DynamicPrintConfig nf;
+            nf.set_key_value(key, new ConfigOptionBool(v));
+            print_tab->load_config(nf);
+        }
+        if (modified) ImGui::PopStyleColor();
+        if (modified) {
+            ImGui::SameLine(0.0f, 4.0f * scale);
+            if (undo_button((std::string("##qzundo_") + key).c_str()) && print_tab != nullptr) {
+                DynamicPrintConfig nf;
+                nf.set_key_value(key, new ConfigOptionBool(sv));
+                print_tab->load_config(nf);
+            }
+        }
+    };
+
+    // combo with a thin chevron instead of the solid arrow
+    auto preset_combo = [&](const char *id, PresetCollection &coll, Preset::Type type, float width) {
+        const std::string cur_name = coll.get_edited_preset().name;
+        std::string short_name = cur_name.size() > 30 ? cur_name.substr(0, 28) + "..." : cur_name;
+        ImGui::SetNextItemWidth(width);
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+        const ImVec2 cpos = ImGui::GetCursorScreenPos();
+        const float  fh   = ImGui::GetFrameHeight();
+        const bool open = ImGui::BeginCombo(id, short_name.c_str(), ImGuiComboFlags_NoArrowButton);
+        {
+            const float cx = cpos.x + width - 13.0f * scale;
+            const float cy = cpos.y + fh * 0.5f - 1.5f * scale;
+            const float w  = 4.0f * scale;
+            dl->AddLine(ImVec2(cx - w, cy), ImVec2(cx, cy + w), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+            dl->AddLine(ImVec2(cx, cy + w), ImVec2(cx + w, cy), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+        }
+        if (open) {
+            for (const Preset &preset : coll.get_presets()) {
+                if (!preset.is_visible || preset.is_default) continue;
+                if (type != Preset::TYPE_PRINTER && !preset.is_compatible) continue;
+                const bool selected = preset.name == cur_name;
+                if (ImGui::Selectable(preset.name.c_str(), selected) && !selected) {
+                    if (Tab *t = wxGetApp().get_tab(type))
+                        t->select_preset(preset.name);
+                }
+                if (selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+    };
+
+    // after a machine switch, pull the material into the machine's family
+    // (QZmini machine -> its biomaterial; stock machine -> its stock filament)
+    auto qz_sync_filament = []() {
+        wxGetApp().CallAfter([]() {
+            PresetBundle &pb = *wxGetApp().preset_bundle;
+            const Preset &pp = pb.printers.get_edited_preset();
+            const ConfigOptionBool *qe2 = pp.config.option<ConfigOptionBool>("qzmini_enable");
+            const auto *dfp = pp.config.option<ConfigOptionStrings>("default_filament_profile");
+            if (dfp == nullptr || dfp->values.empty()) return;
+            const Preset &cf = pb.filaments.get_edited_preset();
+            const bool cf_qz      = cf.vendor != nullptr && cf.vendor->id == "Quasizero";
+            const bool machine_qz = qe2 != nullptr && qe2->value;
+            if (machine_qz != cf_qz) {
+                if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
+                    ft->select_preset(dfp->values.front());
+                if (!pb.filament_presets.empty())
+                    pb.filament_presets.front() = pb.filaments.get_edited_preset().name;
+                wxGetApp().plater()->sidebar().update_presets(Preset::TYPE_FILAMENT);
+            }
+        });
+    };
+
+    auto thin_chevron = [&](ImDrawList *dl, const ImVec2 &cpos, float width, float fh) {
+        const float ccx = cpos.x + width - 13.0f * scale;
+        const float ccy = cpos.y + fh * 0.5f - 1.5f * scale;
+        const float cw2 = 4.0f * scale;
+        dl->AddLine(ImVec2(ccx - cw2, ccy), ImVec2(ccx, ccy + cw2), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+        dl->AddLine(ImVec2(ccx, ccy + cw2), ImVec2(ccx + cw2, ccy), IM_COL32(60, 58, 55, 255), 1.5f * scale);
+    };
+
+    const int card_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+                           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+                           ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing;
+    // an open card never grows past ~55% of the canvas height - it scrolls instead
+    const float qz_card_max_h = ch * 0.55f;
+    const int card_flags_open = (card_flags & ~ImGuiWindowFlags_NoScrollbar);
+
+    // ---------------- Printer card (bottom of the stack) ----------------
+    imgui.set_next_window_pos(left, bottom, ImGuiCond_Always, 0.0f, 1.0f);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, qz_card_max_h));
+    imgui.begin(std::string("QZCardPrinter"), s_open_printer ? card_flags_open : card_flags);
+    title_row(_u8L("Printer").c_str(), &s_open_printer, "printer");
+    if (s_open_printer) {
+        const std::string &cur_model  = cur_model_top;
+        const std::string cur_variant = prcfg.opt_string("printer_variant");
+
+        auto select_printer = [&](const std::string &model, const std::string &variant) {
+            const Preset *pick = nullptr;
+            for (const Preset &pr : bundle.printers.get_presets()) {
+                if (!pr.is_visible || pr.is_default) continue;
+                if (pr.config.opt_string("printer_model") != model) continue;
+                if (pick == nullptr) pick = &pr;
+                if (!variant.empty() && pr.config.opt_string("printer_variant") == variant) { pick = &pr; break; }
+            }
+            if (pick != nullptr && pick->name != bundle.printers.get_edited_preset().name)
+                if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) t->select_preset(pick->name);
+        };
+        // cover thumbnail; falls away on small windows, like the native sidebar
+        static GLTexture   s_qz_cover;
+        static std::string s_qz_cover_path;
+        if (ch >= 520.0f * scale) {
+            const std::string cover_path = resources_dir() + "/profiles/Quasizero/" + cur_model + "_cover.png";
+            if (s_qz_cover_path != cover_path) {
+                s_qz_cover.reset();
+                if (wxFileExists(wxString::FromUTF8(cover_path.c_str())))
+                    s_qz_cover.load_from_file(cover_path, false, GLTexture::None, false);
+                s_qz_cover_path = cover_path;
+            }
+            if (s_qz_cover.get_id() != 0) {
+                const float iw  = 108.0f * scale;
+                const float ih2 = iw * (float)s_qz_cover.get_height() / (float)std::max(1, s_qz_cover.get_width());
+                ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (220.0f * scale - iw) * 0.5f);
+                ImGui::Image((ImTextureID)(intptr_t)s_qz_cover.get_id(), ImVec2(iw, ih2));
+                // edit pencil at the top-right corner of the card, over the cover row
+                const ImVec2 imn = ImGui::GetItemRectMin();
+                const float  peh = 18.0f * scale;
+                // anchor on the fixed 220px content width - NEVER on the window size
+                // (that fed the auto-resize and grew the card forever)
+                const float  pex = ImGui::GetWindowPos().x + ImGui::GetStyle().WindowPadding.x + 220.0f * scale - peh;
+                const ImVec2 keep = ImGui::GetCursorScreenPos();
+                ImGui::SetCursorScreenPos(ImVec2(pex, imn.y));
+                const bool pclk = ImGui::InvisibleButton("##qzpedit", ImVec2(peh, peh));
+                const bool phov = ImGui::IsItemHovered();
+                ImDrawList *pdl = ImGui::GetWindowDrawList();
+                if (phov) pdl->AddRectFilled(ImVec2(pex, imn.y), ImVec2(pex + peh, imn.y + peh), IM_COL32(236, 235, 233, 255), 4.0f * scale);
+                static ImTextureID s_qz_edit_tex = nullptr;
+                if (s_qz_edit_tex == nullptr)
+                    IMTexture::load_from_svg_file(resources_dir() + "/images/menu_edit_preset.svg", 32, 32, s_qz_edit_tex);
+                if (s_qz_edit_tex != nullptr)
+                    pdl->AddImage(s_qz_edit_tex, ImVec2(pex + 2.0f * scale, imn.y + 2.0f * scale),
+                                  ImVec2(pex + peh - 2.0f * scale, imn.y + peh - 2.0f * scale));
+                if (pclk) {
+                    if (Tab *pt2 = wxGetApp().get_tab(Preset::TYPE_PRINTER)) {
+                        if (pt2->GetParent() == wxGetApp().params_panel())
+                            wxGetApp().mainframe->select_tab(MainFrame::tp3DEditor);
+                        else {
+                            wxGetApp().params_dialog()->Popup();
+                            pt2->OnActivate();
+                        }
+                        pt2->restore_last_select_item();
+                    }
+                }
+                ImGui::SetCursorScreenPos(keep);
+            }
+        }
+
+        // model selector (no nozzle suffix, like the native sidebar cell)
+        ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+        {
+            std::string short_model = base_model.size() > 30 ? base_model.substr(0, 28) + "..." : base_model;
+            ImGui::SetNextItemWidth(220.0f * scale);
+            ImDrawList *dl = ImGui::GetWindowDrawList();
+            const ImVec2 cpos = ImGui::GetCursorScreenPos();
+            const float  fh   = ImGui::GetFrameHeight();
+            const bool open = ImGui::BeginCombo("##qzpmodel", short_model.c_str(), ImGuiComboFlags_NoArrowButton);
+            thin_chevron(dl, cpos, 220.0f * scale, fh);
+            if (open) {
+                // one entry per PHYSICAL printer (QZmini overlays folded into their base
+                // model); picking one selects its QZmini extruder whenever it exists
+                std::vector<std::string> seen;
+                for (const Preset &pr : bundle.printers.get_presets()) {
+                    if (!pr.is_visible || pr.is_default) continue;
+                    std::string model = pr.config.opt_string("printer_model");
+                    if (model.rfind("QZmini @ ", 0) == 0) model = model.substr(9);
+                    if (model.empty() || std::find(seen.begin(), seen.end(), model) != seen.end()) continue;
+                    seen.push_back(model);
+                    const bool selected = model == base_model;
+                    if (ImGui::Selectable(model.c_str(), selected) && !selected) {
+                        const Preset *qp = nullptr, *sp2 = nullptr;
+                        for (const Preset &p2 : bundle.printers.get_presets()) {
+                            if (p2.is_default) continue;
+                            const std::string m2 = p2.config.opt_string("printer_model");
+                            if (m2 == std::string("QZmini @ ") + model) {
+                                if (qp == nullptr || p2.config.opt_string("printer_variant") == "4.0") qp = &p2;
+                            } else if (m2 == model) {
+                                if (sp2 == nullptr || p2.config.opt_string("printer_variant") == "0.4") sp2 = &p2;
+                            }
+                        }
+                        if (const Preset *pick = (qp != nullptr) ? qp : sp2; pick != nullptr)
+                            if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) { t->select_preset(pick->name); qz_sync_filament(); }
+                    }
+                    if (selected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::Separator();
+                if (ImGui::Selectable((_u8L("Select/Remove printers (system presets)") + "##qzwiz").c_str()))
+                    wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS); });
+                if (ImGui::Selectable((_u8L("Create printer") + "##qzwiz2").c_str()))
+                    wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_CUSTOM); });
+                ImGui::EndCombo();
+            }
+        }
+
+        // nozzle selector (variants available for the current model)
+        ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextColored(lbl_col, "%s", _u8L("Nozzle").c_str());
+        ImGui::SameLine(0.0f, 10.0f * scale);
+        {
+            ImGui::SetNextItemWidth(80.0f * scale);
+            ImDrawList *dl = ImGui::GetWindowDrawList();
+            const ImVec2 cpos = ImGui::GetCursorScreenPos();
+            const float  fh   = ImGui::GetFrameHeight();
+            const bool open = ImGui::BeginCombo("##qzpnozzle", cur_variant.c_str(), ImGuiComboFlags_NoArrowButton);
+            thin_chevron(dl, cpos, 80.0f * scale, fh);
+            if (open) {
+                std::vector<std::string> vars;
+                for (const Preset &pr : bundle.printers.get_presets()) {
+                    if (!pr.is_visible || pr.is_default) continue;
+                    if (pr.config.opt_string("printer_model") != cur_model) continue;
+                    const std::string v = pr.config.opt_string("printer_variant");
+                    if (v.empty() || std::find(vars.begin(), vars.end(), v) != vars.end()) continue;
+                    vars.push_back(v);
+                }
+                std::sort(vars.begin(), vars.end());
+                for (const std::string &v : vars) {
+                    const bool selected = v == cur_variant;
+                    if (ImGui::Selectable(v.c_str(), selected) && !selected)
+                        select_printer(cur_model, v);
+                    if (selected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+        // extruder selector: QZmini / Original (switches the whole machine family)
+        {
+            const Preset *qz_pick = nullptr, *stock_pick = nullptr;
+            for (const Preset &pr : bundle.printers.get_presets()) {
+                if (pr.is_default) continue;
+                const std::string m = pr.config.opt_string("printer_model");
+                if (m == std::string("QZmini @ ") + base_model) {
+                    if (qz_pick == nullptr || pr.config.opt_string("printer_variant") == "4.0") qz_pick = &pr;
+                } else if (m == base_model) {
+                    if (stock_pick == nullptr || pr.config.opt_string("printer_variant") == "0.4") stock_pick = &pr;
+                }
+            }
+            ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextColored(lbl_col, "%s", _u8L("Extruder").c_str());
+            ImGui::SameLine(0.0f, 10.0f * scale);
+            const std::string cur_ex = is_qz_printer ? "QZmini" : _u8L("Original");
+            ImGui::SetNextItemWidth(120.0f * scale);
+            ImDrawList *edl2 = ImGui::GetWindowDrawList();
+            const ImVec2 ecpos = ImGui::GetCursorScreenPos();
+            const float  efh   = ImGui::GetFrameHeight();
+            const bool eopen = ImGui::BeginCombo("##qzextsel", cur_ex.c_str(), ImGuiComboFlags_NoArrowButton);
+            thin_chevron(edl2, ecpos, 120.0f * scale, efh);
+            if (eopen) {
+                if (qz_pick != nullptr) {
+                    if (ImGui::Selectable("QZmini", is_qz_printer) && !is_qz_printer)
+                        if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) { t->select_preset(qz_pick->name); qz_sync_filament(); }
+                    if (is_qz_printer) ImGui::SetItemDefaultFocus();
+                } else {
+                    ImGui::Selectable("QZmini", false, ImGuiSelectableFlags_Disabled); // not available for this printer
+                }
+                if (stock_pick != nullptr) {
+                    if (ImGui::Selectable(_u8L("Original").c_str(), !is_qz_printer) && is_qz_printer)
+                        if (Tab *t = wxGetApp().get_tab(Preset::TYPE_PRINTER)) { t->select_preset(stock_pick->name); qz_sync_filament(); }
+                    if (!is_qz_printer) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+    }
+    s_printer_size = ImGui::GetWindowSize();
+    imgui.end();
+
+    // ---------------- Process card (top of the stack / last in the row) ----------------
+    if (qz_compact)
+        imgui.set_next_window_pos(left + s_printer_size.x + gap, bottom, ImGuiCond_Always, 0.0f, 1.0f);
+    else
+        imgui.set_next_window_pos(left, bottom - s_printer_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, qz_card_max_h));
+    imgui.begin(std::string("QZCardProcess"), s_open_process ? card_flags_open : card_flags);
+    title_row(_u8L("Process").c_str(), &s_open_process, "process");
+    if (s_open_process) {
+        ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+        preset_combo("##qzprocess", bundle.prints, Preset::TYPE_PRINT, 220.0f * scale);
+        if (bundle.prints.get_edited_preset().is_dirty && print_tab != nullptr) {
+            ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+            if (ImGui::Button((_u8L("Save") + "##qzsavep").c_str()))
+                wxGetApp().CallAfter([print_tab]() { print_tab->save_preset(); });
+            ImGui::SameLine(0.0f, 6.0f * scale);
+            if (ImGui::Button((_u8L("Reset") + "##qzresetp").c_str()))
+                wxGetApp().CallAfter([print_tab]() {
+                    wxGetApp().preset_bundle->prints.discard_current_changes();
+                    print_tab->load_current_preset();
+                });
+        }
+
+        section(_u8L("WALLS").c_str());
+        int_row(_u8L("Wall loops").c_str(), "##qzwl", "wall_loops", 0, 20);
+
+        section(_u8L("INFILL").c_str());
+        {   // percent option needs its own writer
+            int cur = 0;
+            if (const ConfigOptionPercent *o = pcfg.option<ConfigOptionPercent>("sparse_infill_density")) cur = (int)std::lround(o->value);
+            int sv = cur; bool has_saved = false;
+            if (const ConfigOptionPercent *o = saved_pcfg.option<ConfigOptionPercent>("sparse_infill_density")) { sv = (int)std::lround(o->value); has_saved = true; }
+            const bool modified = has_saved && sv != cur;
+            int v = cur;
+            row_label(_u8L("Density (%)").c_str());
+            if (modified) {
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, qz_mod_bg);
+                ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.788f, 0.643f, 0.494f, 0.50f));
+            }
+            ImGui::InputInt("##qzid", &v, 5, 5);
+            if (modified) ImGui::PopStyleColor(2);
+            if (v != cur && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                v = std::min(100, std::max(0, v));
+                if (v != cur && print_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("sparse_infill_density", new ConfigOptionPercent(v));
+                    print_tab->load_config(nf);
+                }
+            }
+            if (modified) {
+                ImGui::SameLine(0.0f, 4.0f * scale);
+                if (undo_button("##qzundo_sid") && print_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("sparse_infill_density", new ConfigOptionPercent(sv));
+                    print_tab->load_config(nf);
+                }
+            }
+        }
+
+        section(_u8L("SHELLS").c_str());
+        int_row(_u8L("Top layers").c_str(),    "##qztl", "top_shell_layers",    0, 50);
+        int_row(_u8L("Bottom layers").c_str(), "##qzbl", "bottom_shell_layers", 0, 50);
+
+        section(_u8L("OTHERS").c_str());
+        int_row(_u8L("Skirt loops").c_str(), "##qzsk", "skirt_loops", 0, 10);
+        bool_row(_u8L("Spiral vase").c_str(), "##qzsv", "spiral_mode");
+        bool_row(_u8L("Support").c_str(),     "##qzsu", "enable_support");
+
+        section(_u8L("PASTE").c_str());
+        {   // Short-Segment Anchoring quick access (machine-scoped, like all qzmini_* keys)
+            Tab *prt_tab = wxGetApp().get_tab(Preset::TYPE_PRINTER);
+            const DynamicPrintConfig &prc2 = bundle.printers.get_edited_preset().config;
+            bool en = false;  if (const ConfigOption *o = prc2.option("qzmini_ssa_enable"))     en  = o->getBool();
+            double len = 2.0; if (const ConfigOption *o = prc2.option("qzmini_ssa_max_length")) len = o->getFloat();
+            row_label(_u8L("Anchor short segs").c_str());
+            bool v = en;
+            if (ImGui::Checkbox("##qzssaen", &v) && v != en && prt_tab != nullptr) {
+                DynamicPrintConfig nf;
+                nf.set_key_value("qzmini_ssa_enable", new ConfigOptionBool(v));
+                prt_tab->load_config(nf);
+            }
+            row_label(_u8L("Short seg (mm)").c_str());
+            float lf = (float)len;
+            ImGui::InputFloat("##qzssalen", &lf, 0.5f, 0.5f, "%.1f");
+            if ((double)lf != len && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                lf = std::min(50.0f, std::max(0.1f, lf));
+                if ((double)lf != len && prt_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("qzmini_ssa_max_length", new ConfigOptionFloat((double)lf));
+                    prt_tab->load_config(nf);
+                }
+            }
+            double zh = 0.0;
+            if (const ConfigOptionFloats *o = prc2.option<ConfigOptionFloats>("z_hop"); o != nullptr && !o->values.empty()) zh = o->values.front();
+            row_label(_u8L("Z hop (mm)").c_str());
+            float zf = (float)zh;
+            ImGui::InputFloat("##qzzhop", &zf, 0.5f, 0.5f, "%.1f");
+            if ((double)zf != zh && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                zf = std::min(20.0f, std::max(0.0f, zf));
+                if ((double)zf != zh && prt_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("z_hop", new ConfigOptionFloats{ (double)zf });
+                    prt_tab->load_config(nf);
+                }
+            }
+            double mseg = 0.0; if (const ConfigOption *o = prc2.option("qzmini_max_segment_mm")) mseg = o->getFloat();
+            row_label(_u8L("Max segment (mm)").c_str());
+            float mf = (float)mseg;
+            ImGui::InputFloat("##qzmaxseg", &mf, 0.5f, 0.5f, "%.1f");
+            if ((double)mf != mseg && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                mf = std::min(100.0f, std::max(0.0f, mf));
+                if ((double)mf != mseg && prt_tab != nullptr) {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("qzmini_max_segment_mm", new ConfigOptionFloat((double)mf));
+                    prt_tab->load_config(nf);
+                }
+            }
+        }
+
+        section(_u8L("EXPERIMENTAL").c_str());
+        {   // Continuous Spiral: solid spiral filling with hollow-core density
+            InfillPattern cur_pat = ipRectilinear;
+            if (const ConfigOptionEnum<InfillPattern> *o = pcfg.option<ConfigOptionEnum<InfillPattern>>("sparse_infill_pattern"))
+                cur_pat = o->value;
+            const bool spiral_on = (cur_pat == ipQZContinuousSpiral);
+            row_label(_u8L("Continuous Spiral").c_str());
+            bool v = spiral_on;
+            if (ImGui::Checkbox("##qzcspi", &v) && v != spiral_on && print_tab != nullptr) {
+                if (v) {
+                    wxGetApp().CallAfter([print_tab]() {
+                        wxMessageDialog dlg(wxGetApp().mainframe,
+                            _L("Continuous Spiral (EXPERIMENTAL) works when wall loops is 1, top and bottom "
+                               "shell layers are 0, supports are disabled and the sparse infill pattern is the "
+                               "QZ Continuous Spiral. The spiral is printed solid; the infill density below "
+                               "sizes the hollow core instead (100% fills to the center).\n\n"
+                               "Change these settings automatically?"),
+                            _L("Continuous Spiral"), wxYES_NO | wxICON_WARNING);
+                        if (dlg.ShowModal() == wxID_YES) {
+                            DynamicPrintConfig nf;
+                            nf.set_key_value("sparse_infill_pattern", new ConfigOptionEnum<InfillPattern>(ipQZContinuousSpiral));
+                            nf.set_key_value("wall_loops", new ConfigOptionInt(1));
+                            nf.set_key_value("top_shell_layers", new ConfigOptionInt(0));
+                            nf.set_key_value("bottom_shell_layers", new ConfigOptionInt(0));
+                            nf.set_key_value("enable_support", new ConfigOptionBool(false));
+                            nf.set_key_value("spiral_mode", new ConfigOptionBool(false));
+                            print_tab->load_config(nf);
+                        }
+                    });
+                } else {
+                    DynamicPrintConfig nf;
+                    nf.set_key_value("sparse_infill_pattern", new ConfigOptionEnum<InfillPattern>(ipConcentric));
+                    print_tab->load_config(nf);
+                }
+            }
+            // spiral density: same key as infill density, spiral semantics (core size)
+            {
+                int cur = 0;
+                if (const ConfigOptionPercent *o = pcfg.option<ConfigOptionPercent>("sparse_infill_density")) cur = (int)std::lround(o->value);
+                int dv = cur;
+                row_label(_u8L("Spiral density (%)").c_str());
+                ImGui::InputInt("##qzcspd", &dv, 5, 5);
+                if (dv != cur && (!ImGui::IsItemActive() || ImGui::IsItemDeactivatedAfterEdit())) {
+                    dv = std::min(100, std::max(5, dv));
+                    if (dv != cur && print_tab != nullptr) {
+                        DynamicPrintConfig nf;
+                        nf.set_key_value("sparse_infill_density", new ConfigOptionPercent(dv));
+                        print_tab->load_config(nf);
+                    }
+                }
+            }
+        }
+    }
+    const ImVec2 qz_process_size = ImGui::GetWindowSize();
+    imgui.end();
+
+    // ---------------- Stability card (Preview, above Process): paste buildability
+    // of the loaded job - collapse prediction, critical layer, recommended layer
+    // time; live numbers follow the vertical layer slider ----------------
+    if (m_canvas_type == CanvasPreview && m_gcode_viewer.has_data()) {
+        static bool s_open_stab = true;
+        const GCodeViewer::QzStability &st = m_gcode_viewer.qz_stability();
+        if (qz_compact)
+            imgui.set_next_window_pos(left + s_printer_size.x + gap + qz_process_size.x + gap, bottom, ImGuiCond_Always, 0.0f, 1.0f);
+        else
+            imgui.set_next_window_pos(left, bottom - s_printer_size.y - gap - qz_process_size.y - gap, ImGuiCond_Always, 0.0f, 1.0f);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, qz_card_max_h));
+        imgui.begin(std::string("QZCardStability"), s_open_stab ? card_flags_open : card_flags);
+        title_row(_u8L("Stability").c_str(), &s_open_stab, "process");
+        if (s_open_stab) {
+            ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+            const ImVec4 ok_col(0.30f, 0.55f, 0.30f, 1.0f), warn_col(0.80f, 0.55f, 0.10f, 1.0f), bad_col(0.75f, 0.20f, 0.15f, 1.0f);
+            auto kv = [&](const char *label, const std::string &value, const ImVec4 *vcol = nullptr) {
+                ImGui::SetWindowFontScale(0.85f);
+                ImGui::TextColored(lbl_col, "%s", label);
+                ImGui::SetWindowFontScale(1.0f);
+                ImGui::SameLine(175.0f * scale);
+                if (vcol) ImGui::TextColored(*vcol, "%s", value.c_str()); else ImGui::TextUnformatted(value.c_str());
+            };
+            auto fmt = [](const char *f, double v) { char b[64]; std::snprintf(b, sizeof(b), f, v); return std::string(b); };
+            if (!st.enabled) {
+                ImGui::SetWindowFontScale(0.85f);
+                ImGui::TextColored(lbl_col, "%s", _u8L("Stability simulation is off (Printer > QZmini).").c_str());
+                ImGui::SetWindowFontScale(1.0f);
+            } else if (!st.characterised) {
+                ImGui::PushTextWrapPos(300.0f * scale);
+                ImGui::SetWindowFontScale(0.85f);
+                ImGui::TextColored(lbl_col, "%s", _u8L("Material not characterised: set the paste yield stress in the material preset (Material > QZmini paste stability).").c_str());
+                ImGui::SetWindowFontScale(1.0f);
+                ImGui::PopTextWrapPos();
+            } else if (!st.result.valid) {
+                ImGui::SetWindowFontScale(0.85f);
+                ImGui::TextColored(lbl_col, "%s", _u8L("No extrusion layers to evaluate.").c_str());
+                ImGui::SetWindowFontScale(1.0f);
+            } else {
+                const auto &r = st.result;
+                const double sf_target = 1.0 / std::max(1.0, st.options.safety_factor);
+                // whole print verdict
+                if (r.collapse_after_layer >= 0) {
+                    kv(_u8L("Verdict").c_str(), _u8L("Collapse predicted"), &bad_col);
+                    kv(_u8L("Collapse at").c_str(), fmt("%.0f mm", r.collapse_height * 1000.0) + "  (" + _u8L("layer") + " " + std::to_string(r.collapse_after_layer + 1) + ", " + fmt("%.0f min", r.collapse_time / 60.0) + ")");
+                    kv(_u8L("Critical layer").c_str(), std::to_string(r.critical_layer + 1) + "  (" + fmt("z = %.0f mm", (st.layer_top_z.empty() ? 0.0 : st.layer_top_z[std::min<size_t>(r.critical_layer, st.layer_top_z.size() - 1)])) + ")");
+                } else if (r.max_utilization > sf_target) {
+                    kv(_u8L("Verdict").c_str(), _u8L("Prints, below the safety margin"), &warn_col);
+                    kv(_u8L("Peak load/strength").c_str(), fmt("%.0f %%", 100.0 * r.max_utilization) + "  (" + _u8L("layer") + " " + std::to_string(r.critical_layer + 1) + ")", &warn_col);
+                } else {
+                    kv(_u8L("Verdict").c_str(), _u8L("Stable"), &ok_col);
+                    kv(_u8L("Peak load/strength").c_str(), fmt("%.0f %%", 100.0 * r.max_utilization) + "  (" + _u8L("layer") + " " + std::to_string(r.critical_layer + 1) + ")", &ok_col);
+                }
+                // live: state at the layer the vertical slider shows
+                const int li = m_gcode_viewer.qz_stability_layer_at_view_top();
+                if (li >= 0 && (size_t)li < r.history.size() && !r.history[li].empty()) {
+                    float mu = 0.0f; int mj = 0;
+                    for (size_t j = 0; j < r.history[li].size(); ++j) if (r.history[li][j] > mu) { mu = r.history[li][j]; mj = (int)j; }
+                    const ImVec4 &c = mu >= 1.0f ? bad_col : (mu > sf_target ? warn_col : ok_col);
+                    kv((_u8L("At layer") + " " + std::to_string(li + 1)).c_str(), fmt("%.0f %%", 100.0 * mu) + "  " + _u8L("on layer") + " " + std::to_string(mj + 1), &c);
+                }
+                ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+                // material / process numbers
+                kv(_u8L("Vertical speed").c_str(), fmt("%.2f mm/min", r.build_rate * 60000.0));
+                kv(_u8L("Critical speed").c_str(), r.critical_build_rate > 0.0 ? fmt("%.2f mm/min", r.critical_build_rate * 60000.0) : std::string("-"));
+                kv(_u8L("Max height (plastic)").c_str(), r.max_height_plastic < 0.0 ? _u8L("unbounded") : fmt("%.0f mm", r.max_height_plastic * 1000.0));
+                kv(_u8L("Buckling, free wall").c_str(), r.buckling_height_wall_cured > 0.0 ? fmt("%.0f mm", std::min(r.buckling_height_wall_cured, 9.999) * 1000.0) + " (" + fmt("%.0f mm", r.mean_thickness * 1000.0) + " " + _u8L("bead") + ")" : std::string("-"));
+                if (r.min_time_scale > 1.0)
+                    kv(_u8L("Layer time factor").c_str(), fmt("x %.2f", r.min_time_scale) + "  " + _u8L("to be safe"), &warn_col);
+                else if (r.min_time_scale < 0.0)
+                    kv(_u8L("Layer time factor").c_str(), _u8L("no speed makes it safe"), &bad_col);
+                if (!st.lambda_by_top.empty()) {
+                    const double lam_end = st.lambda_by_top.back();
+                    kv(_u8L("Buckling factor").c_str(), lam_end > 100.0 ? std::string("> 100") : fmt("%.2f", lam_end) + (lam_end <= 1.0 ? "  " + _u8L("(buckles)") : std::string("")), lam_end <= 1.0 ? &bad_col : (lam_end < 2.0 ? &warn_col : nullptr));
+                }
+                // PRO extension rows (deformation view) or, in LITE, the Level 0 note
+                if (QzProHooks *pro = m_gcode_viewer.qz_pro()) {
+                    QzProCardContext ctx;
+                    ctx.kv = kv; ctx.fmt = fmt;
+                    ctx.ok = &ok_col; ctx.warn = &warn_col; ctx.bad = &bad_col; ctx.label = &lbl_col;
+                    ctx.sf_target = sf_target; ctx.scale = scale;
+                    pro->render_card(ctx);
+                } else {
+                    ImGui::SetWindowFontScale(0.85f);
+                    ImGui::PushTextWrapPos(330.0f * scale);
+                    ImGui::TextColored(lbl_col, "%s", _u8L("Level 0 model: yield + structuration, bed confinement. Calibrate the material with the collapse tests.").c_str());
+                    ImGui::PopTextWrapPos();
+                    ImGui::SetWindowFontScale(1.0f);
+                }
+            }
+        }
+        imgui.end();
+    }
+
+    // ---------------- G-code Editor card: bottom-right on Prepare - paste a
+    // custom body (Grasshopper paths...), Process wraps it with the selected
+    // machine's start/end + QZ pipeline and opens it in the Preview ----------------
+    if (m_canvas_type == CanvasView3D) {
+        static bool        s_ed_open = false;
+        static std::string s_ed_src;
+        static std::string s_ed_status;
+        static bool        s_ed_error = false;
+        imgui.set_next_window_pos(cw - 10.0f * scale, ch - 20.0f * scale, ImGuiCond_Always, 1.0f, 1.0f);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, ch * 0.75f));
+        imgui.begin(std::string("QZGcodeEditor"), s_ed_open ? card_flags_open : card_flags);
+        title_row(_u8L("G-code Editor").c_str(), &s_ed_open, "process");
+        if (s_ed_open) {
+            ImGui::Dummy(ImVec2(0.0f, 2.0f * scale));
+            if (s_ed_src.capacity() < 4096) s_ed_src.reserve(4096);
+            ImGui::InputTextMultiline("##qzgsrc", (char *) s_ed_src.c_str(), s_ed_src.capacity() + 1,
+                                      ImVec2(420.0f * scale, 240.0f * scale),
+                                      ImGuiInputTextFlags_CallbackResize | ImGuiInputTextFlags_AllowTabInput,
+                                      qz_gcode_text_cb, &s_ed_src);
+            const size_t nlines = (size_t) std::count(s_ed_src.begin(), s_ed_src.end(), '\n') + (s_ed_src.empty() ? 0 : 1);
+            if (ImGui::Button((_u8L("Paste") + "##qzged").c_str())) {
+                if (wxTheClipboard->Open()) {
+                    if (wxTheClipboard->IsSupported(wxDF_TEXT)) {
+                        wxTextDataObject td;
+                        wxTheClipboard->GetData(td);
+                        s_ed_src += td.GetText().ToUTF8().data();
+                    }
+                    wxTheClipboard->Close();
+                }
+            }
+            ImGui::SameLine(0.0f, 6.0f * scale);
+            if (ImGui::Button((_u8L("Clear") + "##qzged").c_str())) { s_ed_src.clear(); s_ed_status.clear(); }
+            ImGui::SameLine(0.0f, 6.0f * scale);
+            ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.227f, 0.220f, 0.208f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.160f, 0.155f, 0.147f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.120f, 0.116f, 0.110f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text,          ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+            const bool do_process = ImGui::Button((_u8L("Process") + " -> Preview##qzged").c_str());
+            ImGui::PopStyleColor(4);
+            ImGui::SameLine(0.0f, 8.0f * scale);
+            ImGui::SetWindowFontScale(0.85f);
+            ImGui::TextColored(lbl_col, "%d %s", (int) nlines, _u8L("lines").c_str());
+            ImGui::SetWindowFontScale(1.0f);
+            if (do_process && !s_ed_src.empty()) {
+                std::string path, perr;
+                if (qz_process_custom_gcode(s_ed_src, path, perr)) {
+                    s_ed_status = _u8L("Processed - opening preview");
+                    s_ed_error  = false;
+                    wxGetApp().CallAfter([path]() {
+                        wxGetApp().plater()->load_gcode(wxString::FromUTF8(path.c_str()));
+                    });
+                } else {
+                    s_ed_status = perr;
+                    s_ed_error  = true;
+                }
+            }
+            if (!s_ed_status.empty()) {
+                ImGui::PushTextWrapPos(420.0f * scale);
+                ImGui::TextColored(s_ed_error ? ImVec4(0.75f, 0.20f, 0.15f, 1.0f) : ImVec4(0.35f, 0.35f, 0.34f, 1.0f),
+                                   "%s", s_ed_status.c_str());
+                ImGui::PopTextWrapPos();
+            }
+            ImGui::SetWindowFontScale(0.85f);
+            ImGui::TextColored(lbl_col, "%s", _u8L("Start/end G-code, refill and paste anchoring of the selected printer are applied on Process.").c_str());
+            ImGui::SetWindowFontScale(1.0f);
+        }
+        imgui.end();
+    }
+
+    // ---------------- Params capsule on Prepare (and on Preview after a slicing
+    // error, when the G-code viewer has nothing to show) - the same four quick
+    // fields + Apply as the Preview quickbar, so a bad value can always be fixed
+    // and resliced without expanding the sidebar ----------------
+    const bool qz_show_params = (m_canvas_type == CanvasView3D) ||
+                                (m_canvas_type == CanvasPreview && !m_gcode_viewer.has_data());
+    if (qz_show_params && cw >= 700.0f * scale) {
+        DynamicPrintConfig &qpc = bundle.prints.get_edited_preset().config;
+        DynamicPrintConfig &qfc = bundle.filaments.get_edited_preset().config;
+        auto getfv = [](const DynamicPrintConfig &c, const char *k, double d) {
+            const ConfigOption *o = c.option(k); return o ? o->getFloat() : d; };
+        static double s_layer = 0, s_width = 0, s_speed = 0, s_flow = 0; static bool s_dirty = false;
+        const double cur_layer = getfv(qpc, "layer_height", 3.0);
+        const double cur_width = getfv(qpc, "line_width", 4.0);
+        const double cur_speed = getfv(qpc, "outer_wall_speed", 20.0);
+        double cur_flow = 1.0;
+        if (auto *fr = qfc.option<ConfigOptionFloats>("filament_flow_ratio"); fr && !fr->values.empty()) cur_flow = fr->values.front();
+        if (!s_dirty) { s_layer = cur_layer; s_width = cur_width; s_speed = cur_speed; s_flow = cur_flow; }
+
+        ImGuiWrapper &imgui2 = *wxGetApp().imgui();
+        ImFont *big = imgui2.get_large_font();
+        const ImVec4 lblc(0.55f, 0.55f, 0.54f, 1.0f);
+        const float bar_bottom = ch - (qz_compact ? 74.0f : 20.0f) * scale;
+        imgui2.set_next_window_pos(cw * 0.5f + 60.0f * scale, bar_bottom, ImGuiCond_Always, 0.5f, 1.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 18.0f * scale);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(22.0f, 14.0f) * scale);
+        // value boxes blend into the white capsule, like the Preview quickbar
+        ImGui::PushStyleColor(ImGuiCol_FrameBg,        ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.955f, 0.953f, 0.949f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive,  ImVec4(0.930f, 0.928f, 0.924f, 1.0f));
+        imgui2.begin(std::string("QZParamsPrep"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+        float rowy = -1.0f;
+        auto pfield = [&](const char *label, const char *id, double *val, const char *unit,
+                          double vmin, double vmax, double disp = 1.0, const char *fmt = "%.2f") {
+            if (rowy < 0.0f) rowy = ImGui::GetCursorPosY(); else ImGui::SetCursorPosY(rowy);
+            ImGui::BeginGroup();
+            ImGui::GetCurrentWindow()->DC.CurrLineTextBaseOffset = 0.0f;
+            ImGui::SetWindowFontScale(0.85f);
+            ImGui::TextColored(lblc, "%s", label);
+            ImGui::SetWindowFontScale(1.0f);
+            if (big) ImGui::PushFont(big); else ImGui::SetWindowFontScale(1.5f);
+            ImGui::SetNextItemWidth(64.0f * scale);
+            float f2 = (float)(*val * disp);
+            if (ImGui::InputFloat(id, &f2, 0.0f, 0.0f, fmt)) { *val = std::min(vmax, std::max(vmin, (double)f2 / disp)); s_dirty = true; }
+            if (big) ImGui::PopFont(); else ImGui::SetWindowFontScale(1.0f);
+            ImGui::SameLine(0.0f, 0.0f);
+            ImGui::SetWindowFontScale(0.85f);
+            ImGui::TextColored(lblc, "%s", unit);
+            ImGui::SetWindowFontScale(1.0f);
+            ImGui::EndGroup();
+            ImGui::SameLine(0, 16.0f * scale);
+        };
+        pfield(_u8L("LAYER HEIGHT").c_str(), "##qzplh", &s_layer, "mm", 0.3, 10.0);
+        pfield(_u8L("LINE WIDTH").c_str(),  "##qzplw", &s_width, "mm", 0.4, 12.0);
+        pfield(_u8L("SPEED").c_str(),       "##qzpsp", &s_speed, "mm/s", 1.0, 300.0);
+        pfield(_u8L("FLOW").c_str(),        "##qzpfl", &s_flow, "%", 0.1, 50.0, 100.0, "%.0f");
+        if (s_dirty) {
+            ImGui::SameLine(0, 22.0f * scale);
+            ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.227f, 0.220f, 0.208f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.160f, 0.155f, 0.147f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.120f, 0.116f, 0.110f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text,          ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(20.0f, 7.0f) * scale);
+            if (ImGui::Button((_u8L("Apply") + "##qzprep").c_str())) {
+                // same coherent families as the Preview quickbar
+                DynamicPrintConfig np;
+                np.set_key_value("layer_height", new ConfigOptionFloat(s_layer));
+                np.set_key_value("initial_layer_print_height", new ConfigOptionFloat(s_layer));
+                for (const char *wk : { "line_width", "outer_wall_line_width", "inner_wall_line_width",
+                                        "top_surface_line_width", "sparse_infill_line_width",
+                                        "internal_solid_infill_line_width", "initial_layer_line_width" })
+                    np.set_key_value(wk, new ConfigOptionFloatOrPercent(s_width, false));
+                for (const char *sk : { "outer_wall_speed", "inner_wall_speed", "sparse_infill_speed",
+                                        "internal_solid_infill_speed", "top_surface_speed", "gap_infill_speed" })
+                    np.set_key_value(sk, new ConfigOptionFloat(s_speed));
+                np.set_key_value("initial_layer_speed", new ConfigOptionFloat(std::max(1.0, s_speed)));
+                np.set_key_value("initial_layer_infill_speed", new ConfigOptionFloat(std::max(1.0, s_speed)));
+                np.set_key_value("skirt_speed", new ConfigOptionFloat(std::max(1.0, s_speed)));
+                if (Tab *pt3 = wxGetApp().get_tab(Preset::TYPE_PRINT)) pt3->load_config(np);
+                DynamicPrintConfig nf2; nf2.set_key_value("filament_flow_ratio", new ConfigOptionFloats{ s_flow });
+                if (Tab *ft3 = wxGetApp().get_tab(Preset::TYPE_FILAMENT)) ft3->load_config(nf2);
+                s_dirty = false;
+                wxGetApp().plater()->reslice();
+            }
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(4);
+        }
+        imgui2.end();
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
+    }
+
+    ImGui::PopStyleVar(5);
+    ImGui::PopStyleColor(15);
 }
 
 } // namespace GUI

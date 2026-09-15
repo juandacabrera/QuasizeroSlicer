@@ -125,7 +125,7 @@ private:
     std::map<std::string, ::CheckBox*>  m_checkbox_list;
     std::vector<MachineObject*>         m_list;
     wxColour                            m_colour_def_color{ wxColour(255, 255, 255) };
-    wxColour                            m_colour_bold_color{ wxColour(38, 46, 48) };
+    wxColour                            m_colour_bold_color{ wxColour(48, 43, 39) };
     wxTimer*                            m_refresh_timer{ nullptr };
     std::unique_ptr<wxTimer>            m_task_timer{ nullptr };
     std::unique_ptr<wxTimer>            m_url_timer{nullptr};

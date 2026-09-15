@@ -1987,7 +1987,7 @@ void ColourPicker::draw_bmp_btn(wxColourPickerCtrl* field, wxColour color)
         if (!dc.IsOk()) return bmp;
         wxGCDC dc2(dc); // just use wxGCDC since bitmap button only used for windows
 
-        dc2.SetPen(focus ? wxPen(wxColour(StateColor::darkModeColorFor(wxColour("#009688"))), 1) : *wxTRANSPARENT_PEN);
+        dc2.SetPen(focus ? wxPen(wxColour(StateColor::darkModeColorFor(wxColour("#3A3835"))), 1) : *wxTRANSPARENT_PEN);
         dc2.SetBrush(wxBrush(StateColor::darkModeColorFor(bg_color)));
         dc2.DrawRoundedRectangle(btn->GetRect(), btn->FromDIP(4));
 
@@ -2001,7 +2001,7 @@ void ColourPicker::draw_bmp_btn(wxColourPickerCtrl* field, wxColour color)
             dc2.SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
             wxString text    = _L("Pick") + " " + dots;
             wxSize   text_sz = dc2.GetTextExtent(text);
-            dc2.SetTextForeground(StateColor::darkModeColorFor(wxColour("#262E30")));
+            dc2.SetTextForeground(StateColor::darkModeColorFor(wxColour("#30302F")));
             dc2.DrawText(text, (btn_sz.x - text_sz.x) / 2, (btn_sz.y - text_sz.y) / 2);
         }
         dc.SelectObject(wxNullBitmap);

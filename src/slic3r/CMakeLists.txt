@@ -58,6 +58,11 @@ set(SLIC3R_GUI_SOURCES
     GUI/BonjourDialog.hpp
     GUI/CrealityDiscoveryDialog.cpp
     GUI/CrealityDiscoveryDialog.hpp
+    GUI/QuasiZero/QzCalibrationDialog.cpp
+    GUI/QuasiZero/QzCalibrationDialog.hpp
+    GUI/QuasiZero/QzSyringePanel.cpp
+    GUI/QuasiZero/QzSyringePanel.hpp
+    GUI/QuasiZero/QzProHooks.hpp
     GUI/calib_dlg.cpp
     GUI/calib_dlg.hpp
     GUI/Calibration.cpp
@@ -747,6 +752,14 @@ else ()
     add_library(libslic3r_gui STATIC ${SLIC3R_GUI_SOURCES})
 endif ()
 target_include_directories(libslic3r_gui PRIVATE Utils ${CMAKE_CURRENT_BINARY_DIR})
+
+# Quasizero: the PRO extension of the preview behind QzProHooks - the implementation
+# (QzProView, needs the simulation engine) or the LITE stub that returns no extension.
+if (QZ_PRO)
+    target_sources(libslic3r_gui PRIVATE GUI/QuasiZero/QzProView.cpp GUI/QuasiZero/QzProView.hpp)
+else ()
+    target_sources(libslic3r_gui PRIVATE GUI/QuasiZero/QzProStub.cpp)
+endif ()
 
 if (WIN32)
     target_include_directories(libslic3r_gui SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/WebView2/include)

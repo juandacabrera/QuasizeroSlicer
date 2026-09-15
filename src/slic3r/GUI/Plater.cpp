@@ -655,8 +655,14 @@ void Sidebar::priv::layout_printer(bool isBBL, bool isDual)
     // ORCA ensure printer section is visible after changing printer from printer selection dialog
     // this will inform user on printer change when printer section is collapsed
     if (m_panel_printer_content){
+        // Quasizero: the first auto-expand fires while the app is still initializing
+        // (Home -> Prepare tab switch); swallow it so the card truly starts collapsed.
+        static bool qz_startup_expand_swallowed = false;
         bool isShown = m_panel_printer_content->IsShown();
-        if(!isShown && m_text_printer_settings){
+        if (!isShown && !qz_startup_expand_swallowed) {
+            qz_startup_expand_swallowed = true;
+        }
+        else if(!isShown && m_text_printer_settings){
             m_text_printer_settings->SetLabel(_L("Printer")); // ensure title returns to default state
             m_panel_printer_content->Show();
         }
@@ -669,7 +675,7 @@ void Sidebar::priv::flush_printer_sync(bool restart)
         *counter_sync_printer = 6;
         timer_sync_printer->Start(500);
     }
-    //btn_sync_printer->SetBackgroundColorNormal((*counter_sync_printer & 1) ? "#F8F8F8" :"#009688");
+    //btn_sync_printer->SetBackgroundColorNormal((*counter_sync_printer & 1) ? "#F8F8F8" :"#3A3835");
     m_printer_bbl_sync->SetBitmap_((*counter_sync_printer & 1) ? "printer_sync_not" : "printer_sync_ok");
     if (--*counter_sync_printer <= 0)
         timer_sync_printer->Stop();
@@ -914,10 +920,10 @@ public:
         SetBackgroundColour(*wxWHITE);
         auto msg  = new wxStaticText(this, wxID_ANY, _L("Set the number of AMS installed on the nozzle."));
         msg->SetFont(Label::Body_14);
-        msg->SetForegroundColour("#262E30");
+        msg->SetForegroundColour("#30302F");
         msg->Wrap(FromDIP(280));
         auto box = new StaticBox(this, wxID_ANY);
-        box->SetBackgroundColor(0xF8F8F8);
+        box->SetBackgroundColor(0xF7F3EC);
         box->SetBorderWidth(0);
         auto img4 = new ScalableButton(box, wxID_ANY, "ams_4_tray", {}, wxDefaultSize, wxDefaultPosition, wxBU_EXACTFIT | wxNO_BORDER, false, 44);
         //img4->SetBackgroundColour(*wxWHITE);
@@ -925,12 +931,12 @@ public:
         //img1->SetBackgroundColour(*wxWHITE);
         auto txt4 = new wxStaticText(box, wxID_ANY, _L("AMS(4 slots)"));
         txt4->SetFont(Label::Body_14);
-        txt4->SetBackgroundColour(0xF8F8F8);
-        txt4->SetForegroundColour("#262E30");
+        txt4->SetBackgroundColour(0xF7F3EC);
+        txt4->SetForegroundColour("#30302F");
         auto txt1 = new wxStaticText(box, wxID_ANY, _L("AMS(1 slot)"));
         txt1->SetFont(Label::Body_14);
-        txt1->SetBackgroundColour(0xF8F8F8);
-        txt1->SetForegroundColour("#262E30");
+        txt1->SetBackgroundColour(0xF7F3EC);
+        txt1->SetForegroundColour("#30302F");
         int ams4 = 0, ams1 = 0;
         int oth4 = 0, oth1 = 0;
         GetAMSCount(index, ams4, ams1);
@@ -1031,13 +1037,13 @@ ExtruderGroup::ExtruderGroup(wxWindow * parent, int index, wxString const &title
     // Nozzle
     wxStaticText *label_diameter = new wxStaticText(this, wxID_ANY, _L("Diameter"));
     label_diameter->SetFont(Label::Body_14);
-    label_diameter->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#262E30")));
+    label_diameter->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#30302F")));
     if (index >= 0) label_diameter->SetMinSize({FromDIP(80), -1});
     auto combo_diameter = new ComboBox(this, wxID_ANY, wxString(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_READONLY);
     this->combo_diameter = combo_diameter;
     wxStaticText *label_flow = new wxStaticText(this, wxID_ANY, _L("Flow"));
     label_flow->SetFont(Label::Body_14);
-    label_flow->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#262E30")));
+    label_flow->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#30302F")));
     if (index >= 0) label_flow->SetMinSize({FromDIP(80), -1});
     auto combo_flow = new ComboBox(this, wxID_ANY, wxString(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_READONLY);
     combo_flow->GetDropDown().SetUseContentWidth(true);
@@ -1052,7 +1058,7 @@ ExtruderGroup::ExtruderGroup(wxWindow * parent, int index, wxString const &title
     // AMS
     wxStaticText *label_ams  = new wxStaticText(this, wxID_ANY, _L("AMS"));
     label_ams->SetFont(Label::Body_14);
-    label_ams->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#262E30")));
+    label_ams->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#30302F")));
     //label_ams->SetMinSize({FromDIP(70), -1});
     if (index >= 0) {
         btn_edit = new ScalableButton(this, wxID_ANY, "dot");
@@ -1081,7 +1087,7 @@ ExtruderGroup::ExtruderGroup(wxWindow * parent, int index, wxString const &title
     // AMS not installed message
     ams_not_installed_msg = new wxStaticText(this, wxID_ANY, _L("Not installed"));
     ams_not_installed_msg->SetFont(Label::Body_14);
-    ams_not_installed_msg->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#262E30")));
+    ams_not_installed_msg->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#30302F")));
 
     // AMS group
     for (size_t i = 0; i < 4; ++i) {
@@ -1416,7 +1422,7 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material)
 
 void Sidebar::priv::update_sync_status(const MachineObject *obj)
 {
-    StateColor not_synced_colour(std::pair<wxColour, int>(wxColour("#009688"), StateColor::Normal));
+    StateColor not_synced_colour(std::pair<wxColour, int>(wxColour("#3A3835"), StateColor::Normal));
     auto clear_all_sync_status = [this, &not_synced_colour]() {
         panel_printer_preset->ShowBadge(false);
         panel_printer_bed->ShowBadge(false);
@@ -1643,7 +1649,7 @@ Sidebar::Sidebar(Plater *parent)
     auto* scrolled_sizer = m_scrolled_sizer = new wxBoxSizer(wxVERTICAL);
     p->scrolled->SetSizer(scrolled_sizer);
 
-    wxColour title_bg = wxColour(248, 248, 248);
+    wxColour title_bg = wxColour(250, 250, 249);
     wxColour inactive_text = wxColour(86, 86, 86);
     wxColour active_text = wxColour(0, 0, 0);
     wxColour static_line_col = wxColour(166, 169, 170);
@@ -1658,7 +1664,7 @@ Sidebar::Sidebar(Plater *parent)
         // 1.1 create title bar resources
         p->m_panel_printer_title = new StaticBox(p->scrolled, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxBORDER_NONE);
         p->m_panel_printer_title->SetBackgroundColor(title_bg);
-        p->m_panel_printer_title->SetBackgroundColor2(0xF1F1F1);
+        p->m_panel_printer_title->SetBackgroundColor2(0xFAFAF9); // Quasizero flat card
 
         p->m_printer_icon = new ScalableButton(p->m_panel_printer_title, wxID_ANY, "printer");
         p->m_text_printer_settings = new Label(p->m_panel_printer_title, _L("Printer"), LB_PROPAGATE_MOUSE_EVENT | wxST_ELLIPSIZE_END);
@@ -1737,10 +1743,10 @@ Sidebar::Sidebar(Plater *parent)
 
         struct PanelColors {
             wxColour bg_normal = "#FFFFFF";
-            wxColour bg_focus  = "#E5F0EE";
+            wxColour bg_focus  = "#ECEBE9"; // Quasizero neutral
             wxColour bd_normal = "#DBDBDB";
-            wxColour bd_hover  = "#009688";
-            wxColour bd_focus  = "#009688";
+            wxColour bd_hover  = "#3A3835";
+            wxColour bd_focus  = "#3A3835";
         };
         PanelColors panel_color;
 
@@ -2020,8 +2026,8 @@ Sidebar::Sidebar(Plater *parent)
                 std::pair<wxColour, int>(wxColour("#F8F8F8"), StateColor::Hovered),
                 std::pair<wxColour, int>(wxColour("#F8F8F8"), StateColor::Normal));
         StateColor btn_sync_bd_col(
-                std::pair<wxColour, int>(wxColour("#009688"), StateColor::Pressed),
-                std::pair<wxColour, int>(wxColour("#009688"), StateColor::Hovered),
+                std::pair<wxColour, int>(wxColour("#3A3835"), StateColor::Pressed),
+                std::pair<wxColour, int>(wxColour("#3A3835"), StateColor::Hovered),
                 std::pair<wxColour, int>(wxColour("#EEEEEE"), StateColor::Normal));
         btn_sync->SetBackgroundColor(btn_sync_bg_col);
         btn_sync->SetBorderColor(btn_sync_bd_col);
@@ -2067,7 +2073,7 @@ Sidebar::Sidebar(Plater *parent)
     // add filament title
     p->m_panel_filament_title = new StaticBox(p->scrolled, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxBORDER_NONE);
     p->m_panel_filament_title->SetBackgroundColor(title_bg);
-    p->m_panel_filament_title->SetBackgroundColor2(0xF1F1F1);
+    p->m_panel_filament_title->SetBackgroundColor2(0xFAFAF9); // Quasizero flat card
     p->m_panel_filament_title->Bind(wxEVT_LEFT_UP, [this](wxMouseEvent &e) {
         if (e.GetPosition().x > (p->m_flushing_volume_btn->IsShown()
                 ? p->m_flushing_volume_btn->GetPosition().x : (p->m_bpButton_add_filament->GetPosition().x - FromDIP(30)))) // ORCA exclude area of del button from titlebar collapse/expand feature to fix undesired collapse when user spams del filament button 
@@ -2228,7 +2234,7 @@ Sidebar::Sidebar(Plater *parent)
 
     wxTextCtrl* text_ctrl = p->m_search_item->GetTextCtrl();
     text_ctrl->SetHint(_L("Search plate, object and part."));
-    text_ctrl->SetForegroundColour(wxColour("#262E30"));
+    text_ctrl->SetForegroundColour(wxColour("#30302F"));
     text_ctrl->SetFont(Label::Body_13);
     text_ctrl->SetSize(wxSize(-1, FromDIP(16))); // Centers text vertically
 
@@ -2237,7 +2243,7 @@ Sidebar::Sidebar(Plater *parent)
             e.Skip();
             return;
         }
-        p->m_search_bar->SetBorderColor(wxColour("#009688"));
+        p->m_search_bar->SetBorderColor(wxColour("#3A3835"));
         wxPoint pos = this->p->m_search_bar->ClientToScreen(wxPoint(0, 0));
 #ifndef __WXGTK__
         pos.y += this->p->m_search_bar->GetRect().height;
@@ -2292,6 +2298,21 @@ Sidebar::Sidebar(Plater *parent)
     auto *sizer = new wxBoxSizer(wxVERTICAL);
     sizer->Add(p->scrolled, 1, wxEXPAND);
     SetSizer(sizer);
+
+    // Quasizero: no dark seams - sidebar chrome matches the light canvas
+    this->SetBackgroundColour(wxColour(245, 245, 244));
+    if (p->scrolled) p->scrolled->SetBackgroundColour(wxColour(245, 245, 244));
+
+    // Quasizero (Tesla reference): start with the Printer and Biomaterial cards
+    // collapsed. Deferred via CallAfter so the initial preset load (which can
+    // auto-expand the printer section) cannot undo it.
+    wxGetApp().CallAfter([this]() {
+        if (p->m_panel_printer_content)  p->m_panel_printer_content->Show(false);
+        if (p->m_panel_filament_content) p->m_panel_filament_content->Show(false);
+        if (p->scrolled) p->scrolled->Layout();
+        Layout();
+    });
+
 }
 
 Sidebar::~Sidebar() {}
@@ -2497,7 +2518,11 @@ void Sidebar::update_all_preset_comboboxes()
 
     }
 
-    if (cfg.opt_bool("pellet_modded_printer")) {
+    if (cfg.has("qzmini_enable") && cfg.opt_bool("qzmini_enable")) {
+        // Quasizero: QZmini printers extrude biomaterial, not filament
+        p->m_staticText_filament_settings->SetLabel(_L("Biomaterial"));
+        p->m_filament_icon->SetBitmap_("filament");
+    } else if (cfg.opt_bool("pellet_modded_printer")) {
 		p->m_staticText_filament_settings->SetLabel(_L("Pellets"));
         p->m_filament_icon->SetBitmap_("pellets");
     } else {
@@ -5585,21 +5610,21 @@ wxColour Plater::get_next_color_for_filament()
     // refs to https://www.ebaomonthly.com/window/photo/lesson/colorList.htm
     wxColour colors[FILAMENT_SYSTEM_COLORS_NUM] = {
         // ORCA updated all color palette
-        wxColour("#00C1AE"),
-        wxColour("#F4E2C1"),
+        wxColour("#C1590F"),
+        wxColour("#F2F2EE"),
         wxColour("#ED1C24"),
-        wxColour("#00FF7F"),
+        wxColour("#FF7614"),
         wxColour("#F26722"),
         wxColour("#FFEB31"),
         wxColour("#7841CE"),
-        wxColour("#115877"),
+        wxColour("#767674"),
         wxColour("#ED1E79"),
-        wxColour("#2EBDEF"),
-        wxColour("#345B2F"),
+        wxColour("#EDEDE9"),
+        wxColour("#5A5A59"),
         wxColour("#800080"),
         wxColour("#FA8173"),
         wxColour("#800000"),
-        wxColour("#F7B763"),
+        wxColour("#F5F5F1"),
         wxColour("#A4C41E"),
     };
     return colors[curr_color_filamenet++ % FILAMENT_SYSTEM_COLORS_NUM];
@@ -5637,6 +5662,41 @@ void Plater::priv::apply_free_camera_correction(bool apply/* = true*/)
 //BBS: add no slice option
 void Plater::priv::select_view_3D(const std::string& name, bool no_slice)
 {
+    // Quasizero: the sidebar is collapsed whenever the user lands on Prepare or
+    // Preview - regardless of the selected printer. The native Expand Sidebar
+    // button (which relabels itself) remains the explicit Advanced path.
+    if (name == "3D" || name == "Preview") {
+        if (!q->is_sidebar_collapsed())
+            q->collapse_sidebar(true);
+
+        // Quasizero: material-family guard. The wizard (and other reload paths)
+        // can apply a stock FDM filament AFTER our startup hooks; a QZmini
+        // machine must never sit on a stock filament (it corrupts the E->ml
+        // volumetric model). User-created presets are always respected.
+        PresetBundle &qpb = *wxGetApp().preset_bundle;
+        const Preset &qpp = qpb.printers.get_edited_preset();
+        const ConfigOptionBool *qqe = qpp.config.option<ConfigOptionBool>("qzmini_enable");
+        const auto *qdfp = qpp.config.option<ConfigOptionStrings>("default_filament_profile");
+        if (qqe != nullptr && qqe->value && qdfp != nullptr && !qdfp->values.empty()) {
+            auto family_ok = [](const Preset *pr) {
+                if (pr == nullptr) return false;
+                if (!pr->is_system) return true; // user presets are fine
+                return pr->vendor != nullptr && pr->vendor->id == "Quasizero";
+            };
+            const bool edited_ok = family_ok(&qpb.filaments.get_edited_preset());
+            bool slot_ok = true;
+            if (!qpb.filament_presets.empty())
+                slot_ok = family_ok(qpb.filaments.find_preset(qpb.filament_presets.front(), false));
+            if (!edited_ok || !slot_ok) {
+                if (Tab *qft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
+                    qft->select_preset(qdfp->values.front());
+                // keep the sidebar slot and its combo in step with the edited preset
+                if (!qpb.filament_presets.empty())
+                    qpb.filament_presets.front() = qpb.filaments.get_edited_preset().name;
+                sidebar->update_presets(Preset::TYPE_FILAMENT);
+            }
+        }
+    }
     if (name == "3D") {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << "select view3D";
         if (q->only_gcode_mode() || q->using_exported_file()) {
@@ -10527,9 +10587,9 @@ void Plater::priv::on_change_color_mode(SimpleEvent& evt) {
 void Plater::priv::apply_color_mode()
 {
     const bool is_dark         = wxGetApp().dark_mode();
-    wxColour   orca_color      = wxColour(59, 68, 70);//wxColour(ColorRGBA::ORCA().r_uchar(), ColorRGBA::ORCA().g_uchar(), ColorRGBA::ORCA().b_uchar());
+    wxColour   orca_color      = wxColour(70, 64, 60);//wxColour(ColorRGBA::ORCA().r_uchar(), ColorRGBA::ORCA().g_uchar(), ColorRGBA::ORCA().b_uchar());
     orca_color                 = is_dark ? StateColor::darkModeColorFor(orca_color) : StateColor::lightModeColorFor(orca_color);
-    wxColour sash_color = is_dark ? wxColour(38, 46, 48) : wxColour(206, 206, 206);
+    wxColour sash_color = is_dark ? wxColour(48, 43, 39) : wxColour(206, 206, 206);
     m_aui_mgr.GetArtProvider()->SetColour(wxAUI_DOCKART_INACTIVE_CAPTION_COLOUR, sash_color);
     m_aui_mgr.GetArtProvider()->SetColour(wxAUI_DOCKART_INACTIVE_CAPTION_TEXT_COLOUR, *wxWHITE);
     m_aui_mgr.GetArtProvider()->SetColour(wxAUI_DOCKART_SASH_COLOUR, sash_color);
@@ -10817,7 +10877,7 @@ void Plater::priv::set_project_name(const wxString& project_name)
     if (!m_project_name.IsEmpty())
         wxGetApp().mainframe->update_title_colour_after_set_title();
 #else
-    wxGetApp().mainframe->SetTitle(m_project_name + " - OrcaSlicer");
+    wxGetApp().mainframe->SetTitle(m_project_name + " - Quasizero Slicer");
     wxGetApp().mainframe->topbar()->SetTitle(m_project_name);
 #endif
 }
@@ -10837,7 +10897,7 @@ void Plater::priv::update_title_dirty_status()
     wxGetApp().mainframe->SetTitle(title);
     wxGetApp().mainframe->update_title_colour_after_set_title();
 #else
-    wxGetApp().mainframe->SetTitle(title + " - OrcaSlicer");
+    wxGetApp().mainframe->SetTitle(title + " - Quasizero Slicer");
     wxGetApp().mainframe->topbar()->SetTitle(title);
 #endif    
 }
@@ -11365,6 +11425,17 @@ void Plater::priv::set_bed_shape(const Pointfs       &shape,
     else
         SCALING_FACTOR = SCALING_FACTOR_INTERNAL_LARGE_PRINTER;
 
+    // Quasizero: QZmini printers get the Quasizero plate logo when no custom texture is set
+    std::string qz_custom_texture = custom_texture;
+    if (qz_custom_texture.empty()) {
+        const ConfigOptionBool *qz_en = wxGetApp().preset_bundle->printers.get_edited_preset().config.option<ConfigOptionBool>("qzmini_enable");
+        if (qz_en != nullptr && qz_en->value) {
+            const std::string qz_logo = resources_dir() + "/profiles/Quasizero/qz_plate_logo.svg";
+            boost::system::error_code qz_ec;
+            if (boost::filesystem::exists(qz_logo, qz_ec)) qz_custom_texture = qz_logo;
+        }
+    }
+
     //BBS: add shape position
     Vec2d shape_position = partplate_list.get_current_shape_position();
     bool new_shape = bed.set_shape(shape, printable_height, extruder_areas, extruder_heights, custom_model, force_as_custom, shape_position);
@@ -11378,8 +11449,8 @@ void Plater::priv::set_bed_shape(const Pointfs       &shape,
     Pointfs prev_wrapping_exclude_areas = partplate_list.get_wrapping_exclude_area();
     new_shape |= (height_to_lid != prev_height_lid) || (height_to_rod != prev_height_rod) || (prev_exclude_areas != exclude_areas)
         || (prev_wrapping_exclude_areas != wrapping_exclude_areas);
-    if (!new_shape && partplate_list.get_logo_texture_filename() != custom_texture) {
-        partplate_list.update_logo_texture_filename(custom_texture);
+    if (!new_shape && partplate_list.get_logo_texture_filename() != qz_custom_texture) {
+        partplate_list.update_logo_texture_filename(qz_custom_texture);
     }
     if (new_shape) {
         if (view3D) view3D->bed_shape_changed();
@@ -11392,7 +11463,7 @@ void Plater::priv::set_bed_shape(const Pointfs       &shape,
         double z = config->opt_float("printable_height");
 
         partplate_list.reset_size(max.x() - min.x() - Bed3D::Axes::DefaultTipRadius, max.y() - min.y() - Bed3D::Axes::DefaultTipRadius, z);
-        partplate_list.set_shapes(shape, exclude_areas, wrapping_exclude_areas, extruder_areas, extruder_heights, custom_texture, height_to_lid, height_to_rod);
+        partplate_list.set_shapes(shape, exclude_areas, wrapping_exclude_areas, extruder_areas, extruder_heights, qz_custom_texture, height_to_lid, height_to_rod);
 
         Vec2d new_shape_position = partplate_list.get_current_shape_position();
         if (shape_position != new_shape_position)

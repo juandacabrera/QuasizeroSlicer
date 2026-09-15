@@ -1319,6 +1319,11 @@ void StringReplace(string &strBase, string strSrc, string strDes)
 
 int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath)
 {
+    // Quasizero: the Quasizero vendor is an internal overlay family (QZmini
+    // extruder replicas). It is always loaded by the slicer itself and must not
+    // appear as a pickable vendor in the wizard.
+    if (strVendor == "Quasizero")
+        return 0;
     // wxString strFolder = strFilePath.BeforeLast(boost::filesystem::path::preferred_separator);
     boost::filesystem::path file_path(strFilePath);
     boost::filesystem::path vendor_dir = boost::filesystem::absolute(file_path.parent_path() / strVendor).make_preferred();

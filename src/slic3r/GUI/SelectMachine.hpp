@@ -312,7 +312,7 @@ private:
     wxString                            m_current_project_name;
     PrintDialogStatus                   m_print_status { PrintStatusInit };
     wxColour                            m_colour_def_color{wxColour(255, 255, 255)};
-    wxColour                            m_colour_bold_color{wxColour(38, 46, 48)};
+    wxColour                            m_colour_bold_color{wxColour(48, 43, 39)};
     StateColor                          m_btn_bg_enable;
 
     std::unordered_map<string, PrintOption*> m_checkbox_list;

@@ -299,7 +299,7 @@ void AppConfig::set_defaults()
         set("drc_bits", DRC_BITS_DEFAULT_STR);
 
     if (get("show_gcode_window").empty())
-        set_bool("show_gcode_window", true);
+        set_bool("show_gcode_window", false); // Quasizero: folded by default
 
     if (get("show_3d_navigator").empty())
         set_bool("show_3d_navigator", true);
@@ -429,8 +429,13 @@ void AppConfig::set_defaults()
         set("auto_calculate_flush","all");
     }
 
+    // Quasizero: zoom button hidden by default (one-time migration for existing configs)
+    if (get("qz_zoom_btn_hidden_default").empty()) {
+        set_bool("show_canvas_zoom_button", false);
+        set_bool("qz_zoom_btn_hidden_default", true);
+    }
     if (get("show_canvas_zoom_button").empty()) {
-        set_bool("show_canvas_zoom_button", true);
+        set_bool("show_canvas_zoom_button", false);
     }
 
     if (get("remember_printer_config").empty()) {

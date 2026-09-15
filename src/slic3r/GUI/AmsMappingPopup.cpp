@@ -2017,7 +2017,7 @@ AmsIntroducePopup::AmsIntroducePopup(wxWindow* parent)
 
     m_staticText_top = new Label(this, _L("Do not Enable AMS"));
     m_staticText_top->SetFont(::Label::Head_13);
-    // m_staticText_top->SetForegroundColour(wxColour("#323A3D"));
+    // m_staticText_top->SetForegroundColour(wxColour("#3C3C3B"));
     m_staticText_top->Wrap(-1);
     bSizer4->Add(m_staticText_top, 0, wxALL, 5);
 
@@ -2197,14 +2197,14 @@ void AmsReplaceMaterialDialog::create()
 
     label_txt = new Label(this, _L("When the current material run out, the printer will continue to print in the following order."));
     label_txt->SetFont(Label::Body_13);
-    label_txt->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
+    label_txt->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#3B3B3A")));
     label_txt->SetMinSize(wxSize(FromDIP(380), -1));
     label_txt->SetMaxSize(wxSize(FromDIP(380), -1));
     label_txt->Wrap(FromDIP(380));
 
     identical_filament = new Label(this, _L("Identical filament: same brand, type and color."));
     identical_filament->SetFont(Label::Body_13);
-    identical_filament->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#009688")));
+    identical_filament->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#3A3835")));
 
     m_scrollview_groups = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
     m_scrollview_groups->SetScrollRate(5, 5);
@@ -2227,13 +2227,13 @@ void AmsReplaceMaterialDialog::create()
         std::pair<wxColour, int>(AMS_CONTROL_WHITE_COLOUR, StateColor::Normal));
 
     StateColor btn_bd_white(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
+        std::pair<wxColour, int>(wxColour(48, 43, 39), StateColor::Enabled));
 
     StateColor btn_text_white(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
+        std::pair<wxColour, int>(wxColour(48, 43, 39), StateColor::Enabled));
 
 
-    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(0, 137, 123), StateColor::Pressed), std::pair<wxColour, int>(wxColour(0, 150, 136), StateColor::Normal));
+    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(45, 44, 42), StateColor::Pressed), std::pair<wxColour, int>(wxColour(58, 56, 53), StateColor::Normal));
     m_button_sizer->Add( 0, 0, 1, wxEXPAND, 0 );
 
     m_main_sizer->Add(0,0,0, wxTOP, FromDIP(12));
@@ -2637,8 +2637,8 @@ void AmsRMGroup::doRender(wxDC& dc)
         //draw tray
         dc.SetFont(::Label::Body_12);
         auto text_size = dc.GetTextExtent(tray_name);
-        dc.SetTextForeground(tray_color.GetLuminance() < 0.6 ? *wxWHITE : wxColour("#262E30"));
-        if (tray_color.Alpha() == 0) { dc.SetTextForeground(wxColour("#262E30")); }
+        dc.SetTextForeground(tray_color.GetLuminance() < 0.6 ? *wxWHITE : wxColour("#30302F"));
+        if (tray_color.Alpha() == 0) { dc.SetTextForeground(wxColour("#30302F")); }
 
         dc.DrawText(tray_name, x_center - text_size.x / 2, size.y - y_center - text_size.y / 2);
 
@@ -2668,7 +2668,7 @@ void AmsRMGroup::doRender(wxDC& dc)
     //dc.DrawBitmap(bitmap_backup_tips_1.bmp(), wxPoint((size.x - bitmap_backup_tips_1.GetBmpSize().x) / 2, (size.y - bitmap_backup_tips_1.GetBmpSize().y) / 2));
 
     //draw material
-    dc.SetTextForeground(wxColour("#323A3D"));
+    dc.SetTextForeground(wxColour("#3C3C3B"));
     dc.SetFont(Label::Head_15);
     auto text_size = dc.GetTextExtent(m_material_name);
     dc.DrawText(m_material_name, (size.x - text_size.x) / 2,(size.y - text_size.y) / 2 - FromDIP(12));

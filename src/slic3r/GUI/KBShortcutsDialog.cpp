@@ -92,8 +92,8 @@ void KBShortcutsDialog::OnSelectTabel(wxCommandEvent &event)
     while (i != m_hash_selector.end()) {
         Select *sel = i->second;
         if (id == sel->m_index) {
-            sel->m_tab_button->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#BFE1DE"))); // ORCA color for selected tab background
-            sel->m_tab_text->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#BFE1DE"))); // ORCA color for selected tab background
+            sel->m_tab_button->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#DFDFDC"))); // ORCA color for selected tab background
+            sel->m_tab_text->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#DFDFDC"))); // ORCA color for selected tab background
             sel->m_tab_text->SetFont(::Label::Head_13);
             sel->m_tab_button->Refresh();
             sel->m_tab_text->Refresh();
@@ -121,7 +121,7 @@ wxWindow *KBShortcutsDialog::create_button(int id, wxString text)
 
     auto stext = new wxStaticText(tab_button, wxID_ANY, text, wxDefaultPosition, wxDefaultSize, 0);
     stext->SetFont(::Label::Body_13);
-    stext->SetForegroundColour(wxColour(38, 46, 48));
+    stext->SetForegroundColour(wxColour(48, 43, 39));
     stext->Wrap(-1);
     sizer->Add(stext, 1, wxALIGN_CENTER, 0);
 
@@ -341,13 +341,13 @@ wxPanel* KBShortcutsDialog::create_page(wxWindow* parent, const ShortcutsItem& s
     for (int i = 0; i < items_count; ++i) {
         const auto &[shortcut, description] = shortcuts.second[i];
         auto key                            = new wxStaticText(scrollable_panel, wxID_ANY, _(shortcut));
-        key->SetForegroundColour(wxColour(50, 58, 61));
+        key->SetForegroundColour(wxColour(61, 55, 51));
         key->SetFont(bold_font);
         grid_sizer->Add(key, 0, wxALIGN_CENTRE_VERTICAL);
 
         auto desc = new wxStaticText(scrollable_panel, wxID_ANY, _(description));
         desc->SetFont(font);
-        desc->SetForegroundColour(wxColour(50, 58, 61));
+        desc->SetForegroundColour(wxColour(61, 55, 51));
         desc->Wrap(FromDIP(600));
         grid_sizer->Add(desc, 0, wxALIGN_CENTRE_VERTICAL);
     }

@@ -45,10 +45,10 @@ BBLStatusBarPrint::BBLStatusBarPrint(wxWindow *parent, int id)
         std::pair<wxColour, int>(*wxWHITE, StateColor::Normal));
 
     StateColor btn_bd_white(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
+        std::pair<wxColour, int>(wxColour(48, 43, 39), StateColor::Enabled));
 
 
-    StateColor btn_txt_white(std::pair<wxColour, int>(wxColour("#FFFFFE"), StateColor::Disabled), std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Normal));
+    StateColor btn_txt_white(std::pair<wxColour, int>(wxColour("#FFFFFE"), StateColor::Disabled), std::pair<wxColour, int>(wxColour(48, 43, 39), StateColor::Normal));
 
     m_cancelbutton = new Button(m_self, _L("Cancel"));
     m_cancelbutton->SetMinSize(wxSize(m_self->FromDIP(80), m_self->FromDIP(32)));
@@ -71,7 +71,7 @@ BBLStatusBarPrint::BBLStatusBarPrint(wxWindow *parent, int id)
 
     m_sizer_status_text = new wxBoxSizer(wxHORIZONTAL);
     m_link_show_error = new Label(top_panel, _L("Check the reason"));
-    m_link_show_error->SetForegroundColour(wxColour("#009688"));
+    m_link_show_error->SetForegroundColour(wxColour("#3A3835"));
     m_link_show_error->SetFont(::Label::Head_13);
     m_link_show_error->Bind(wxEVT_ENTER_WINDOW, [this](auto &e) { this->m_self->SetCursor(wxCURSOR_HAND); });
     m_link_show_error->Bind(wxEVT_LEAVE_WINDOW, [this](auto &e) { this->m_self->SetCursor(wxCURSOR_ARROW); });

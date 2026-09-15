@@ -280,28 +280,29 @@ static void delete_buffers(unsigned int& id)
     }
 }
 
+// Quasizero: warm, harmonious earth-tone palette aligned with the light/brown brand direction
 static const std::array<Color, size_t(EGCodeExtrusionRole::COUNT)> DEFAULT_EXTRUSION_ROLES_COLORS = { {
-    { 230, 179, 179 }, // None
-    { 255, 230,  77 }, // Perimeter
-    { 255, 125,  56 }, // ExternalPerimeter
-    {  31,  31, 255 }, // OverhangPerimeter
-    { 176,  48,  41 }, // InternalInfill
-    { 150,  84, 204 }, // SolidInfill
-    { 240,  64,  64 }, // TopSolidInfill
-    { 255, 140, 105 }, // Ironing
-    {  77, 128, 186 }, // BridgeInfill
-    { 255, 255, 255 }, // GapFill
-    {   0, 135, 110 }, // Skirt
-    {   0, 255,   0 }, // SupportMaterial
-    {   0, 128,   0 }, // SupportMaterialInterface
-    { 179, 227, 171 }, // WipeTower
-    {  94, 209, 148 },  // Custom
+    { 214, 205, 196 }, // None                     warm gray
+    { 217, 180, 140 }, // Perimeter                sand
+    { 138,  98,  68 }, // ExternalPerimeter        Quasizero brown
+    { 122,  78, 116 }, // OverhangPerimeter        muted plum (kept distinct as a warning tone)
+    { 197, 141, 101 }, // InternalInfill           clay
+    { 165, 130,  95 }, // SolidInfill              umber
+    { 112,  75,  50 }, // TopSolidInfill           dark coffee
+    { 232, 201, 169 }, // Ironing                  pale sand
+    { 130, 144, 158 }, // BridgeInfill             cool slate (contrast)
+    { 240, 234, 226 }, // GapFill                  warm white
+    { 185, 147, 114 }, // Skirt                    light brown
+    { 156, 163, 122 }, // SupportMaterial          sage
+    { 121, 128,  90 }, // SupportMaterialInterface dark sage
+    { 222, 210, 188 }, // WipeTower                parchment
+    { 205, 176, 144 },  // Custom                  latte
     // ORCA
-    { 102,  92, 199 }, // BottomSurface
-    {  77, 128, 186 }, // InternalBridgeInfill
-    {   0,  59, 110 }, // Brim
-    {   0,  64,   0 }, // SupportTransition
-    { 128, 128, 128 }, // Mixed
+    { 143, 111,  86 }, // BottomSurface            walnut
+    { 150, 160, 170 }, // InternalBridgeInfill     light slate
+    { 172, 134,  98 }, // Brim                     caramel
+    { 100, 105,  75 }, // SupportTransition        olive
+    { 150, 140, 130 }, // Mixed                    taupe
 } };
 
 static const std::array<Color, size_t(EOptionType::COUNT)> DEFAULT_OPTIONS_COLORS{ {
@@ -1316,6 +1317,18 @@ void ViewerImpl::set_view_type(EViewType type)
     m_settings.update_colors = true;
 }
 
+void ViewerImpl::set_vertices_stability(const std::vector<float>& values)
+{
+    if (values.size() != m_vertices.size())
+        return;
+    for (size_t i = 0; i < m_vertices.size(); ++i)
+        m_vertices[i].stability = values[i];
+    // the colour cache is rebuilt on the next render only for the Stability view;
+    // for the other views the new values are simply the ones used the next time it is selected
+    if (m_settings.view_type == EViewType::Stability)
+        m_settings.update_colors = true;
+}
+
 void ViewerImpl::set_time_mode(ETimeMode mode)
 {
     m_settings.time_mode = mode;
@@ -1517,6 +1530,13 @@ Color ViewerImpl::get_vertex_color(const PathVertex& v) const
     {
         return m_jerk_range.get_color_at(v.jerk);
     }
+    // Quasizero
+    case EViewType::Stability:
+    {
+        if (v.is_travel() || v.stability < 0.0f)
+            return get_option_color(move_type_to_option(v.type));
+        return m_stability_range.get_color_at(std::min(v.stability, 1.0f));
+    }
     case EViewType::VolumetricFlowRate:
     {
         return v.is_travel() ? get_option_color(move_type_to_option(v.type)) : m_volumetric_rate_range.get_color_at(v.volumetric_rate());
@@ -1612,6 +1632,8 @@ const ColorRange& ViewerImpl::get_color_range(EViewType type) const
     case EViewType::Acceleration:             { return m_acceleration_range; }
     // ORCA: Add Jerk visualization support
     case EViewType::Jerk:                     { return m_jerk_range; }
+    // Quasizero
+    case EViewType::Stability:                { return m_stability_range; }
     case EViewType::VolumetricFlowRate:       { return m_volumetric_rate_range; }
     case EViewType::ActualVolumetricFlowRate: { return m_actual_volumetric_rate_range; }
     case EViewType::LayerTimeLinear:          { return m_layer_time_range[0]; }
@@ -1636,6 +1658,8 @@ void ViewerImpl::set_color_range_palette(EViewType type, const Palette& palette)
     case EViewType::Acceleration:             { m_acceleration_range.set_palette(palette);     break; }
     // ORCA: Add Jerk visualization support
     case EViewType::Jerk:                     { m_jerk_range.set_palette(palette);             break; }
+    // Quasizero
+    case EViewType::Stability:                { m_stability_range.set_palette(palette);        break; }
     case EViewType::VolumetricFlowRate:       { m_volumetric_rate_range.set_palette(palette); break; }
     case EViewType::ActualVolumetricFlowRate: { m_actual_volumetric_rate_range.set_palette(palette); break; }
     case EViewType::LayerTimeLinear:          { m_layer_time_range[0].set_palette(palette);   break; }
@@ -1679,6 +1703,7 @@ size_t ViewerImpl::get_used_cpu_memory() const
     ret += m_acceleration_range.size_in_bytes_cpu();
     // ORCA: Add Jerk visualization support
     ret += m_jerk_range.size_in_bytes_cpu();
+    ret += m_stability_range.size_in_bytes_cpu();
     ret += m_volumetric_rate_range.size_in_bytes_cpu();
     ret += m_actual_volumetric_rate_range.size_in_bytes_cpu();
     for (size_t i = 0; i < COLOR_RANGE_TYPES_COUNT; ++i) {
@@ -1835,6 +1860,11 @@ void ViewerImpl::update_color_ranges()
     m_acceleration_range.reset();
     // ORCA: Add Jerk visualization support
     m_jerk_range.reset();
+    // Quasizero: semantic scale, always 0 -> 1 (collapse); data above 1 is clamped.
+    // Fed as a ladder so the legend shows every palette step, not just the two anchors.
+    m_stability_range.reset();
+    for (int i = 0; i <= 10; ++i)
+        m_stability_range.update(0.1f * static_cast<float>(i));
     m_volumetric_rate_range.reset();
     m_actual_volumetric_rate_range.reset();
     m_layer_time_range[0].reset(); // ColorRange::EType::Linear

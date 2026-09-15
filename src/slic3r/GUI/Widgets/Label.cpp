@@ -293,7 +293,7 @@ Label::Label(wxWindow *parent, wxFont const &font, wxString const &text, long st
     SetFont(font);
     SetForegroundColour(*wxBLACK);
     SetBackgroundColour(StaticBox::GetParentBackgroundColor(parent));
-    SetForegroundColour("#262E30");
+    SetForegroundColour("#30302F");
     if (style & LB_PROPAGATE_MOUSE_EVENT) {
         for (auto evt : { wxEVT_LEFT_UP, wxEVT_LEFT_DOWN })
             Bind(evt, [this] (auto & e) { GetParent()->GetEventHandler()->ProcessEventLocally(e); });
@@ -329,7 +329,7 @@ void Label::SetWindowStyleFlag(long style)
     wxStaticText::SetWindowStyleFlag(style);
     if (style & LB_HYPERLINK) {
         this->m_color = GetForegroundColour();
-        static wxColor clr_url("#009688");
+        static wxColor clr_url("#3A3835");
         SetFont(this->m_font.Underlined());
         SetForegroundColour(clr_url);
         SetCursor(wxCURSOR_HAND);

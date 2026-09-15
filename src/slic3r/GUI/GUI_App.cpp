@@ -307,7 +307,9 @@ public:
         bool dark_mode = m_fg_color != wxColour("#6B6A6A");
         wxSize sz  = m_window->GetClientSize();
         BitmapCache bmp_cache;
-        m_logo_bmp = *bmp_cache.load_svg(dark_mode ? "splash_logo_dark" : "splash_logo", sz.GetWidth(), sz.GetHeight());
+        // Quasizero: slightly smaller splash logo, drawn centered
+        const wxSize qz_lsz(int(sz.GetWidth() * 0.78), int(sz.GetHeight() * 0.78));
+        m_logo_bmp = *bmp_cache.load_svg(dark_mode ? "splash_logo_dark" : "splash_logo", qz_lsz.GetWidth(), qz_lsz.GetHeight());
 
         m_window->Bind(wxEVT_PAINT, &SplashScreen::OnPaint, this);
         m_window->Refresh();
@@ -322,7 +324,8 @@ public:
         dc.SetBackground(wxBrush(m_bg_color));
         dc.Clear();
         if (m_logo_bmp.IsOk())
-            dc.DrawBitmap(m_logo_bmp, 0, 0, true);
+            dc.DrawBitmap(m_logo_bmp, (c_sz.GetWidth() - m_logo_bmp.GetWidth()) / 2,
+                          (c_sz.GetHeight() - m_logo_bmp.GetHeight()) / 2, true);
 
         wxRect rc = wxRect(0, 0, c_sz.GetWidth(), 0);
         dc.SetTextForeground(m_fg_color);
@@ -905,7 +908,7 @@ void GUI_App::post_init()
 
     hms_query = new HMSQuery();
 
-    m_show_gcode_window = app_config->get_bool("show_gcode_window");
+    m_show_gcode_window = false; // Quasizero: G-code panel starts folded every session
     if (m_networking_need_update) {
         show_network_plugin_download_dialog(false);
     }
@@ -2787,7 +2790,7 @@ bool GUI_App::on_init_inner()
             RichMessageDialog
                 dlg(nullptr,
                     wxString::Format(_L("%s\nDo you want to continue?"), msg),
-                    "OrcaSlicer", wxICON_QUESTION | wxYES_NO);
+                    "Quasizero Slicer", wxICON_QUESTION | wxYES_NO);
             dlg.ShowCheckBox(_L("Remember my choice"));
             if (dlg.ShowModal() != wxID_YES) return false;
 
@@ -3695,6 +3698,9 @@ void GUI_App::select_machine(const std::string& agent_id)
 
 bool GUI_App::dark_mode()
 {
+    // Quasizero: the whole product ships a single light theme; never let the OS
+    // dark appearance leak into the window chrome, title bar or icon variants.
+    return false;
 #ifdef SUPPORT_DARK_MODE
 #if __APPLE__
     // The check for dark mode returns false positive on 10.12 and 10.13,
@@ -3721,7 +3727,7 @@ bool GUI_App::dark_mode()
 
 const wxColour GUI_App::get_label_default_clr_system()
 {
-    return dark_mode() ? wxColour(115, 220, 103) : wxColour(26, 132, 57);
+    return dark_mode() ? wxColour(220, 157, 112) : wxColour(132, 75, 34);
 }
 
 const wxColour GUI_App::get_label_default_clr_modified()
@@ -3854,7 +3860,7 @@ void GUI_App::UpdateDarkUI(wxWindow* window, bool highlited/* = false*/, bool ju
         auto orig_col = window->GetBackgroundColour();
         auto bg_col = StateColor::darkModeColorFor(orig_col);
         // there are cases where the background color of an item is bright, specifically:
-        // * the background color of a button: #009688  -- 73
+        // * the background color of a button: #3A3835  -- 73
         if (bg_col != orig_col) {
             window->SetBackgroundColour(bg_col);
         }
@@ -9291,7 +9297,7 @@ void GUI_App::associate_files(std::wstring extend)
 
     std::wstring prog_path = L"\"" + std::wstring(app_path) + L"\"";
     std::wstring prog_id = L" Orca.Slicer.1";
-    std::wstring prog_desc = L"OrcaSlicer";
+    std::wstring prog_desc = L"Quasizero Slicer";
     std::wstring prog_command = prog_path + L" \"%1\"";
     std::wstring reg_base = L"Software\\Classes";
     std::wstring reg_extension = reg_base + L"\\." + extend;
@@ -9318,7 +9324,7 @@ void GUI_App::disassociate_files(std::wstring extend)
 
     std::wstring prog_path = L"\"" + std::wstring(app_path) + L"\"";
     std::wstring prog_id = L" Orca.Slicer.1";
-    std::wstring prog_desc = L"OrcaSlicer";
+    std::wstring prog_desc = L"Quasizero Slicer";
     std::wstring prog_command = prog_path + L" \"%1\"";
     std::wstring reg_base = L"Software\\Classes";
     std::wstring reg_extension = reg_base + L"\\." + extend;

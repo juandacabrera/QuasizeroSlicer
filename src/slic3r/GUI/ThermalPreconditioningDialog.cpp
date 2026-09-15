@@ -51,7 +51,7 @@ void ThermalPreconditioningDialog::create_ui()
     time_font.SetPointSize(14);
     time_font.SetWeight(wxFONTWEIGHT_BOLD);
     m_remaining_time_label->SetFont(time_font);
-    m_remaining_time_label->SetForegroundColour(StateColor::darkModeColorFor(wxColour(50, 58, 61)));
+    m_remaining_time_label->SetForegroundColour(StateColor::darkModeColorFor(wxColour(61, 55, 51)));
 
     // Explanation text
     m_explanation_label =
@@ -59,7 +59,7 @@ void ThermalPreconditioningDialog::create_ui()
                          _L("The heated bed's thermal preconditioning helps optimize the first layer print quality. Printing will start once preconditioning is complete."),
                          wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
     m_explanation_label->Wrap(FromDIP(350));
-    m_explanation_label->SetForegroundColour(StateColor::darkModeColorFor(wxColour(50, 58, 61)));
+    m_explanation_label->SetForegroundColour(StateColor::darkModeColorFor(wxColour(61, 55, 51)));
 
     m_ok_button = new wxButton(this, wxID_OK, _L("OK"));
 #ifdef __WXMAC__

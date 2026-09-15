@@ -219,6 +219,18 @@ set(lisbslic3r_sources
     GCode/ExtrusionProcessor.hpp
     GCode/FanMover.cpp
     GCode/FanMover.hpp
+    QuasiZero/QzVolumetricModel.cpp
+    QuasiZero/QzVolumetricModel.hpp
+    QuasiZero/QzGcodeStateMachine.cpp
+    QuasiZero/QzGcodeStateMachine.hpp
+    QuasiZero/QzFirmwareAdapter.cpp
+    QuasiZero/QzFirmwareAdapter.hpp
+    QuasiZero/QzRefillPlanner.cpp
+    QuasiZero/QzRefillPlanner.hpp
+    QuasiZero/QzShortSegmentAnchor.cpp
+    QuasiZero/QzShortSegmentAnchor.hpp
+    QuasiZero/QzStabilityModel.cpp
+    QuasiZero/QzStabilityModel.hpp
     GCode/GCodeProcessor.cpp
     GCode/GCodeProcessor.hpp
     GCode.hpp
@@ -529,6 +541,37 @@ target_link_libraries(libslic3r_cgal PRIVATE ${_cgal_tgt} admesh libigl mcut boo
 
 if (MSVC AND "${CMAKE_SIZEOF_VOID_P}" STREQUAL "4") # 32 bit MSVC workaround
     target_compile_definitions(libslic3r_cgal PRIVATE CGAL_DO_NOT_USE_MPZF)
+endif ()
+
+# Quasizero PRO: the simulation engine (engine/ submodule, see the top-level QZ_PRO option)
+# is compiled into libslic3r. Its QzStabilityModel is the same as the LITE one above (the
+# engine carries a copy so that it builds on its own); only the LITE copy is compiled and the
+# two headers must match once comments and whitespace are ignored.
+if (QZ_PRO)
+    function(qz_check_same_header a b)
+        file(READ "${a}" _ta)
+        file(READ "${b}" _tb)
+        string(REGEX REPLACE "//[^\n]*" "" _ta "${_ta}")
+        string(REGEX REPLACE "//[^\n]*" "" _tb "${_tb}")
+        string(REGEX REPLACE "[ \t\r\n]+" " " _ta "${_ta}")
+        string(REGEX REPLACE "[ \t\r\n]+" " " _tb "${_tb}")
+        if (NOT "${_ta}" STREQUAL "${_tb}")
+            message(FATAL_ERROR "Quasizero: ${a} and ${b} differ (apart from comments). "
+                                "Keep the engine's copy of QzStabilityModel.hpp in sync with the slicer's.")
+        endif ()
+    endfunction()
+    qz_check_same_header("${CMAKE_CURRENT_SOURCE_DIR}/QuasiZero/QzStabilityModel.hpp"
+                         "${QZ_ENGINE_DIR}/src/QzStabilityModel.hpp")
+    target_sources(libslic3r PRIVATE
+        ${QZ_ENGINE_DIR}/src/QzStackSim.cpp
+        ${QZ_ENGINE_DIR}/src/QzStackSim.hpp
+        ${QZ_ENGINE_DIR}/src/QzSkeleton.cpp
+        ${QZ_ENGINE_DIR}/src/QzSkeleton.hpp
+        ${QZ_ENGINE_DIR}/src/QzBeadSim.cpp
+        ${QZ_ENGINE_DIR}/src/QzBeadSim.hpp
+    )
+    target_include_directories(libslic3r PUBLIC ${QZ_ENGINE_DIR}/src)
+    target_compile_definitions(libslic3r PUBLIC QZ_PRO=1)
 endif ()
 
 encoding_check(libslic3r)

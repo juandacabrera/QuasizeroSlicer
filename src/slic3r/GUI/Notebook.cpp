@@ -23,9 +23,9 @@ ButtonsListCtrl::ButtonsListCtrl(wxWindow *parent, wxBoxSizer* side_tools) :
 
     wxColour default_btn_bg;
 #ifdef __APPLE__
-    default_btn_bg = wxColour("#3B4446"); // Gradient #414B4E
+    default_btn_bg = wxColour("#F5F5F4"); // Quasizero arena
 #else
-    default_btn_bg = wxColour("#2D2D30"); // Gradient #414B4E
+    default_btn_bg = wxColour("#F5F5F4"); // Quasizero arena
 #endif
 
    
@@ -40,6 +40,7 @@ ButtonsListCtrl::ButtonsListCtrl(wxWindow *parent, wxBoxSizer* side_tools) :
     this->SetSizer(m_sizer);
 
     m_buttons_sizer = new wxFlexGridSizer(1, m_btn_margin, m_btn_margin);
+    m_sizer->AddSpacer(0); // Quasizero: width computed in the size handler to center the pills on the window
     m_sizer->Add(m_buttons_sizer, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxBOTTOM, m_btn_margin);
 
     if (side_tools != NULL) {
@@ -54,44 +55,60 @@ ButtonsListCtrl::ButtonsListCtrl(wxWindow *parent, wxBoxSizer* side_tools) :
         m_sizer->Add(side_tools, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxBOTTOM, m_btn_margin);
     }
 
-    // BBS: disable custom paint
-    //this->Bind(wxEVT_PAINT, &ButtonsListCtrl::OnPaint, this);
+    if (side_tools == NULL)
+        m_sizer->AddStretchSpacer(1); // keep the pills centered when there are no right-side tools
+
+    this->Bind(wxEVT_PAINT, &ButtonsListCtrl::OnPaint, this); // Quasizero: continuous white bar with rounded ends
+    this->Bind(wxEVT_SIZE, [this](wxSizeEvent &evt) {
+        // Quasizero: center the pill group on the control center (the titlebar
+        // center), clamped so it never collides with the right-side tools
+        const int    W  = GetSize().x;
+        const wxSize bs = m_buttons_sizer->CalcMin();
+        int side_w = 0;
+        if (m_sizer->GetItemCount() >= 4) {
+            wxSizerItem *st = m_sizer->GetItem(m_sizer->GetItemCount() - 1);
+            if (st != nullptr && st->IsSizer()) side_w = st->GetSizer()->CalcMin().x;
+        }
+        int x = (W - bs.x) / 2;
+        x = std::max(0, std::min(x, W - bs.x - side_w - FromDIP(16)));
+        wxSizerItem *sp = m_sizer->GetItemCount() > 0 ? m_sizer->GetItem((size_t)0) : nullptr;
+        if (sp != nullptr && sp->IsSpacer() && sp->GetSize().x != x) {
+            sp->AssignSpacer(x, 0);
+            Layout();
+        }
+        evt.Skip();
+    });
     Bind(wxEVT_SYS_COLOUR_CHANGED, [this](auto& e){
     });
 }
 
 void ButtonsListCtrl::OnPaint(wxPaintEvent&)
 {
-    //Slic3r::GUI::wxGetApp().UpdateDarkUI(this);
-    const wxSize sz = GetSize();
+    // Quasizero: strip background + one continuous white bar with fully rounded
+    // ends behind the page buttons (the buttons themselves are square white, so
+    // the whole group reads as a single pill).
     wxPaintDC dc(this);
+    const wxSize sz = GetSize();
+    const wxColour strip(245, 245, 244);
+    dc.SetPen(wxPen(strip));
+    dc.SetBrush(wxBrush(strip));
+    dc.DrawRectangle(0, 0, sz.x, sz.y);
 
-    if (m_selection < 0 || m_selection >= (int)m_pageButtons.size())
-        return;
-
-    wxColour selected_btn_bg("#1F8EEA");
-    wxColour default_btn_bg("#3B4446"); // Gradient #414B4E
-    const wxColour& btn_marker_color = Slic3r::GUI::wxGetApp().get_color_hovered_btn_label();
-
-    // highlight selected notebook button
-
-    for (int idx = 0; idx < int(m_pageButtons.size()); idx++) {
-        Button* btn = m_pageButtons[idx];
-
-        btn->SetBackgroundColor(idx == m_selection ? selected_btn_bg : default_btn_bg);
-
-        wxPoint pos = btn->GetPosition();
-        wxSize size = btn->GetSize();
-        const wxColour& clr = idx == m_selection ? btn_marker_color : default_btn_bg;
-        dc.SetPen(clr);
-        dc.SetBrush(clr);
-        dc.DrawRectangle(pos.x, pos.y + size.y, size.x, sz.y - size.y);
+    int x0 = 1 << 29, y0 = 1 << 29, x1 = -1, y1 = -1;
+    for (Button* btn : m_pageButtons) {
+        if (btn == nullptr || !btn->IsShown()) continue;
+        const wxPoint p = btn->GetPosition();
+        const wxSize  bs = btn->GetSize();
+        x0 = std::min(x0, p.x);        y0 = std::min(y0, p.y);
+        x1 = std::max(x1, p.x + bs.x); y1 = std::max(y1, p.y + bs.y);
     }
-    // Draw orange bottom line
-
-    dc.SetPen(btn_marker_color);
-    dc.SetBrush(btn_marker_color);
-    dc.DrawRectangle(1, sz.y - m_line_margin, sz.x, m_line_margin);
+    if (x1 > x0 && y1 > y0) {
+        const int h   = y1 - y0;
+        const int pad = h / 2;
+        dc.SetPen(*wxWHITE_PEN);
+        dc.SetBrush(*wxWHITE_BRUSH);
+        dc.DrawRoundedRectangle(x0 - pad, y0, (x1 - x0) + 2 * pad, h, h / 2.0);
+    }
 }
 
 void ButtonsListCtrl::UpdateMode()
@@ -123,14 +140,14 @@ void ButtonsListCtrl::SetSelection(int sel)
     if (m_selection == sel)
         return;
     // BBS: change button color
-    wxColour selected_btn_bg("#009688");    // Gradient #009688
+    wxColour selected_btn_bg("#3A3835");    // Gradient #3A3835
     if (m_selection >= 0) {
         StateColor bg_color = StateColor(
-        std::pair{wxColour(107, 107, 107), (int) StateColor::Hovered},
-        std::pair{wxColour(59, 68, 70), (int) StateColor::Normal});
+        std::pair{wxColour(236, 235, 233), (int) StateColor::Hovered},
+        std::pair{wxColour(255, 255, 255), (int) StateColor::Normal}); // Quasizero: white, part of the continuous pill bar
         m_pageButtons[m_selection]->SetBackgroundColor(bg_color);
         StateColor text_color = StateColor(
-        std::pair{wxColour(254,254, 254), (int) StateColor::Normal}
+        std::pair{wxColour(31, 31, 31), (int) StateColor::Normal}
         );
         m_pageButtons[m_selection]->SetSelected(false);
         m_pageButtons[m_selection]->SetTextColor(text_color);
@@ -138,12 +155,12 @@ void ButtonsListCtrl::SetSelection(int sel)
     m_selection = sel;
 
     StateColor bg_color = StateColor(
-        std::pair{wxColour(0, 150, 136), (int) StateColor::Hovered},
-        std::pair{wxColour(0,150, 136), (int) StateColor::Normal});
+        std::pair{wxColour(224, 222, 219), (int) StateColor::Hovered},
+        std::pair{wxColour(233, 231, 228), (int) StateColor::Normal});
     m_pageButtons[m_selection]->SetBackgroundColor(bg_color);
 
     StateColor text_color = StateColor(
-        std::pair{wxColour(254, 254, 254), (int) StateColor::Normal}
+        std::pair{wxColour(31, 31, 31), (int) StateColor::Normal}
         );
     m_pageButtons[m_selection]->SetSelected(true);
     m_pageButtons[m_selection]->SetTextColor(text_color);
@@ -161,12 +178,12 @@ bool ButtonsListCtrl::InsertPage(size_t n, const wxString &text, bool bSelect /*
     btn->SetMinSize({(text.empty() ? 40 : 136) * em / 10, 36 * em / 10});
 
     StateColor bg_color = StateColor(
-        std::pair{wxColour(107, 107, 107), (int) StateColor::Hovered},
-        std::pair{wxColour(59, 68, 70), (int) StateColor::Normal});
+        std::pair{wxColour(236, 235, 233), (int) StateColor::Hovered},
+        std::pair{wxColour(255, 255, 255), (int) StateColor::Normal}); // Quasizero: white, part of the continuous pill bar
 
     btn->SetBackgroundColor(bg_color);
     StateColor text_color = StateColor(
-        std::pair{wxColour(254,254, 254), (int) StateColor::Normal});
+        std::pair{wxColour(31, 31, 31), (int) StateColor::Normal});
     btn->SetTextColor(text_color);
     btn->SetInactiveIcon(inactive_bmp_name);
     btn->SetSelected(false);

@@ -1,0 +1,12 @@
+{
+ "type": "machine_model",
+ "name": "QZmini @ Bambu Lab A1 mini",
+ "model_id": "N1",
+ "nozzle_diameter": "4.0;2.0",
+ "machine_tech": "FFF",
+ "family": "Quasizero",
+ "bed_model": "qz_bbl_a1mini_bed.stl",
+ "bed_texture": "",
+ "default_materials": "Biocomposite Sawdust",
+ "hotend_model": "qz_hotend.stl"
+}

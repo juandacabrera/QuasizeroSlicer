@@ -189,9 +189,13 @@ Slic3r::PrintEstimatedStatistics::ETimeMode convert(const ETimeMode& mode)
 }
 
 GCodeInputData convert(const Slic3r::GCodeProcessorResult& result, const std::vector<std::string>& str_tool_colors,
-    const std::vector<std::string>& str_color_print_colors, const Viewer& viewer)
+    const std::vector<std::string>& str_color_print_colors, const Viewer& viewer,
+    const std::vector<float>* qz_stability_per_move)
 {
     GCodeInputData ret;
+    auto qz_stab = [qz_stability_per_move](size_t i) -> float {
+        return (qz_stability_per_move != nullptr && i < qz_stability_per_move->size()) ? (*qz_stability_per_move)[i] : -1.0f;
+    };
 
     // collect tool colors
     ret.tools_colors.reserve(str_tool_colors.size());
@@ -227,7 +231,8 @@ GCodeInputData convert(const Slic3r::GCodeProcessorResult& result, const std::ve
                     static_cast<uint8_t>(curr.extruder_id), static_cast<uint8_t>(curr.cp_color_id), { 0.0f, 0.0f },
                     /* ORCA: Add Pressure Advance visualization support */ 0.0f, curr.pressure_advance,
                     /* ORCA: Add Acceleration visualization support */ curr.acceleration,
-                    /* ORCA: Add Jerk visualization support */ curr.jerk };
+                    /* ORCA: Add Jerk visualization support */ curr.jerk,
+                    /* Quasizero: stability utilization */ qz_stab(i) };
 #else
               const libvgcode::PathVertex vertex = { convert(prev.position), curr.height, curr.width, curr.feedrate, prev.actual_feedrate,
                     curr.mm3_per_mm, curr.fan_speed, curr.temperature, convert(curr.extrusion_role), curr_type,
@@ -235,7 +240,8 @@ GCodeInputData convert(const Slic3r::GCodeProcessorResult& result, const std::ve
                     static_cast<uint8_t>(curr.extruder_id), static_cast<uint8_t>(curr.cp_color_id), { 0.0f, 0.0f },
                     /* ORCA: Add Pressure Advance visualization support */ 0.0f, curr.pressure_advance,
                     /* ORCA: Add Acceleration visualization support */ curr.acceleration,
-                    /* ORCA: Add Jerk visualization support */ curr.jerk };
+                    /* ORCA: Add Jerk visualization support */ curr.jerk,
+                    /* Quasizero: stability utilization */ qz_stab(i) };
 #endif // VGCODE_ENABLE_COG_AND_TOOL_MARKERS
                 ret.vertices.emplace_back(vertex);
             }
@@ -249,7 +255,8 @@ GCodeInputData convert(const Slic3r::GCodeProcessorResult& result, const std::ve
             static_cast<uint8_t>(curr.extruder_id), static_cast<uint8_t>(curr.cp_color_id), curr.time,
             /* ORCA: Add Pressure Advance visualization support */ 0.0f, curr.pressure_advance,
             /* ORCA: Add Acceleration visualization support */ curr.acceleration,
-            /* ORCA: Add Jerk visualization support */ curr.jerk };
+            /* ORCA: Add Jerk visualization support */ curr.jerk,
+            /* Quasizero: stability utilization */ qz_stab(i) };
 #else
         const libvgcode::PathVertex vertex = { convert(curr.position), curr.height, curr.width, curr.feedrate, curr.actual_feedrate,
             curr.mm3_per_mm, curr.fan_speed, curr.temperature, convert(curr.extrusion_role), curr_type,
@@ -257,7 +264,8 @@ GCodeInputData convert(const Slic3r::GCodeProcessorResult& result, const std::ve
             static_cast<uint8_t>(curr.extruder_id), static_cast<uint8_t>(curr.cp_color_id), curr.time,
             /* ORCA: Add Pressure Advance visualization support */ 0.0f, curr.pressure_advance,
             /* ORCA: Add Acceleration visualization support */ curr.acceleration,
-            /* ORCA: Add Jerk visualization support */ curr.jerk };
+            /* ORCA: Add Jerk visualization support */ curr.jerk,
+            /* Quasizero: stability utilization */ qz_stab(i) };
 #endif // VGCODE_ENABLE_COG_AND_TOOL_MARKERS
         ret.vertices.emplace_back(vertex);
     }

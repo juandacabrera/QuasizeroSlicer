@@ -306,7 +306,7 @@ void Tab::create_preset_tab()
     //search input
     m_search_item = new StaticBox(m_top_panel);
     StateColor box_colour(std::pair<wxColour, int>(*wxWHITE, StateColor::Normal));
-    StateColor box_border_colour(std::pair<wxColour, int>(wxColour("#009688"), StateColor::Normal)); // ORCA match border color with other input/combo boxes
+    StateColor box_border_colour(std::pair<wxColour, int>(wxColour("#3A3835"), StateColor::Normal)); // ORCA match border color with other input/combo boxes
 
     m_search_item->SetBackgroundColor(box_colour);
     m_search_item->SetBorderColor(box_border_colour);
@@ -317,7 +317,7 @@ void Tab::create_preset_tab()
     auto search_sizer = new wxBoxSizer(wxHORIZONTAL);
     m_search_input = new TextInput(m_search_item, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 | wxBORDER_NONE);
     m_search_input->SetBackgroundColour(wxColour(238, 238, 238));
-    m_search_input->SetForegroundColour(wxColour(43, 52, 54));
+    m_search_input->SetForegroundColour(wxColour(54, 48, 44));
     m_search_input->SetFont(wxGetApp().bold_font());
     m_search_input->SetIcon(*BitmapCache().load_svg("search", FromDIP(16), FromDIP(16)));
     m_search_input->GetTextCtrl()->SetHint(_L("Search in preset") + dots);
@@ -2125,6 +2125,10 @@ void Tab::on_presets_changed()
     }
 
     bool is_bbl_vendor_preset = m_preset_bundle->is_bbl_vendor();
+    { // Quasizero: QZmini plates show the Quasizero logo texture instead of the Bambu bedtype textures
+        const ConfigOptionBool *qz_en = m_preset_bundle->printers.get_edited_preset().config.option<ConfigOptionBool>("qzmini_enable");
+        if (qz_en != nullptr && qz_en->value) is_bbl_vendor_preset = false;
+    }
     if (is_bbl_vendor_preset) {
         wxGetApp().plater()->get_partplate_list().set_render_option(true, true);
         if (m_preset_bundle->printers.get_edited_preset().has_cali_lines(wxGetApp().preset_bundle)) {
@@ -3933,6 +3937,15 @@ void TabFilament::build()
         };
 
         // Orca: New section to focus on flow rate and PA to declutter general section
+        // Quasizero: paste stability parameters (used by the Stability view of the preview)
+        optgroup = page->new_optgroup(L("QZmini paste stability"), L"param_settings");
+        optgroup->append_single_option_line("qzmini_paste_yield_stress");
+        optgroup->append_single_option_line("qzmini_paste_structuration_rate");
+        optgroup->append_single_option_line("qzmini_paste_elastic_modulus");
+        optgroup->append_single_option_line("qzmini_paste_stiffening_rate");
+        optgroup->append_single_option_line("qzmini_paste_poisson");
+        optgroup->append_single_option_line("qzmini_paste_yield_factor");
+
         optgroup = page->new_optgroup(L("Flow ratio and Pressure Advance"), L"param_flow_ratio_and_pressure_advance");
         optgroup->append_single_option_line("pellet_flow_coefficient", "printer_basic_information_advanced#pellet-modded-printer");
         optgroup->append_single_option_line("filament_flow_ratio", "material_flow_ratio_and_pressure_advance#flow-ratio", 0);
@@ -4577,6 +4590,45 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line("support_air_filtration", "printer_basic_information_accessory#support-air-filtration");
 
         auto edit_custom_gcode_fn = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
+
+    // ===================== Quasizero QZmini =====================
+    page = add_options_page(L("QZmini"), "printer");
+        optgroup = page->new_optgroup(L("QZmini extrusion system"), L"param_settings");
+        optgroup->append_single_option_line("qzmini_enable");
+        optgroup->append_single_option_line("qzmini_barrel_inner_diameter");
+        optgroup->append_single_option_line("qzmini_nominal_syringe_capacity_ml");
+        optgroup->append_single_option_line("qzmini_usable_syringe_capacity_ml");
+        optgroup->append_single_option_line("qzmini_usable_plunger_stroke_mm");
+        optgroup->append_single_option_line("qzmini_plunger_mm_per_e_unit");
+
+        optgroup = page->new_optgroup(L("QZmini Refill Assist"), L"param_retraction_material_change");
+        optgroup->append_single_option_line("qzmini_refill_enable");
+        optgroup->append_single_option_line("qzmini_refill_threshold_ml");
+        optgroup->append_single_option_line("qzmini_park_x");
+        optgroup->append_single_option_line("qzmini_park_y");
+        optgroup->append_single_option_line("qzmini_park_z_lift");
+        optgroup->append_single_option_line("qzmini_plunger_reset_enable");
+        optgroup->append_single_option_line("qzmini_plunger_reset_feedrate");
+        optgroup->append_single_option_line("qzmini_prime_after_refill_enable");
+        optgroup->append_single_option_line("qzmini_prime_after_refill_ml");
+        optgroup->append_single_option_line("qzmini_prime_feedrate");
+        optgroup->append_single_option_line("qzmini_pause_strategy");
+        optgroup->append_single_option_line("qzmini_refill_show_in_preview");
+        optgroup = page->new_optgroup(L("Paste stability simulation"), L"param_settings");
+        optgroup->append_single_option_line("qzmini_stability_enable");
+        optgroup->append_single_option_line("qzmini_stability_safety_factor");
+        optgroup->append_single_option_line("qzmini_stability_base_confinement");
+
+        optgroup = page->new_optgroup(L("QZmini custom pause G-code"), L"param_gcode", 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
+        optgroup->edit_custom_gcode = edit_custom_gcode_fn;
+        option = optgroup->get_option("qzmini_pause_custom_gcode");
+        option.opt.is_code = true;
+        option.opt.height = 5;
+        optgroup->append_single_option_line(option);
+    // =================== end Quasizero QZmini ===================
 
     const int gcode_field_height = 15; // 150
     const int notes_field_height = 25; // 250

@@ -252,6 +252,7 @@ static t_config_enum_values s_keys_map_InfillPattern {
     { "concentric", ipConcentric },
     { "hilbertcurve", ipHilbertCurve },
     { "archimedeanchords", ipArchimedeanChords },
+    { "qzcontispiral", ipQZContinuousSpiral },
     { "octagramspiral", ipOctagramSpiral }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(InfillPattern)
@@ -2319,7 +2320,7 @@ void PrintConfigDef::init_fff_params()
                      "The recommended value range is between 0.95 and 1.05. "
                      "You may be able to tune this value to get a nice flat surface if there is slight overflow or underflow.");
     def->min = 0;
-    def->max = 2;
+    def->max = 50; // Quasizero: paste biomaterials calibrate far above molten-plastic ratios
     def->mode = comAdvanced;
     def->nullable = true;
     def->set_default_value(new ConfigOptionFloatsNullable { 1. });
@@ -2869,6 +2870,64 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloats { 0. });
 
+    // ===================== Quasizero paste stability parameters =====================
+    def = this->add("qzmini_paste_yield_stress", coFloats);
+    def->label = L("Yield stress at deposition");
+    def->category = L("QZmini");
+    def->tooltip = L("Static yield stress of the paste right after extrusion. 0 = material not characterised "
+                     "(stability simulation off for this material). Measure it with the cylinder collapse test.");
+    def->sidetext = "Pa";
+    def->min = 0;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloats { 0. });
+
+    def = this->add("qzmini_paste_structuration_rate", coFloats);
+    def->label = L("Structuration rate");
+    def->category = L("QZmini");
+    def->tooltip = L("Linear growth of the yield stress with the age of the layer (thixotropy, drying, setting). "
+                     "Identified from two collapse tests at different speeds.");
+    def->sidetext = "Pa/min";
+    def->min = 0;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloats { 0. });
+
+    def = this->add("qzmini_paste_elastic_modulus", coFloats);
+    def->label = L("Elastic modulus at deposition");
+    def->category = L("QZmini");
+    def->tooltip = L("Young's modulus of the fresh paste (large-strain, compression test). Governs buckling of thin walls.");
+    def->sidetext = "kPa";
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloats { 30. });
+
+    def = this->add("qzmini_paste_stiffening_rate", coFloats);
+    def->label = L("Stiffening rate");
+    def->category = L("QZmini");
+    def->tooltip = L("Linear growth of the elastic modulus with layer age.");
+    def->sidetext = "kPa/min";
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloats { 0. });
+
+    def = this->add("qzmini_paste_poisson", coFloats);
+    def->label = L("Poisson ratio");
+    def->category = L("QZmini");
+    def->tooltip = L("Fresh paste Poisson ratio (0.3-0.45). Low sensitivity.");
+    def->min = 0;
+    def->max = 0.49;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloats { 0.3 });
+
+    def = this->add("qzmini_paste_yield_factor", coFloats);
+    def->label = L("Yield criterion factor");
+    def->category = L("QZmini");
+    def->tooltip = L("Compressive strength = factor x yield stress. 1.732 (sqrt 3) for von Mises, 2 for Tresca.");
+    def->min = 1;
+    def->max = 3;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloats { 1.732 });
+    // ===================== end Quasizero paste stability =====================
+
     def = this->add("filament_type", coStrings);
     def->label = L("Type");
     def->tooltip = L("The material type of filament.");
@@ -3045,6 +3104,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("hilbertcurve");
     def->enum_values.push_back("archimedeanchords");
     def->enum_values.push_back("octagramspiral");
+    def->enum_values.push_back("qzcontispiral");
     def->enum_labels.push_back(L("Rectilinear"));
     def->enum_labels.push_back(L("Aligned Rectilinear"));
     def->enum_labels.push_back(L("Zig Zag"));
@@ -3071,6 +3131,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_labels.push_back(L("Hilbert Curve"));
     def->enum_labels.push_back(L("Archimedean Chords"));
     def->enum_labels.push_back(L("Octagram Spiral"));
+    def->enum_labels.push_back(L("QZ Continuous Spiral"));
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipCrossHatch));
 
     def           = this->add("lateral_lattice_angle_1", coFloat);
@@ -4468,6 +4529,273 @@ void PrintConfigDef::init_fff_params()
     def->height = 12;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionString());
+
+
+    // ======================= Quasizero QZmini =======================
+    // Namespaced configuration for the QZmini syringe-plunger retrofit.
+    // Values marked provisional require physical calibration (see QZMINI_CALIBRATION.md).
+    def = this->add("qzmini_enable", coBool);
+    def->label = L("QZmini extrusion system");
+    def->category = L("QZmini");
+    def->tooltip = L("Enable the Quasizero QZmini syringe-plunger volumetric model for this printer. "
+                     "Material amounts are reported in millilitres and refill assistance becomes available.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("qzmini_barrel_inner_diameter", coFloat);
+    def->label = L("Barrel inner diameter");
+    def->category = L("QZmini");
+    def->tooltip = L("Inner diameter of the QZmini syringe barrel. Used to convert plunger travel to volume.");
+    def->sidetext = L("mm");
+    def->min = 1;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(35.0));
+
+    def = this->add("qzmini_nominal_syringe_capacity_ml", coFloat);
+    def->label = L("Nominal syringe capacity");
+    def->category = L("QZmini");
+    def->tooltip = L("Manufacturer nominal capacity of the syringe. Kept independent from the usable capacity; "
+                     "do not derive one from the other.");
+    def->sidetext = L("ml");
+    def->min = 1;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(150.0));
+
+    def = this->add("qzmini_usable_syringe_capacity_ml", coFloat);
+    def->label = L("Usable capacity per cycle");
+    def->category = L("QZmini");
+    def->tooltip = L("Verified usable volume per refill cycle. The margin between the refill threshold and this "
+                     "value is the safety reserve used to move refills to a safe toolpath boundary.");
+    def->sidetext = L("ml");
+    def->min = 1;
+    def->mode = comSimple;
+    // 134 ml: conservative default below the ~134.7 ml geometric estimate of the
+    // 35 mm x 140 mm barrel, leaving a 14 ml reserve above the 120 ml threshold.
+    def->set_default_value(new ConfigOptionFloat(134.0));
+
+    def = this->add("qzmini_usable_plunger_stroke_mm", coFloat);
+    def->label = L("Usable plunger stroke (unverified)");
+    def->category = L("QZmini");
+    def->tooltip = L("Reported usable plunger travel. Marked unverified: with a 35 mm barrel, 140 mm of stroke "
+                     "is about 134.7 ml, which contradicts the 150 ml nominal capacity. Verify physically.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(140.0));
+
+    def = this->add("qzmini_plunger_mm_per_e_unit", coFloat);
+    def->label = L("Plunger travel per E unit");
+    def->category = L("QZmini");
+    def->tooltip = L("Physical plunger travel produced by one commanded E unit. Primary mechanical calibration "
+                     "value; obtain it with the E100 test in the QZmini calibration panel. The default is a "
+                     "provisional seed from a preliminary printed line test.");
+    def->sidetext = L("mm/E");
+    def->min = 0;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(0.277));
+
+    def = this->add("qzmini_ssa_enable", coBool);
+    def->label = L("Anchor short segments");
+    def->category = L("QZmini");
+    def->tooltip = L("Paste islands shorter than the configured length get an extra prime before, a dwell "
+                     "after (so the paste releases the nozzle instead of dragging along) and a slow first "
+                     "travel out of the island.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("qzmini_ssa_max_length", coFloat);
+    def->label = L("Short segment length");
+    def->category = L("QZmini");
+    def->tooltip = L("Extrusion islands with a total XY length up to this value are treated as short segments.");
+    def->sidetext = "mm";
+    def->min = 0.1;
+    def->max = 50;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(2.0));
+
+    def = this->add("qzmini_ssa_dwell_ms", coInt);
+    def->label = L("Anchor dwell");
+    def->category = L("QZmini");
+    def->tooltip = L("Pause inserted after a short segment so the paste lets go of the nozzle.");
+    def->sidetext = "ms";
+    def->min = 0;
+    def->max = 5000;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionInt(300));
+
+    def = this->add("qzmini_ssa_extra_prime_e", coFloat);
+    def->label = L("Anchor extra prime");
+    def->category = L("QZmini");
+    def->tooltip = L("Extra E units primed right before a short segment to compensate the preceding retraction.");
+    def->sidetext = "E";
+    def->min = 0;
+    def->max = 10;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.3));
+
+    def = this->add("qzmini_ssa_depart_speed", coFloat);
+    def->label = L("Anchor depart speed");
+    def->category = L("QZmini");
+    def->tooltip = L("Speed cap for the first travel move leaving a short segment.");
+    def->sidetext = "mm/s";
+    def->min = 1;
+    def->max = 300;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(10.0));
+
+    def = this->add("qzmini_max_segment_mm", coFloat);
+    def->label = L("Max segment length");
+    def->category = L("QZmini");
+    def->tooltip = L("Extrusion moves longer than this are split into collinear sub-moves with proportional E. "
+                     "Kinematically identical on its own; it provides fine-grained segments for per-segment flow "
+                     "shaping and live overrides. 0 disables splitting.");
+    def->sidetext = "mm";
+    def->min = 0;
+    def->max = 100;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.0));
+
+    def = this->add("qzmini_refill_enable", coBool);
+    def->label = L("Auto-pause for refill");
+    def->category = L("QZmini");
+    def->tooltip = L("Insert automatic pause sequences at safe toolpath boundaries whenever the configured "
+                     "refill threshold of biomaterial has been consumed.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("qzmini_refill_threshold_ml", coFloat);
+    def->label = L("Refill threshold");
+    def->category = L("QZmini");
+    def->tooltip = L("Consumed volume that triggers a refill event. The difference between this and the usable "
+                     "capacity is the safety reserve.");
+    def->sidetext = L("ml");
+    def->min = 1;
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionFloat(120.0));
+
+    def = this->add("qzmini_park_x", coFloat);
+    def->label = L("Refill park X");
+    def->category = L("QZmini");
+    def->tooltip = L("Absolute X position where the head parks for syringe refill.");
+    def->sidetext = L("mm");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(10.0));
+
+    def = this->add("qzmini_park_y", coFloat);
+    def->label = L("Refill park Y");
+    def->category = L("QZmini");
+    def->tooltip = L("Absolute Y position where the head parks for syringe refill.");
+    def->sidetext = L("mm");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(10.0));
+
+    def = this->add("qzmini_park_z_lift", coFloat);
+    def->label = L("Refill Z lift");
+    def->category = L("QZmini");
+    def->tooltip = L("Relative Z lift applied before travelling to the park position.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(20.0));
+
+    def = this->add("qzmini_plunger_reset_enable", coBool);
+    def->label = L("Plunger reset before pause");
+    def->category = L("QZmini");
+    def->tooltip = L("Retract the plunger by the E distance consumed since the previous refill before pausing, "
+                     "so the syringe can be refilled or replaced. After refill only the logical E coordinate is "
+                     "restored; the plunger is never physically advanced back to its previous depth.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("qzmini_plunger_reset_feedrate", coFloat);
+    def->label = L("Plunger reset speed");
+    def->category = L("QZmini");
+    def->tooltip = L("E-axis feedrate used to retract the plunger back to its refill (100%) position "
+                     "during a refill. This runs cold, before the pause, so it should be fast and firm "
+                     "(like the manual plunger jog) rather than at printing speed; otherwise a large "
+                     "retract takes a very long time. Keep it within the machine's maximum E speed.");
+    def->sidetext = L("mm/min");
+    def->min = 1;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(1800.0));
+
+    def = this->add("qzmini_prime_after_refill_enable", coBool);
+    def->label = L("Prime after refill");
+    def->category = L("QZmini");
+    def->tooltip = L("After resuming, extrude a small priming volume in the park area before returning to the print.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("qzmini_prime_after_refill_ml", coFloat);
+    def->label = L("Prime volume");
+    def->category = L("QZmini");
+    def->tooltip = L("Priming volume extruded in the park area after a refill.");
+    def->sidetext = L("ml");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(1.0));
+
+    def = this->add("qzmini_prime_feedrate", coFloat);
+    def->label = L("Prime speed");
+    def->category = L("QZmini");
+    def->tooltip = L("E-axis feedrate used for the post-refill prime.");
+    def->sidetext = L("mm/min");
+    def->min = 1;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(120.0));
+
+    def = this->add("qzmini_pause_strategy", coString);
+    def->label = L("Firmware pause strategy");
+    def->category = L("QZmini");
+    def->tooltip = L("Pause command family used for refill events. Allowed values: auto (derive from G-code "
+                     "flavor), M0, M25, M600, custom (use the custom pause G-code below). M600 is not assumed "
+                     "suitable: QZmini refill is not a conventional filament change.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionString("auto"));
+
+    def = this->add("qzmini_pause_custom_gcode", coString);
+    def->label = L("Custom pause G-code");
+    def->category = L("QZmini");
+    def->tooltip = L("Used when the firmware pause strategy is set to custom (for example a Klipper PAUSE macro).");
+    def->multiline = true;
+    def->full_width = true;
+    def->height = 5;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionString());
+
+    def = this->add("qzmini_refill_show_in_preview", coBool);
+    def->label = L("Show refill events in Preview");
+    def->category = L("QZmini");
+    def->tooltip = L("Mark each refill event in the sliced toolpath preview.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("qzmini_stability_enable", coBool);
+    def->label = L("Stability simulation");
+    def->category = L("QZmini");
+    def->tooltip = L("Evaluate the paste's ability to carry its own weight while printing (plastic collapse "
+                     "with time-dependent strength, buckling indicators) and expose it as the Stability view "
+                     "of the preview. Needs the paste parameters of the material preset.");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("qzmini_stability_safety_factor", coFloat);
+    def->label = L("Stability safety factor");
+    def->category = L("QZmini");
+    def->tooltip = L("Utilization above 1/factor is flagged. The recommended layer time keeps the whole print below it.");
+    def->min = 1;
+    def->max = 5;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(1.5));
+
+    def = this->add("qzmini_stability_base_confinement", coBool);
+    def->label = L("Bed confinement of the first layers");
+    def->category = L("QZmini");
+    def->tooltip = L("Layers stuck to the bed cannot spread laterally and carry more (Suiker 2018). Moves the "
+                     "critical layer above the base, as observed in collapse tests. Disable for a conservative estimate.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(true));
+    // ===================== end Quasizero QZmini =====================
 
     def = this->add("small_area_infill_flow_compensation", coBool);
     def->label = L("Small area flow compensation (beta)");

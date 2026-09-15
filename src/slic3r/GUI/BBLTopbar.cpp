@@ -47,10 +47,10 @@ CenteredTitle::CenteredTitle(wxWindow* parent)
     Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE);
     Bind(wxEVT_PAINT, [this](wxPaintEvent&) {
         wxBufferedPaintDC dc(this);
-        dc.SetBackground(wxBrush(wxColour(38, 46, 48)));
+        dc.SetBackground(wxBrush(wxColour(240, 240, 239)));
         dc.Clear();
 
-        dc.SetTextForeground(*wxWHITE);
+        dc.SetTextForeground(wxColour(31, 31, 31)); // Quasizero dark title
 
         wxFontMetrics fm = dc.GetFontMetrics();
         int textHeight = fm.ascent + fm.descent;
@@ -99,11 +99,20 @@ class BBLTopbarArt : public wxAuiDefaultToolBarArt
 public:
     virtual void DrawBackground(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE;
     virtual void DrawButton(wxDC& dc, wxWindow* wnd, const wxAuiToolBarItem& item, const wxRect& rect) wxOVERRIDE;
+    virtual void DrawSeparator(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE; // Quasizero
 };
+
+void BBLTopbarArt::DrawSeparator(wxDC& dc, wxWindow* wnd, const wxRect& rect)
+{
+    // Quasizero: light hairline instead of the system (dark-theme) separator
+    dc.SetPen(wxPen(wxColour(223, 222, 220)));
+    const int x = rect.x + rect.width / 2;
+    dc.DrawLine(x, rect.y + wnd->FromDIP(6), x, rect.y + rect.height - wnd->FromDIP(6));
+}
 
 void BBLTopbarArt::DrawBackground(wxDC& dc, wxWindow* wnd, const wxRect& rect)
 {
-    dc.SetBrush(wxBrush(wxColour(38, 46, 48)));
+    dc.SetBrush(wxBrush(wxColour(240, 240, 239)));
     wxRect clipRect = rect;
     clipRect.y -= 8;
     clipRect.height += 8;
@@ -165,28 +174,27 @@ void BBLTopbarArt::DrawButton(wxDC& dc, wxWindow* wnd, const wxAuiToolBarItem& i
     {
         if (item.GetState() & wxAUI_BUTTON_STATE_PRESSED)
         {
-            dc.SetPen(wxPen(StateColor::darkModeColorFor("#009688"))); // ORCA
-            dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#009688"))); // ORCA
+            dc.SetPen(wxPen(StateColor::darkModeColorFor("#3A3835"))); // ORCA
+            dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#3A3835"))); // ORCA
             dc.DrawRectangle(rect);
         }
         else if ((item.GetState() & wxAUI_BUTTON_STATE_HOVER) || item.IsSticky())
         {
-            dc.SetPen(wxPen(StateColor::darkModeColorFor("#009688"))); // ORCA
-            dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#009688"))); // ORCA
-
-            // draw an even lighter background for checked item hovers (since
-            // the hover background is the same color as the check background)
-            if (item.GetState() & wxAUI_BUTTON_STATE_CHECKED)
-                dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#009688"))); // ORCA
-
+            // Quasizero: slight darkening on hover (light arena tint), dark text kept.
+            dc.SetPen(wxPen(wxColour(236, 235, 233)));
+            dc.SetBrush(wxBrush(wxColour(236, 235, 233)));
+            if (item.GetState() & wxAUI_BUTTON_STATE_CHECKED) {
+                dc.SetPen(wxPen(StateColor::darkModeColorFor("#3A3835")));
+                dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#3A3835")));
+            }
             dc.DrawRectangle(rect);
         }
         else if (item.GetState() & wxAUI_BUTTON_STATE_CHECKED)
         {
             // it's important to put this code in an else statement after the
             // hover, otherwise hovers won't draw properly for checked items
-            dc.SetPen(wxPen(StateColor::darkModeColorFor("#009688"))); // ORCA
-            dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#009688"))); // ORCA
+            dc.SetPen(wxPen(StateColor::darkModeColorFor("#3A3835"))); // ORCA
+            dc.SetBrush(wxBrush(StateColor::darkModeColorFor("#3A3835"))); // ORCA
             dc.DrawRectangle(rect);
         }
     }
@@ -194,15 +202,14 @@ void BBLTopbarArt::DrawButton(wxDC& dc, wxWindow* wnd, const wxAuiToolBarItem& i
     if (bmp.IsOk())
         dc.DrawBitmap(bmp, bmpX, bmpY, true);
 
-    // set the item's text color based on if it is disabled
-#ifdef __WINDOWS__
-    dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT));
-#else
-    dc.SetTextForeground(*wxWHITE);
-#endif
+    // Quasizero: dark text on the light bar; white only when a filled (pressed/
+    // checked) background is drawn behind the item.
+    const bool qz_selected = (item.GetState() & wxAUI_BUTTON_STATE_PRESSED) ||
+                             (item.GetState() & wxAUI_BUTTON_STATE_CHECKED);
+    dc.SetTextForeground(qz_selected ? *wxWHITE : wxColour(31, 31, 31));
     if (item.GetState() & wxAUI_BUTTON_STATE_DISABLED)
     {
-        dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+        dc.SetTextForeground(wxColour(176, 175, 173));
     }
 
     if ((m_flags & wxAUI_TB_TEXT) && !item.GetLabel().empty())
@@ -275,7 +282,7 @@ void BBLTopbar::Init(wxFrame* parent)
     wxBitmap file_bitmap = create_scaled_bitmap("topbar_file", nullptr, TOPBAR_ICON_SIZE);
     m_file_menu_item = this->AddTool(ID_TOP_FILE_MENU, _L("File"), file_bitmap, wxEmptyString, wxITEM_NORMAL);
 
-    this->SetForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT));
+    this->SetForegroundColour(wxColour(31, 31, 31)); // Quasizero light topbar: dark warm text
 
     this->AddSpacer(FromDIP(5));
 

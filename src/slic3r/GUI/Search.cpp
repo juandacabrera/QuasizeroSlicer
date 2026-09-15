@@ -450,7 +450,7 @@ wxSize SearchItem::DrawTextString(wxDC &dc, const wxString &text, const wxPoint 
     }
 
     dc.SetBackgroundMode(wxTRANSPARENT);
-    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour("#323A3C")));
+    dc.SetTextForeground(StateColor::darkModeColorFor(wxColour("#3B3B3A")));
     dc.DrawText(text, pt);
     return dc.GetTextExtent(text);
 }
@@ -522,7 +522,7 @@ void SearchItem::OnPaint(wxPaintEvent &event)
 
 void SearchItem::on_mouse_enter(wxMouseEvent &evt)
 {
-    SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#BFE1DE"))); // ORCA color with %25 opacity
+    SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#DFDFDC"))); // ORCA color with %25 opacity
     Refresh();
 }
 
@@ -534,7 +534,7 @@ void SearchItem::on_mouse_leave(wxMouseEvent &evt)
 
 void SearchItem::on_mouse_left_down(wxMouseEvent &evt)
 {
-    SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#BFE1DE"))); // ORCA color with %25 opacity
+    SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#DFDFDC"))); // ORCA color with %25 opacity
     Refresh();
 }
 
@@ -604,7 +604,7 @@ SearchDialog::SearchDialog(OptionsSearcher *searcher, Preset::Type type, wxWindo
 #ifdef __WXGTK__
     search_line = new TextInput(m_client_panel, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
     search_line->SetBackgroundColour(wxColour(238, 238, 238));
-    search_line->SetForegroundColour(wxColour(43, 52, 54));
+    search_line->SetForegroundColour(wxColour(54, 48, 44));
     search_line->SetFont(GUI::wxGetApp().bold_font());
 #endif
 
@@ -855,7 +855,7 @@ SearchObjectDialog::SearchObjectDialog(GUI::ObjectList* object_list, wxWindow* p
 #ifdef __WXGTK__
     search_line = new TextInput(m_client_panel, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
     search_line->SetBackgroundColour(wxColour(238, 238, 238));
-    search_line->SetForegroundColour(wxColour(43, 52, 54));
+    search_line->SetForegroundColour(wxColour(54, 48, 44));
     search_line->SetFont(GUI::wxGetApp().bold_font());
 #endif
 

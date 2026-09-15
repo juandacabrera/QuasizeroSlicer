@@ -1,0 +1,74 @@
+{
+ "name": "Quasizero",
+ "version": "02.04.00.01",
+ "force_update": "0",
+ "description": "Quasizero QZmini biomaterial cold-extrusion configurations (based on OrcaSlicer profile architecture)",
+ "machine_model_list": [
+  {
+   "name": "QZmini @ Artillery Sidewinder X2",
+   "sub_path": "machine/QZmini @ Artillery Sidewinder X2.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab A1 mini",
+   "sub_path": "machine/QZmini @ Bambu Lab A1 mini.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab P1S",
+   "sub_path": "machine/QZmini @ Bambu Lab P1S.json"
+  }
+ ],
+ "process_list": [
+  {
+   "name": "QZmini 3 mm - Smooth Biomaterial",
+   "sub_path": "process/QZmini 3 mm - Smooth Biomaterial.json"
+  },
+  {
+   "name": "QZmini 3 mm - Ultra High Density",
+   "sub_path": "process/QZmini 3 mm - Ultra High Density.json"
+  },
+  {
+   "name": "QZmini 1.5 mm - Smooth Biomaterial",
+   "sub_path": "process/QZmini 1.5 mm - Smooth Biomaterial.json"
+  }
+ ],
+ "filament_list": [
+  {
+   "name": "Biocomposite Sawdust",
+   "sub_path": "filament/Biocomposite Sawdust.json"
+  },
+  {
+   "name": "Biocomposite High Density",
+   "sub_path": "filament/Biocomposite High Density.json"
+  },
+  {
+   "name": "Biocomposite Ultra High Density",
+   "sub_path": "filament/Biocomposite Ultra High Density.json"
+  }
+ ],
+ "machine_list": [
+  {
+   "name": "QZmini @ Artillery Sidewinder X2 4.0 nozzle",
+   "sub_path": "machine/QZmini @ Artillery Sidewinder X2 4.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Artillery Sidewinder X2 2.0 nozzle",
+   "sub_path": "machine/QZmini @ Artillery Sidewinder X2 2.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab A1 mini 4.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab A1 mini 4.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab A1 mini 2.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab A1 mini 2.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab P1S 4.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab P1S 4.0 nozzle.json"
+  },
+  {
+   "name": "QZmini @ Bambu Lab P1S 2.0 nozzle",
+   "sub_path": "machine/QZmini @ Bambu Lab P1S 2.0 nozzle.json"
+  }
+ ]
+}

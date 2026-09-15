@@ -98,6 +98,8 @@ enum class EViewType : uint8_t
     Acceleration,
     // ORCA: Add Jerk visualization support
     Jerk,
+    // Quasizero: paste stability (utilization of the material strength during printing)
+    Stability,
     Tool,
     COUNT
 };

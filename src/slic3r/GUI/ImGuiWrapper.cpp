@@ -159,21 +159,21 @@ static const std::map<const wchar_t, std::string> font_icons_extra_large = {
     //{ImGui::ClippyMarker            , "notification_clippy"             },
 };
 
-const ImVec4 ImGuiWrapper::COL_GREY_DARK         = { 0.333f, 0.333f, 0.333f, 1.0f };
-const ImVec4 ImGuiWrapper::COL_GREY_LIGHT        = { 0.4f, 0.4f, 0.4f, 1.0f };
-const ImVec4 ImGuiWrapper::COL_ORANGE_DARK       = { 0.757f, 0.404f, 0.216f, 1.0f };
+const ImVec4 ImGuiWrapper::COL_GREY_DARK         = { 0.937f, 0.933f, 0.925f, 1.0f }; // Quasizero light frame
+const ImVec4 ImGuiWrapper::COL_GREY_LIGHT        = { 0.906f, 0.902f, 0.894f, 1.0f }; // Quasizero
+const ImVec4 ImGuiWrapper::COL_ORANGE_DARK       = { 0.227f, 0.220f, 0.208f, 1.0f }; // Quasizero charcoal
 const ImVec4 ImGuiWrapper::COL_ORANGE_LIGHT      = to_ImVec4(ColorRGBA::ORANGE());
-const ImVec4 ImGuiWrapper::COL_WINDOW_BACKGROUND = { 0.1f, 0.1f, 0.1f, 0.8f };
+const ImVec4 ImGuiWrapper::COL_WINDOW_BACKGROUND = { 1.0f, 1.0f, 1.0f, 0.94f }; // Quasizero white card
 const ImVec4 ImGuiWrapper::COL_BUTTON_BACKGROUND = COL_ORANGE_DARK;
 const ImVec4 ImGuiWrapper::COL_BUTTON_HOVERED    = COL_ORANGE_LIGHT;
 const ImVec4 ImGuiWrapper::COL_BUTTON_ACTIVE     = COL_BUTTON_HOVERED;
 
 //BBS
 const ImVec4 ImGuiWrapper::COL_RED               = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-const ImVec4 ImGuiWrapper::COL_GREEN             = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+const ImVec4 ImGuiWrapper::COL_GREEN             = ImVec4(1.00f, 0.46f, 0.08f, 1.00f);
 const ImVec4 ImGuiWrapper::COL_BLUE              = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
-const ImVec4 ImGuiWrapper::COL_BLUE_LIGHT        = ImVec4(0.122f, 0.557f, 0.918f, 1.0f);
-const ImVec4 ImGuiWrapper::COL_GREEN_LIGHT       = { 0.f, 156 / 255.f, 136 / 255.f, 0.25f }; // ORCA used on various places like text selection bg. Replaced with orca color
+const ImVec4 ImGuiWrapper::COL_BLUE_LIGHT        = ImVec4(0.227f, 0.220f, 0.208f, 1.0f); // Quasizero charcoal
+const ImVec4 ImGuiWrapper::COL_GREEN_LIGHT       = { 0.227f, 0.220f, 0.208f, 0.18f }; // Quasizero neutral selection
 const ImVec4 ImGuiWrapper::COL_HOVER             = { 0.933f, 0.933f, 0.933f, 1.0f };
 const ImVec4 ImGuiWrapper::COL_ACTIVE            = { 0.675f, 0.675f, 0.675f, 1.0f };
 const ImVec4 ImGuiWrapper::COL_SEPARATOR         = { 0.93f, 0.93f, 0.93f, 1.0f };
@@ -785,7 +785,7 @@ bool ImGuiWrapper::bbl_slider_float_style(const std::string &label, float *v, fl
     ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(238 / 255.0f, 238 / 255.0f, 238 / 255.0f, 0.00f));
     ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(238 / 255.0f, 238 / 255.0f, 238 / 255.0f, 0.00f));
     ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.81f, 0.81f, 0.81f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));
 
     bool ret = bbl_slider_float(label, v, v_min,v_max, format, power, clamp,tooltip);
 
@@ -1008,9 +1008,9 @@ bool ImGuiWrapper::bbl_checkbox(const wxString &label, bool &value)
     bool result;
     bool b_value = value;
     if (b_value) {
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));
     }
     auto label_utf8 = into_u8(label);
     result          = ImGui::BBLCheckbox(label_utf8.c_str(), &value);
@@ -1024,9 +1024,9 @@ bool ImGuiWrapper::bbl_radio_button(const char *label, bool active)
     bool result;
     bool b_value = active;
     if (b_value) {
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));
     }
     result = ImGui::BBLRadioButton(label,active);
     if (b_value) { ImGui::PopStyleColor(3); }
@@ -1105,7 +1105,7 @@ void ImGuiWrapper::tooltip(const char *label, float wrap_width)
 {
     ImGui::BeginTooltip();
     ImGui::PushTextWrapPos(wrap_width);
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.00f)); // Quasizero: dark text on light tooltip
     ImGui::TextUnformatted(label);
     ImGui::PopStyleColor(1);
     ImGui::PopTextWrapPos();
@@ -1120,7 +1120,7 @@ void ImGuiWrapper::tooltip(const wxString &label, float wrap_width)
 {
     ImGui::BeginTooltip();
     ImGui::PushTextWrapPos(wrap_width);
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.00f)); // Quasizero: dark text on light tooltip
     ImGui::TextUnformatted(label.ToUTF8().data());
     ImGui::PopStyleColor(1);
     ImGui::PopTextWrapPos();
@@ -1436,7 +1436,7 @@ static bool selectable(const char* label, bool selected, ImGuiSelectableFlags fl
         bb.Max.x += (spacing_x - spacing_L);
         bb.Max.y += (spacing_y - spacing_U);
     }
-    //if (g.IO.KeyCtrl) { GetForegroundDrawList()->AddRect(bb.Min, bb.Max, IM_COL32(0, 255, 0, 255)); }
+    //if (g.IO.KeyCtrl) { GetForegroundDrawList()->AddRect(bb.Min, bb.Max, IM_COL32(255, 118, 20, 255)); }
 
     // Modify ClipRect for the ItemAdd(), faster than doing a PushColumnsBackground/PushTableBackground for every Selectable..
     const float backup_clip_rect_min_x = window->ClipRect.Min.x;
@@ -1647,7 +1647,7 @@ bool begin_menu(const char *label, bool enabled)
                    ImMax((tb.y - extra) - ta.y, -100.0f); // triangle is maximum 200 high to limit the slope and the bias toward large sub-menus // FIXME: Multiply by fb_scale?
             tc.y                           = ta.y + ImMin((tc.y + extra) - ta.y, +100.0f);
             moving_toward_other_child_menu = ImTriangleContainsPoint(ta, tb, tc, g.IO.MousePos);
-            // GetForegroundDrawList()->AddTriangleFilled(ta, tb, tc, moving_within_opened_triangle ? IM_COL32(0,128,0,128) : IM_COL32(128,0,0,128)); // [DEBUG]
+            // GetForegroundDrawList()->AddTriangleFilled(ta, tb, tc, moving_within_opened_triangle ? IM_COL32(128, 59, 10, 128) : IM_COL32(128,0,0,128)); // [DEBUG]
         }
         if (menu_is_open && !hovered && g.HoveredWindow == window && g.HoveredIdPreviousFrame != 0 && g.HoveredIdPreviousFrame != id && !moving_toward_other_child_menu)
             want_close = true;
@@ -2503,7 +2503,8 @@ static bool m_is_dark_mode = false;
 
 void ImGuiWrapper::on_change_color_mode(bool is_dark)
 {
-    m_is_dark_mode = is_dark;
+    (void)is_dark;
+    m_is_dark_mode = false; // Quasizero light theme: keep all ImGui panels light
 }
 
 void ImGuiWrapper::push_toolbar_style(const float scale)
@@ -2573,9 +2574,9 @@ void ImGuiWrapper::push_menu_style(const float scale)
         ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.0f * scale);
         ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0.0f);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGuiWrapper::COL_WINDOW_BG_DARK);
-        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.00f, 0.59f, 0.53f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.00f, 0.59f, 0.53f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.00f, 0.59f, 0.53f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.62f, 0.61f, 0.60f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.62f, 0.61f, 0.60f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.62f, 0.61f, 0.60f, 1.00f));
     }
     else {
         ImGuiWrapper::push_toolbar_style(scale);
@@ -2583,9 +2584,9 @@ void ImGuiWrapper::push_menu_style(const float scale)
         ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.0f * scale);
         ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0.0f);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGuiWrapper::COL_WINDOW_BG);
-        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.00f, 0.59f, 0.53f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.00f, 0.59f, 0.53f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.00f, 0.59f, 0.53f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.62f, 0.61f, 0.60f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.62f, 0.61f, 0.60f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.62f, 0.61f, 0.60f, 1.00f));
     }
 }
 void ImGuiWrapper::pop_menu_style()
@@ -2608,14 +2609,14 @@ void ImGuiWrapper::push_common_window_style(const float scale) {
         ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(54 / 255.0f, 54 / 255.0f, 60 / 255.0f, 1.00f));     // 4
         ImGui::PushStyleColor(ImGuiCol_Separator, ImGuiWrapper::COL_SEPARATOR_DARK);                             // 5
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));                              // 6
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));                       // 7
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));                        // 8
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));                       // 7
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));                        // 8
         ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(84 / 255.0f, 84 / 255.0f, 90 / 255.0f, 1.00f));    // 9
         ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(62 / 255.0f, 62 / 255.0f, 69 / 255.0f, 1.00f));     // 10
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(238 / 255.0f, 238 / 255.0f, 238 / 255.0f, 0.00f));        // 11
         ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));                           // 12
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, ImVec4(43 / 255.0f, 64 / 255.0f, 54 / 255.0f, 1.00f));    // 13
-        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));                       // 14
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));                       // 14
     }
     else {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f * scale);
@@ -2629,14 +2630,14 @@ void ImGuiWrapper::push_common_window_style(const float scale) {
         ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(245 / 255.0f, 245 / 255.0f, 245 / 255.0f, 1.00f));  // 4
         ImGui::PushStyleColor(ImGuiCol_Separator, ImGuiWrapper::COL_SEPARATOR);                                  // 5
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));                              // 6
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));                       // 7
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));                        // 8
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));                       // 7
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));                        // 8
         ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(238 / 255.0f, 238 / 255.0f, 238 / 255.0f, 1.00f)); // 9
         ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(238 / 255.0f, 238 / 255.0f, 238 / 255.0f, 1.00f));  // 10
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(238 / 255.0f, 238 / 255.0f, 238 / 255.0f, 0.00f));        // 11
         ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));                           // 12
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, ImGuiWrapper::COL_GREEN_LIGHT);                           // 13
-        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.00f, 0.59f, 0.53f, 1.00f));                       // 14
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.23f, 0.22f, 0.21f, 1.00f));                       // 14
     }
 }
 
@@ -2647,18 +2648,18 @@ void ImGuiWrapper::pop_common_window_style() {
 
 void ImGuiWrapper::push_confirm_button_style() {
     if (m_is_dark_mode) {
-        ImGui::PushStyleColor(ImGuiCol_Button,        to_ImVec4(decode_color_to_float_array("#00675b")));
+        ImGui::PushStyleColor(ImGuiCol_Button,        to_ImVec4(decode_color_to_float_array("#262523")));
         ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.f / 255.f, 150.f / 255.f, 136.f / 255.f, 1.f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, to_ImVec4(decode_color_to_float_array("#008172")));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  to_ImVec4(decode_color_to_float_array("#00675b")));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, to_ImVec4(decode_color_to_float_array("#813C0A")));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  to_ImVec4(decode_color_to_float_array("#262523")));
         ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 1.f, 1.f, 0.88f));
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.88f));
     }
     else {
-        ImGui::PushStyleColor(ImGuiCol_Button,        to_ImVec4(decode_color_to_float_array("#009688")));
+        ImGui::PushStyleColor(ImGuiCol_Button,        to_ImVec4(decode_color_to_float_array("#3A3835")));
         ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.f / 255.f, 150.f / 255.f, 136.f / 255.f, 1.f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, to_ImVec4(decode_color_to_float_array("#26A69A")));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  to_ImVec4(decode_color_to_float_array("#009688")));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, to_ImVec4(decode_color_to_float_array("#55524E")));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  to_ImVec4(decode_color_to_float_array("#3A3835")));
         ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 1.f, 1.f, 1.f));
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
     }
@@ -2743,10 +2744,10 @@ void ImGuiWrapper::push_radio_style(const float scale)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1.5f, 1.5f) * scale); // ORCA ensure icon size stays consistent
     if (m_is_dark_mode) {
-        ImGui::PushStyleColor(ImGuiCol_CheckMark, to_ImVec4(decode_color_to_float_array("#009688"))); // ORCA use orca color for radio buttons
+        ImGui::PushStyleColor(ImGuiCol_CheckMark, to_ImVec4(decode_color_to_float_array("#3A3835"))); // ORCA use orca color for radio buttons
         ImGui::PushStyleColor(ImGuiCol_Border   , to_ImVec4(decode_color_to_float_array("#949494"))); // ORCA match border color
     } else {
-        ImGui::PushStyleColor(ImGuiCol_CheckMark, to_ImVec4(decode_color_to_float_array("#009688"))); // ORCA use orca color for radio buttons
+        ImGui::PushStyleColor(ImGuiCol_CheckMark, to_ImVec4(decode_color_to_float_array("#3A3835"))); // ORCA use orca color for radio buttons
         ImGui::PushStyleColor(ImGuiCol_Border   , to_ImVec4(decode_color_to_float_array("#7C8282"))); // ORCA match border color
     }
 }
@@ -2802,6 +2803,7 @@ void ImGuiWrapper::init_font(bool compress)
     }
 
     bold_font        = io.Fonts->AddFontFromFileTTF((Slic3r::resources_dir() + "/fonts/" + font_name_bold).c_str(), m_font_size, &cfg, ranges.Data);
+    large_font       = io.Fonts->AddFontFromFileTTF((Slic3r::resources_dir() + "/fonts/" + font_name_regular).c_str(), m_font_size * 1.5f, &cfg, ranges.Data); // Quasizero
     if (bold_font == nullptr) {
         bold_font = io.Fonts->AddFontDefault();
         if (bold_font == nullptr) { throw Slic3r::RuntimeError("ImGui: Could not load deafult font"); }
@@ -3018,6 +3020,9 @@ void ImGuiWrapper::init_style()
     style.WindowRounding = 0.0f;
     set_color(ImGuiCol_WindowBg, COL_WINDOW_BACKGROUND);
     set_color(ImGuiCol_TitleBgActive, COL_WINDOW_BACKGROUND);
+    set_color(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f)); // Quasizero dark text on light cards
+    set_color(ImGuiCol_Border, ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); // Quasizero borderless cards
+    set_color(ImGuiCol_TextDisabled, ImVec4(0.55f, 0.55f, 0.54f, 1.0f));
 
     // Generics
     set_color(ImGuiCol_FrameBg, COL_GREY_DARK);

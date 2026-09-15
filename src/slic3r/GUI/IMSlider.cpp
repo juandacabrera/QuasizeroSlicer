@@ -21,7 +21,7 @@ static const float  LEFT_MARGIN       = 13.0f + 100.0f;  // avoid thumbnail tool
 static const float  HORIZONTAL_SLIDER_WINDOW_HEIGHT  = 64.0f;
 // ORCA: widen slider window to account for one-layer label box left shift.
 static const float  VERTICAL_SLIDER_WINDOW_WIDTH     = 164.0f;
-static const float  GROOVE_WIDTH      = 12.0f;
+static const float  GROOVE_WIDTH      = 9.0f; // Quasizero: slimmer bar
 static const ImVec2 ONE_LAYER_MARGIN  = ImVec2(20.0f, 20.0f);
 static const ImVec2 ONE_LAYER_BUTTON_SIZE  = ImVec2(56.0f, 56.0f);
 
@@ -29,7 +29,7 @@ static const ImU32 BACKGROUND_COLOR_DARK  = IM_COL32(65, 65, 71, 255);
 static const ImU32 BACKGROUND_COLOR_LIGHT = IM_COL32(255, 255, 255, 255);
 static const ImU32 GROOVE_COLOR_DARK      = IM_COL32(45, 45, 49, 255);
 static const ImU32 GROOVE_COLOR_LIGHT     = IM_COL32(206, 206, 206, 255);
-static const ImU32 BRAND_COLOR            = IM_COL32(0, 150, 136, 255);
+static const ImU32 BRAND_COLOR            = IM_COL32(58, 56, 53, 255); // Quasizero neutral
 
 static int m_tick_value = -1;
 static ImVec4 m_tick_rect;
@@ -507,12 +507,12 @@ bool IMSlider::horizontal_slider(const char* str_id, int* value, int v_min, int 
     const ImU32 handle_border_clr = m_is_dark ? BACKGROUND_COLOR_DARK : BACKGROUND_COLOR_LIGHT;
     const wxColour label_bg = StateColor::darkModeColorFor(wxGetApp().get_window_default_clr());
     const wxColour label_border = StateColor::darkModeColorFor(wxColour("#CECECE"));
-    const wxColour rail_inner_bg = m_is_dark ? StateColor::darkModeColorFor(wxColour("#CECECE")) : wxGetApp().get_highlight_default_clr();
+    const wxColour rail_inner_bg = m_is_dark ? StateColor::darkModeColorFor(wxColour("#CECECE")) : wxColour(233, 232, 230); // Quasizero neutral rail
     const wxColour rail_border = m_is_dark ? StateColor::darkModeColorFor(wxColour("#F0F0F1")) : wxColour("#CECECE");
     const ImU32 label_bg_clr = IM_COL32(label_bg.Red(), label_bg.Green(), label_bg.Blue(), 238);
     const ImU32 label_border_clr = IM_COL32(label_border.Red(), label_border.Green(), label_border.Blue(), 255);
     const ImU32 label_shadow_clr = m_is_dark ? IM_COL32(0, 0, 0, 84) : IM_COL32(0, 0, 0, 38);
-    ImVec4 range_fill = ImGui::ColorConvertU32ToFloat4(BRAND_COLOR);
+    ImVec4 range_fill = ImGui::ColorConvertU32ToFloat4(IM_COL32(168, 166, 163, 255)); // Quasizero: lighter fill
     range_fill.w = (m_is_dark ? 210.0f : 190.0f) / 255.0f;
     const ImU32 range_fill_clr = ImGui::GetColorU32(range_fill);
     const ImU32 rail_inner_clr = IM_COL32(rail_inner_bg.Red(), rail_inner_bg.Green(), rail_inner_bg.Blue(), 255);
@@ -677,7 +677,7 @@ void IMSlider::draw_custom_label_block(const ImVec2 anchor, Type type)
     }
     const ImVec2 text_size = ImGui::CalcTextSize(into_u8(label).c_str());
     const ImVec2 padding = ImVec2(4, 2) * m_scale;
-    const ImU32  clr = IM_COL32(255, 111, 0, 255);
+    const ImU32  clr = IM_COL32(58, 56, 53, 255); // Quasizero charcoal tag
     const float  rounding = 2.0f * m_scale;
     ImVec2 block_pos = { anchor.x - text_size.x - padding.x * 2, anchor.y - text_size.y / 2 - padding.y };
     ImVec2 block_size = { text_size.x + padding.x * 2, text_size.y + padding.y * 2 };
@@ -704,7 +704,7 @@ void IMSlider::draw_ticks(const ImRect& slideable_region) {
     ImVec2 icon_size     = ImVec2(14.0f, 14.0f) * m_scale;
 
     const ImU32 tick_clr = IM_COL32(144, 144, 144, 255);
-    const ImU32 tick_hover_box_clr = m_is_dark ? IM_COL32(65, 65, 71, 255) : IM_COL32(219, 253, 231, 255);
+    const ImU32 tick_hover_box_clr = m_is_dark ? IM_COL32(65, 65, 71, 255) : IM_COL32(238, 238, 237, 255);
 
     auto get_tick_pos = [this, slideable_region](int tick)
     {
@@ -795,7 +795,9 @@ void IMSlider::show_tooltip(const std::string tooltip) {
     ImGui::PushStyleColor(ImGuiCol_Border, { 0,0,0,0 });
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
     ImGui::BeginTooltip();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.12f, 0.12f, 0.12f, 1.0f)); // Quasizero: readable dark text
     ImGui::TextUnformatted(tooltip.c_str());
+    ImGui::PopStyleColor();
     ImGui::EndTooltip();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(2);
@@ -901,15 +903,15 @@ bool IMSlider::vertical_slider(const char* str_id, int* higher_value, int* lower
     const ImU32 handle_clr = BRAND_COLOR;
     const ImU32 handle_border_clr = m_is_dark ? BACKGROUND_COLOR_DARK : BACKGROUND_COLOR_LIGHT;
     const wxColour label_bg = StateColor::darkModeColorFor(wxGetApp().get_window_default_clr());
-    const wxColour label_bg_active = StateColor::darkModeColorFor(wxColour("#E5F0EE"));
+    const wxColour label_bg_active = StateColor::darkModeColorFor(wxColour("#ECEBE9"));
     const wxColour label_border = StateColor::darkModeColorFor(wxColour("#CECECE"));
-    const wxColour rail_inner_bg = m_is_dark ? StateColor::darkModeColorFor(wxColour("#CECECE")) : wxGetApp().get_highlight_default_clr();
+    const wxColour rail_inner_bg = m_is_dark ? StateColor::darkModeColorFor(wxColour("#CECECE")) : wxColour(233, 232, 230); // Quasizero neutral rail
     const wxColour rail_border = m_is_dark ? StateColor::darkModeColorFor(wxColour("#F0F0F1")) : wxColour("#CECECE");
     const ImU32 label_bg_clr = IM_COL32(label_bg.Red(), label_bg.Green(), label_bg.Blue(), 238);
     const ImU32 label_bg_active_clr = IM_COL32(label_bg_active.Red(), label_bg_active.Green(), label_bg_active.Blue(), 246);
     const ImU32 label_border_clr = IM_COL32(label_border.Red(), label_border.Green(), label_border.Blue(), 255);
     const ImU32 label_shadow_clr = m_is_dark ? IM_COL32(0, 0, 0, 84) : IM_COL32(0, 0, 0, 38);
-    ImVec4 range_fill = ImGui::ColorConvertU32ToFloat4(BRAND_COLOR);
+    ImVec4 range_fill = ImGui::ColorConvertU32ToFloat4(IM_COL32(168, 166, 163, 255)); // Quasizero: lighter fill
     range_fill.w = (m_is_dark ? 210.0f : 190.0f) / 255.0f;
     const ImU32 range_fill_clr = ImGui::GetColorU32(range_fill);
     const ImU32 rail_inner_clr = IM_COL32(rail_inner_bg.Red(), rail_inner_bg.Green(), rail_inner_bg.Blue(), 255);
@@ -982,15 +984,15 @@ bool IMSlider::vertical_slider(const char* str_id, int* higher_value, int* lower
             (rect_size.y - content_size.y) * 0.5f), label.c_str());
     };
     auto draw_handle = [&](const ImVec2& center) {
-        window->DrawList->AddCircleFilled(center, handle_radius, handle_border_clr);
-        window->DrawList->AddCircleFilled(center, handle_radius - handle_border, handle_clr);
+        // Quasizero: white fill with a charcoal ring, matching the horizontal moves bar
+        window->DrawList->AddCircleFilled(center, handle_radius, IM_COL32(255, 255, 255, 255));
+        window->DrawList->AddCircle(center, handle_radius, handle_clr, 0, 1.5f * m_scale);
     };
     auto draw_active_handle = [&](const ImVec2& center) {
-        window->DrawList->AddCircleFilled(center, handle_radius + 2.0f * m_scale, handle_border_clr);
-        draw_handle(center);
-        window->DrawList->AddCircle(center, handle_radius + 3.0f * m_scale, handle_clr, 0, 2.0f * m_scale);
-        window->DrawList->AddLine(center + ImVec2(-0.5f * line_length, 0.0f), center + ImVec2(0.5f * line_length, 0.0f), white_bg, line_width);
-        window->DrawList->AddLine(center + ImVec2(0.0f, -0.5f * line_length), center + ImVec2(0.0f, 0.5f * line_length), white_bg, line_width);
+        window->DrawList->AddCircleFilled(center, handle_radius + 2.0f * m_scale, IM_COL32(255, 255, 255, 255));
+        window->DrawList->AddCircle(center, handle_radius + 2.0f * m_scale, handle_clr, 0, 1.5f * m_scale);
+        window->DrawList->AddLine(center + ImVec2(-0.5f * line_length, 0.0f), center + ImVec2(0.5f * line_length, 0.0f), IM_COL32(40, 40, 40, 255), line_width);
+        window->DrawList->AddLine(center + ImVec2(0.0f, -0.5f * line_length), center + ImVec2(0.0f, 0.5f * line_length), IM_COL32(40, 40, 40, 255), line_width);
     };
 
     // Prevent interaction with labels if slider add/edit menu is open
@@ -1596,7 +1598,8 @@ void IMSlider::render_edit_menu(const TickCode& tick)
 }
 
 void IMSlider::on_change_color_mode(bool is_dark) {
-    m_is_dark = is_dark;
+    (void)is_dark;
+    m_is_dark = false; // Quasizero light theme
 }
 
 void IMSlider::set_scale(float scale)

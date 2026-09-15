@@ -145,7 +145,7 @@ void AMSMaterialsSetting::create_panel_normal(wxWindow* parent)
 
     // make the style the same with disable m_input_k_val, FIXME
     m_readonly_filament = new TextInput(parent, wxEmptyString, "", "", wxDefaultPosition, AMS_MATERIALS_SETTING_COMBOX_WIDTH, wxTE_CENTRE | wxTE_PROCESS_ENTER);
-    m_readonly_filament->SetBorderColor(StateColor(std::make_pair(0xDBDBDB, (int)StateColor::Focused), std::make_pair(0x009688, (int)StateColor::Hovered),
+    m_readonly_filament->SetBorderColor(StateColor(std::make_pair(0xDBDBDB, (int)StateColor::Focused), std::make_pair(0x3A3835, (int)StateColor::Hovered),
         std::make_pair(0xDBDBDB, (int)StateColor::Normal)));
     m_readonly_filament->SetFont(::Label::Body_14);
     m_readonly_filament->SetLabelColor(AMS_MATERIALS_SETTING_GREY800);
@@ -290,7 +290,7 @@ void AMSMaterialsSetting::create_panel_kn(wxWindow* parent)
     auto cali_title_sizer = new wxBoxSizer(wxHORIZONTAL);
     // title
     m_ratio_text   = new wxStaticText(parent, wxID_ANY, _L("Factors of Flow Dynamics Calibration"));
-    m_ratio_text->SetForegroundColour(wxColour(50, 58, 61));
+    m_ratio_text->SetForegroundColour(wxColour(61, 55, 51));
     m_ratio_text->SetFont(Label::Head_14);
 
     std::string language = wxGetApp().app_config->get("language");
@@ -326,7 +326,7 @@ void AMSMaterialsSetting::create_panel_kn(wxWindow* parent)
     m_k_param->SetMinSize(wxSize(FromDIP(80), -1));
     m_k_param->SetMaxSize(wxSize(FromDIP(80), -1));
     m_k_param->SetFont(::Label::Body_13);
-    m_k_param->SetForegroundColour(wxColour(50, 58, 61));
+    m_k_param->SetForegroundColour(wxColour(61, 55, 51));
     m_k_param->Wrap(-1);
     kn_val_sizer->Add(m_k_param, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(0));
 
@@ -340,7 +340,7 @@ void AMSMaterialsSetting::create_panel_kn(wxWindow* parent)
     wxBoxSizer* n_sizer = new wxBoxSizer(wxHORIZONTAL);
     m_n_param = new wxStaticText(parent, wxID_ANY, _L("Factor N"), wxDefaultPosition, wxDefaultSize, 0);
     m_n_param->SetFont(::Label::Body_13);
-    m_n_param->SetForegroundColour(wxColour(50, 58, 61));
+    m_n_param->SetForegroundColour(wxColour(61, 55, 51));
     m_n_param->Wrap(-1);
     kn_val_sizer->Add(m_n_param, 1, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
     m_input_n_val = new TextInput(parent, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_CENTRE | wxTE_PROCESS_ENTER);
@@ -1535,11 +1535,11 @@ ColorPickerPopup::ColorPickerPopup(wxWindow* parent)
     m_def_colors.push_back(wxColour("#FFFFFF"));
     m_def_colors.push_back(wxColour("#fff144"));
     m_def_colors.push_back(wxColour("#DCF478"));
-    m_def_colors.push_back(wxColour("#0ACC38"));
-    m_def_colors.push_back(wxColour("#057748"));
-    m_def_colors.push_back(wxColour("#0d6284"));
-    m_def_colors.push_back(wxColour("#0EE2A0"));
-    m_def_colors.push_back(wxColour("#76D9F4"));
+    m_def_colors.push_back(wxColour("#CC641A"));
+    m_def_colors.push_back(wxColour("#773A0E"));
+    m_def_colors.push_back(wxColour("#838381"));
+    m_def_colors.push_back(wxColour("#E2701F"));
+    m_def_colors.push_back(wxColour("#F2F2EE"));
     m_def_colors.push_back(wxColour("#46a8f9"));
     m_def_colors.push_back(wxColour("#2850E0"));
     m_def_colors.push_back(wxColour("#443089"));
@@ -1549,10 +1549,10 @@ ColorPickerPopup::ColorPickerPopup(wxWindow* parent)
     m_def_colors.push_back(wxColour("#f95d73"));
     m_def_colors.push_back(wxColour("#f72323"));
     m_def_colors.push_back(wxColour("#7c4b00"));
-    m_def_colors.push_back(wxColour("#f98c36"));
-    m_def_colors.push_back(wxColour("#fcecd6"));
-    m_def_colors.push_back(wxColour("#D3C5A3"));
-    m_def_colors.push_back(wxColour("#AF7933"));
+    m_def_colors.push_back(wxColour("#F7F7F3"));
+    m_def_colors.push_back(wxColour("#F9F9F5"));
+    m_def_colors.push_back(wxColour("#D1D1CE"));
+    m_def_colors.push_back(wxColour("#ADADAA"));
     m_def_colors.push_back(wxColour("#898989"));
     m_def_colors.push_back(wxColour("#BCBCBC"));
     m_def_colors.push_back(wxColour("#161616"));

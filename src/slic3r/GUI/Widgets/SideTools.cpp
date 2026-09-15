@@ -23,7 +23,7 @@ namespace Slic3r { namespace GUI {
     m_printing_img = ScalableBitmap(this, "printer", 16);
     m_arrow_img    = ScalableBitmap(this, "monitor_arrow", 14);
 
-    m_none_printing_img = ScalableBitmap(this, "tab_monitor_active", 20); // ORCA match icon size with exact resolution to fix blurry icon
+    m_none_printing_img = ScalableBitmap(this, "qz_tab_monitor_dark", 20); // Quasizero: dark icon on light header // ORCA match icon size with exact resolution to fix blurry icon
     m_none_arrow_img    = ScalableBitmap(this, "monitor_none_arrow", 14);
     m_none_add_img      = ScalableBitmap(this, "monitor_none_add", 14);
 
@@ -160,7 +160,7 @@ void SideToolsPanel::doRender(wxDC &dc)
         left += (m_none_arrow_img.GetBmpSize().x + FromDIP(6));
         dc.SetFont(::Label::Body_14);
         dc.SetBackgroundMode(wxTRANSPARENT);
-        dc.SetTextForeground(*wxWHITE);
+        dc.SetTextForeground(wxColour(31, 31, 31)); // Quasizero dark text on light header
 
         wxString no_printer_str = _L("No printer");
         auto sizet = dc.GetTextExtent(no_printer_str);
@@ -525,8 +525,8 @@ void SideTools::show_status(int status)
     else if ((status & (int)MonitorStatus::MONITOR_CONNECTING) != 0) {
         m_hyperlink->Hide();
         m_connection_info->SetLabel(_L("Connecting..."));
-        m_connection_info->SetBackgroundColor(0x009688);
-        m_connection_info->SetBorderColor(0x009688);
+        m_connection_info->SetBackgroundColor(0x3A3835);
+        m_connection_info->SetBorderColor(0x3A3835);
         m_connection_info->Show();
         m_more_button->Hide();
         m_side_error_panel->Hide();
