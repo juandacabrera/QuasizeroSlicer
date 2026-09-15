@@ -111,11 +111,15 @@ run the QZmini tests (`ctest -R qz` in `build\`). The engine has its own tests:
 `cmake -S engine -B engine\build && cmake --build engine\build && ctest --test-dir engine\build`
 (or `bash engine/run_tests.sh` in Git Bash / WSL, g++ only).
 
-The CI needs one repository secret for the private submodule: *Settings → Secrets and
-variables → Actions → New repository secret* named `QZ_ENGINE_TOKEN`, holding a
-fine-grained personal access token with *Contents: Read-only* on `QuasizeroSlicer-dev`
-and `qz-sim-engine` (nothing else). Without it the checkout of `engine/` fails and the
-workflow stops at "Verify the simulation engine submodule".
+The CI of the private repository needs two secrets (*Settings → Secrets and variables →
+Actions*), each a fine-grained personal access token:
+- `QZ_ENGINE_TOKEN`: *Contents: Read-only* on `QuasizeroSlicer-dev` and `qz-sim-engine`.
+  Without it the checkout of `engine/` fails and the workflow stops at "Verify the
+  simulation engine submodule".
+- `QZ_PUBLIC_TOKEN`: *Contents: Read and write* **and** *Workflows: Read and write* on the
+  public `QuasizeroSlicer`. The Sync LITE workflow pushes the LITE snapshot with it after
+  every push to `pro`; GitHub refuses a push that changes a file under `.github/workflows/`
+  unless the token has the Workflows permission.
 
 ### C4. Register the PC as a GitHub Actions runner
 
