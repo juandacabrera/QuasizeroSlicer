@@ -1,3 +1,9 @@
+> **Quasizero Slicer** — this repository is Quasizero's fork of OrcaSlicer for biomaterial paste
+> printing with the QZmini syringe extruder (AGPLv3, unchanged from upstream). What it adds, how to
+> build it, the LITE/PRO editions, validation status and known limitations are in
+> [`README_QUASIZERO.md`](README_QUASIZERO.md); licences and attribution in
+> [`LICENSES_AND_ATTRIBUTION.md`](LICENSES_AND_ATTRIBUTION.md). Everything below is OrcaSlicer's own README.
+
 <div align="center">
 
 <picture>
