@@ -86,11 +86,17 @@ jobs:
           token: ${{ secrets.QZ_ENGINE_TOKEN || github.token }}
       - name: Verify the simulation engine submodule (PRO)
         run: bash .github/qz_edition_check.sh
+      # The cache key is hashed BEFORE the build and stored: actions/cache re-evaluates its
+      # inputs in the post (save) step, and hashFiles('deps/**') over the multi-GB deps/build
+      # tree then exceeds the runner's 120 s limit and fails the job (run #11).
+      - name: Dependency cache key
+        id: depskey
+        run: echo "hash=${{ hashFiles('deps/**') }}" >> "$GITHUB_OUTPUT"
       - name: Dependency cache (restore + save; self-healing when GitHub evicts it)
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep
-          key: linux-clang-cache-orcaslicer_deps-build-${{ hashFiles('deps/**') }}
+          key: linux-clang-cache-orcaslicer_deps-build-${{ steps.depskey.outputs.hash }}
       - name: Apt-Install Dependencies
         uses: ./.github/actions/apt-install-deps
       - name: Compile slicer (no AppImage, no packaging)
