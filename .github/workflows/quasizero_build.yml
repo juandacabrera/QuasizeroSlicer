@@ -9,6 +9,8 @@ name: Quasizero Build
 # Linux compile gate (add "[skip gate]" to the commit message to skip it); the Windows
 # build is on demand only (Actions -> Quasizero Build -> Run workflow), on GitHub's
 # runner or on a self-hosted Windows runner (see BUILD_WINDOWS.md, option C).
+# The same file runs in the public LITE repository, where minutes are free: there the
+# Windows build also runs on every push to main (see build_windows_x64).
 #
 # PRO edition: the simulation engine is the private submodule engine/ (qz-sim-engine).
 # The default GITHUB_TOKEN cannot read another private repository, so every checkout
@@ -108,12 +110,15 @@ jobs:
           # -s build slicer, -r skip RAM/disk checks, -l Clang, -L lld. No -i (AppImage).
           ./build_linux.sh -dsrlL
 
+  # Windows: on demand in the private repository (Free-plan minutes, x2 on Windows); on every
+  # push of the PUBLIC repository (minutes are free there), so each LITE snapshot on main
+  # leaves a downloadable portable, unless the commit says "[skip gate]".
   build_windows_x64:
     name: Build Windows x64 (portable + installer)
     needs: qz_core_tests   # run in PARALLEL with the Linux gate (fast fail signal), not after it
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.windows }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.windows) || (github.event_name == 'push' && !github.event.repository.private && !contains(github.event.head_commit.message, '[skip gate]')) }}
     uses: ./.github/workflows/build_check_cache.yml
     with:
-      os: ${{ inputs.windows_runner }}
+      os: ${{ github.event_name == 'workflow_dispatch' && inputs.windows_runner || 'windows-latest' }}
       arch: x64
     secrets: inherit
