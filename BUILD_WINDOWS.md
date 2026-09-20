@@ -23,8 +23,9 @@ deps cache and take ~30–45 min.
 
 Prerequisites (as upstream):
 1. Visual Studio 2022 with the "Desktop development with C++" workload
-2. CMake 3.31.x (CMake 4.x removed pre-3.5 policies; the build script sets
-   `CMAKE_POLICY_VERSION_MINIMUM=3.5` as a mitigation)
+2. CMake 3.31 or 4.x (the CI builds with 4.3; CMake 4 removed pre-3.5 policies and the
+   build script sets `CMAKE_POLICY_VERSION_MINIMUM=3.5` for this tree). It must come
+   before Strawberry Perl's `c\bin` on PATH, or invoke it by its full path.
 3. Git
 4. gettext tools on PATH (for `scripts/run_gettext.bat`), e.g. from
    https://mlocati.github.io/articles/gettext-iconv-windows.html
@@ -132,8 +133,12 @@ LITE (`build-lite\`), with the presets:
 
     cmake --preset win-lite
     cmake --build --preset win-lite
+    scripts\run_gettext.bat               :: translations (.mo), as the .bat does before install
     cmake --build --preset win-lite-install
     build-lite\OrcaSlicer\orca-slicer.exe
+
+(the presets point both build directories at the one dependency tree, `deps\build`, so
+the dependencies are built once.)
 
 (the same for PRO with `win-pro`, `win-pro-install`; the presets are what VS Code's
 CMake Tools shows in its status bar: pick the configure preset, then *Build*.)

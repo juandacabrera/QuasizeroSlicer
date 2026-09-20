@@ -11,7 +11,8 @@
       "environment": { "CMAKE_POLICY_VERSION_MINIMUM": "3.5" },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "ORCA_TOOLS": "ON"
+        "ORCA_TOOLS": "ON",
+        "DEP_BUILD_DIR": "${sourceDir}/deps/build"
       }
     },
     {

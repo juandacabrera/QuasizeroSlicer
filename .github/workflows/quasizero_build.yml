@@ -100,6 +100,7 @@ jobs:
         id: depskey
         run: echo "hash=${{ hashFiles('deps/**') }}" >> "$GITHUB_OUTPUT"
       - name: Dependency cache (restore + save; self-healing when GitHub evicts it)
+        id: depscache
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep
@@ -109,11 +110,20 @@ jobs:
       - name: Compile slicer (no AppImage, no packaging)
         shell: bash
         run: |
-          # -d ensures deps exist: with a restored cache it is a quick stamp check;
-          # on a cache miss (GitHub evicts caches beyond the 10 GB repo quota) it
-          # rebuilds them and the cache step above saves them again.
+          # The cache holds the installed dependency tree (deps/build/OrcaSlicer_dep), not the
+          # ExternalProject stamps, so `-d` after a cache hit does NOT stamp-check: it rebuilds
+          # all 200+ dependency steps with -j1 (runs #12/#17: ~2 h of the 3 h). As upstream's
+          # build_orca.yml does, build only the slicer against the restored tree on a hit; on a
+          # miss (GitHub evicts caches beyond the 10 GB repo quota) build the deps first and the
+          # cache step saves them again.
           # -s build slicer, -r skip RAM/disk checks, -l Clang, -L lld. No -i (AppImage).
-          ./build_linux.sh -dsrlL
+          if [ "${{ steps.depscache.outputs.cache-hit }}" = "true" ]; then
+            echo "dependency cache hit: building the slicer only"
+            ./build_linux.sh -srlL
+          else
+            echo "dependency cache miss: building the dependencies first"
+            ./build_linux.sh -dsrlL
+          fi
 
   # Windows: on demand in the private repository (Free-plan minutes, x2 on Windows); on every
   # push of the PUBLIC repository (minutes are free there), so each LITE snapshot on main
