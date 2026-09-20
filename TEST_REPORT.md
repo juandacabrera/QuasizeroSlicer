@@ -88,12 +88,18 @@ Same runner, current tree: `bash tests/qzmini/standalone/run_standalone.sh` →
 machine + 3 subdivision + 7 volumetric & calibration + 13 stability + 8 stack-simulation +
 4 skeleton/tube + 3 bead-simulation; ~13 s, g++ -O1).
 
-Since the LITE/PRO split (2026-09-15) the same runner reports the two suites separately:
-**51 tests** for the slicer tree (everything above except the stack, skeleton and bead
-simulation) and, when the `engine/` submodule is checked out, **31 tests** for the
-simulation engine (`engine/run_tests.sh`: the 15 moved tests, the 13 stability-model tests
-run again against the engine's own copy of the model, and 3 on the JSON job/result
-interface) — 82 in total, 0 failures.
+Since the LITE/PRO split (2026-09-15) the same runner reports the two suites separately.
+State on 2026-09-20 (external-engine architecture): **56 tests** for the slicer tree — the
+51 above plus 2 on the toolpath skeleton / tube re-skin as the LITE tree has them and 3 on
+the engine client (job document, engine discovery, and the protocol against a real
+`qz-sim serve` process started through a pipe: hello, load, stable and post-collapse frames
+with binary blocks, re-skin of the answered poses; skipped without an engine) — and, when
+the `engine/` submodule is checked out, **40 tests** for the simulation engine
+(`engine/run_tests.sh`: the 15 moved tests, 13 stability-model tests against the engine's
+copy, 3 JSON interface, 5 licence (key pairs, signatures, tampering, expiry, search paths),
+4 serve protocol (hello, licence gating, load/frame/binary blocks, run loop)) — 96 in
+total, 0 failures. Timing through the pipe on the reference cylinder: load 47 ms, frames
+~2 ms each.
 
 - Stability model: the load/strength field shown at layer k keeps the peak memory (it
   dips between load increments for a fast-curing paste with pauses; `qz_utilization_upto`

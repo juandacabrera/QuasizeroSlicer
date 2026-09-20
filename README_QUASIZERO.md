@@ -9,11 +9,16 @@ License: **GNU AGPLv3** (unchanged from upstream). See `LICENSES_AND_ATTRIBUTION
 Upstream base: tag `v2.4.2`, commit `8500fcdccaa10b5099ac20d252af3a7c560046f1`.
 Development branch: `pro` (private repository `QuasizeroSlicer-dev`).
 
-Editions: **LITE** (this tree alone: Stability panel, Level 0/1) and **PRO** (LITE + the
-deformation view of the preview, driven by the simulation engine checked out as the
-`engine/` submodule from the private `qz-sim-engine` repository). CMake picks PRO when
-`engine/` is present, LITE otherwise (`-DQZ_PRO=OFF` forces LITE); see `BUILD_WINDOWS.md`
-and the licence note in `LICENSES_AND_ATTRIBUTION.md`.
+Editions. **LITE** is this tree: the Stability panel (Level 0/1) and, behind
+`src/slic3r/GUI/QuasiZero/QzProHooks.hpp`, a client of the Quasizero simulation engine —
+the *Show deformation* view (collapse kinematics, the bead after the collapse) appears when
+the separate program `qz-sim` is installed and a licence file activates it (Stability card →
+*Activate licence…*). The engine is Quasizero's own, separately licensed software; the
+slicer only speaks its documented protocol (`src/slic3r/Utils/QzEngine.hpp`). **PRO
+integrated** is the same tree built with the engine compiled in (`QZ_PRO=ON`, automatic when
+the private `engine/` submodule is present): one executable, for development and as the
+all-in-one edition. See `BUILD_WINDOWS.md` and the licence note in
+`LICENSES_AND_ATTRIBUTION.md`.
 
 ## What it adds
 

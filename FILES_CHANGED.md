@@ -2,9 +2,10 @@
 
 Two editions build from this tree (top-level CMake option `QZ_PRO`, on by default when the
 `engine/` submodule is checked out): LITE = everything below except the PRO-only lines;
-PRO = LITE + `QzProView` + the simulation engine (`QzStackSim`, `QzSkeleton`, `QzBeadSim`
-and their tests, which live in the private `qz-sim-engine` repository, checked out at
-`engine/`).
+PRO integrated = LITE + `QzProView` + the simulation engine (`QzStackSim`, `QzPose`,
+`QzBeadSim` and their tests, which live in the private `qz-sim-engine` repository, checked
+out at `engine/`). The LITE edition reaches the same simulation through the external
+`qz-sim` process (client in `src/slic3r/Utils/QzEngine.*`).
 
 ```
 A	.github/workflows/quasizero_build.yml
@@ -17,10 +18,18 @@ A	QZMINI_REFILL_ASSIST.md
 A	QZMINI_STABILITY.md
 A	src/libslic3r/QuasiZero/QzStabilityModel.cpp
 A	src/libslic3r/QuasiZero/QzStabilityModel.hpp
+A	src/libslic3r/QuasiZero/QzSimTypes.hpp       (shared with the engine: identical copies)
+A	src/libslic3r/QuasiZero/QzSkeleton.cpp       (shared with the engine: identical copies)
+A	src/libslic3r/QuasiZero/QzSkeleton.hpp
+A	src/slic3r/Utils/QzEngine.cpp                (LITE: client of the external qz-sim process, no engine code)
+A	src/slic3r/Utils/QzEngine.hpp
 A	src/slic3r/GUI/QuasiZero/QzProHooks.hpp      (LITE: interface of the PRO extension of the preview)
-A	src/slic3r/GUI/QuasiZero/QzProStub.cpp       (LITE: no extension)
-A	src/slic3r/GUI/QuasiZero/QzProView.hpp       (PRO only, built with QZ_PRO=ON)
-A	src/slic3r/GUI/QuasiZero/QzProView.cpp       (PRO only)
+A	src/slic3r/GUI/QuasiZero/QzProClient.cpp     (LITE: the extension through the external engine + activation UI)
+A	src/slic3r/GUI/QuasiZero/QzProClient.hpp
+A	src/slic3r/GUI/QuasiZero/QzProView.hpp       (PRO integrated only, built with QZ_PRO=ON)
+A	src/slic3r/GUI/QuasiZero/QzProView.cpp       (PRO integrated only)
+A	tests/qzmini/test_qz_skeleton_lite.cpp
+A	tests/qzmini/test_qz_engine_client.cpp
 A	.gitmodules                                  (PRO only: engine/ = qz-sim-engine, private)
 A	tests/qzmini/test_qz_stability.cpp
 A	SUPPORTED_PRINTERS.md

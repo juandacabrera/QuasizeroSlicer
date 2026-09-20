@@ -272,6 +272,7 @@ private:
     // nullptr in the LITE edition - see QuasiZero/QzProHooks.hpp
     std::unique_ptr<QzProHooks> m_qz_pro;
     friend class QzProView;
+    friend class QzProClient;
     void qz_evaluate_stability(const GCodeProcessorResult& gcode_result);
     // Stability view colours = the load/strength field as it stands at the top layer of the
     // vertical slider (with memory), so the static view and the play show results[k], not

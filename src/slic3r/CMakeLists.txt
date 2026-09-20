@@ -63,6 +63,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/QuasiZero/QzSyringePanel.cpp
     GUI/QuasiZero/QzSyringePanel.hpp
     GUI/QuasiZero/QzProHooks.hpp
+    Utils/QzEngine.cpp
+    Utils/QzEngine.hpp
     GUI/calib_dlg.cpp
     GUI/calib_dlg.hpp
     GUI/Calibration.cpp
@@ -753,12 +755,13 @@ else ()
 endif ()
 target_include_directories(libslic3r_gui PRIVATE Utils ${CMAKE_CURRENT_BINARY_DIR})
 
-# Quasizero: the PRO extension of the preview behind QzProHooks - the implementation
-# (QzProView, needs the simulation engine) or the LITE stub that returns no extension.
+# Quasizero: the PRO extension of the preview behind QzProHooks - PRO: the in-process view
+# (QzProView, the engine compiled in); LITE: the client of the external qz-sim process
+# (QzProClient, with the activation UI), which is inert until an engine and a licence exist.
 if (QZ_PRO)
     target_sources(libslic3r_gui PRIVATE GUI/QuasiZero/QzProView.cpp GUI/QuasiZero/QzProView.hpp)
 else ()
-    target_sources(libslic3r_gui PRIVATE GUI/QuasiZero/QzProStub.cpp)
+    target_sources(libslic3r_gui PRIVATE GUI/QuasiZero/QzProClient.cpp GUI/QuasiZero/QzProClient.hpp)
 endif ()
 
 if (WIN32)

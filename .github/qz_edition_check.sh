@@ -28,7 +28,7 @@ while IFS= read -r p; do
 done < .github/qz_pro_paths.txt
 # engine classes must not be named by any LITE source (comments included: nothing of the
 # engine belongs here)
-if grep -rlE 'QzStackSim|QzSkeleton|QzBeadSim|QzTubeMesher|QzJob' --include='*.cpp' --include='*.hpp' --include='*.h' src tests 2>/dev/null | grep .; then
+if grep -rlE 'QzStackSim|QzBeadSim|QzJob|QzServe|QzLicence|QzPose|qz_pose_from_sim' --include='*.cpp' --include='*.hpp' --include='*.h' src tests 2>/dev/null | grep .; then
     echo "::error::LITE sources name simulation-engine classes (see the files above)"
     bad=1
 fi

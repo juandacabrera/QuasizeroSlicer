@@ -59,9 +59,12 @@ model on the toolpath, Karamba-style) remains future work.
 Source: `engine/src/QzStackSim.{hpp,cpp}` in the Quasizero simulation engine (private
 `qz-sim-engine` repository, checked out as the `engine/` submodule; pure C++17; tested by
 `engine/tests/test_qz_stacksim.cpp`). This section and the two that follow describe the
-**PRO edition** (`QZ_PRO=ON`): the LITE edition stops at §1b and shows the Stability panel
-without the *Show deformation* view. In the GUI the whole extension sits behind
-`src/slic3r/GUI/QuasiZero/QzProHooks.hpp` (`QzProView` in PRO, a stub in LITE).
+PRO simulation. Two ways to run it: the **PRO integrated** build (`QZ_PRO=ON`, the engine
+compiled in, `QzProView`) and, in the **LITE** edition, the external `qz-sim` process the
+slicer starts and talks to (`QzProClient` + `src/slic3r/Utils/QzEngine.*`, protocol
+`qz-sim-serve/1`), which requires a licence file. Without an engine the LITE edition stops
+at §1b (Stability panel) and the card offers the activation. In the GUI the whole extension
+sits behind `src/slic3r/GUI/QuasiZero/QzProHooks.hpp`.
 Since v2 the *Show deformation* view is driven by
 this simulator instead of the per-layer state of §1b; the per-layer functions stay in the
 model (and in the tests) as the analytical reference.

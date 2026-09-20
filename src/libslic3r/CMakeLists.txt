@@ -231,6 +231,9 @@ set(lisbslic3r_sources
     QuasiZero/QzShortSegmentAnchor.hpp
     QuasiZero/QzStabilityModel.cpp
     QuasiZero/QzStabilityModel.hpp
+    QuasiZero/QzSimTypes.hpp
+    QuasiZero/QzSkeleton.cpp
+    QuasiZero/QzSkeleton.hpp
     GCode/GCodeProcessor.cpp
     GCode/GCodeProcessor.hpp
     GCode.hpp
@@ -544,9 +547,10 @@ if (MSVC AND "${CMAKE_SIZEOF_VOID_P}" STREQUAL "4") # 32 bit MSVC workaround
 endif ()
 
 # Quasizero PRO: the simulation engine (engine/ submodule, see the top-level QZ_PRO option)
-# is compiled into libslic3r. Its QzStabilityModel is the same as the LITE one above (the
-# engine carries a copy so that it builds on its own); only the LITE copy is compiled and the
-# two headers must match once comments and whitespace are ignored.
+# is compiled into libslic3r. The files the two editions share (QzStabilityModel, QzSimTypes,
+# QzSkeleton: what the slicer needs to draw what the engine computes) exist in both trees so
+# that each builds on its own; only the LITE copies are compiled and every pair must match
+# once comments and whitespace are ignored.
 if (QZ_PRO)
     function(qz_check_same_header a b)
         file(READ "${a}" _ta)
@@ -560,13 +564,14 @@ if (QZ_PRO)
                                 "Keep the engine's copy of QzStabilityModel.hpp in sync with the slicer's.")
         endif ()
     endfunction()
-    qz_check_same_header("${CMAKE_CURRENT_SOURCE_DIR}/QuasiZero/QzStabilityModel.hpp"
-                         "${QZ_ENGINE_DIR}/src/QzStabilityModel.hpp")
+    foreach (_qz_shared QzStabilityModel.hpp QzStabilityModel.cpp QzSimTypes.hpp QzSkeleton.hpp QzSkeleton.cpp)
+        qz_check_same_header("${CMAKE_CURRENT_SOURCE_DIR}/QuasiZero/${_qz_shared}" "${QZ_ENGINE_DIR}/src/${_qz_shared}")
+    endforeach ()
     target_sources(libslic3r PRIVATE
         ${QZ_ENGINE_DIR}/src/QzStackSim.cpp
         ${QZ_ENGINE_DIR}/src/QzStackSim.hpp
-        ${QZ_ENGINE_DIR}/src/QzSkeleton.cpp
-        ${QZ_ENGINE_DIR}/src/QzSkeleton.hpp
+        ${QZ_ENGINE_DIR}/src/QzPose.cpp
+        ${QZ_ENGINE_DIR}/src/QzPose.hpp
         ${QZ_ENGINE_DIR}/src/QzBeadSim.cpp
         ${QZ_ENGINE_DIR}/src/QzBeadSim.hpp
     )
