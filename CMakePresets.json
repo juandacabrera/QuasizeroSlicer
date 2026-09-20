@@ -1,0 +1,42 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "win-base",
+      "hidden": true,
+      "generator": "Visual Studio 17 2022",
+      "architecture": { "value": "x64", "strategy": "set" },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+      "environment": { "CMAKE_POLICY_VERSION_MINIMUM": "3.5" },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ORCA_TOOLS": "ON"
+      }
+    },
+    {
+      "name": "win-pro",
+      "displayName": "Windows - Quasizero PRO (integrated: engine compiled in, needs engine/)",
+      "description": "Same build dir as build_release_vs2022.bat (build\\). QZ_PRO=ON: the deformation view is linked into the application - the integrated, single-executable edition.",
+      "inherits": "win-base",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": { "QZ_PRO": "ON" }
+    },
+    {
+      "name": "win-lite",
+      "displayName": "Windows - Quasizero LITE (public edition; PRO through the external qz-sim engine)",
+      "description": "Separate build dir build-lite\\. QZ_PRO=OFF: what the public repository builds; the PRO extension comes from the licensed qz-sim process when installed.",
+      "inherits": "win-base",
+      "binaryDir": "${sourceDir}/build-lite",
+      "cacheVariables": { "QZ_PRO": "OFF" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "win-pro",         "configurePreset": "win-pro",  "configuration": "Release", "targets": [ "ALL_BUILD" ], "nativeToolOptions": [ "-m" ] },
+    { "name": "win-pro-app",     "configurePreset": "win-pro",  "configuration": "Release", "targets": [ "OrcaSlicer" ], "nativeToolOptions": [ "-m" ], "displayName": "PRO: application only (incremental)" },
+    { "name": "win-pro-install", "configurePreset": "win-pro",  "configuration": "Release", "targets": [ "install" ],    "displayName": "PRO: refresh build\\OrcaSlicer\\ (portable folder)" },
+    { "name": "win-lite",        "configurePreset": "win-lite", "configuration": "Release", "targets": [ "ALL_BUILD" ], "nativeToolOptions": [ "-m" ] },
+    { "name": "win-lite-app",    "configurePreset": "win-lite", "configuration": "Release", "targets": [ "OrcaSlicer" ], "nativeToolOptions": [ "-m" ], "displayName": "LITE: application only (incremental)" },
+    { "name": "win-lite-install","configurePreset": "win-lite", "configuration": "Release", "targets": [ "install" ],    "displayName": "LITE: refresh build-lite\\OrcaSlicer\\ (portable folder)" }
+  ]
+}
