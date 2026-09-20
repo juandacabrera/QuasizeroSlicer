@@ -52,9 +52,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          # everything tests/qzmini/standalone/run_standalone.sh compiles: the QuasiZero
+          # core, the engine client (src/slic3r/Utils/QzEngine.cpp, header-only deps:
+          # nlohmann/json from deps_src), the tests, and the engine submodule
           sparse-checkout: |
             .github
             src/libslic3r/QuasiZero
+            src/slic3r/Utils
+            deps_src/nlohmann
             tests/qzmini
             engine
           submodules: true
