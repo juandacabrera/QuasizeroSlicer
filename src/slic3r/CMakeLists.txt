@@ -65,6 +65,7 @@ set(SLIC3R_GUI_SOURCES
     GUI/QuasiZero/QzProHooks.hpp
     Utils/QzEngine.cpp
     Utils/QzEngine.hpp
+    Utils/QzPlayClock.hpp
     GUI/calib_dlg.cpp
     GUI/calib_dlg.hpp
     GUI/Calibration.cpp

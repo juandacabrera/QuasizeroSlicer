@@ -7,6 +7,6 @@
  "family": "Quasizero",
  "bed_model": "qz_artillery_x2_bed.stl",
  "bed_texture": "",
- "default_materials": "Biocomposite Sawdust",
+ "default_materials": "Biocomposite Sawdust;Biocomposite High Density;Biocomposite Ultra High Density",
  "hotend_model": "qz_hotend.stl"
 }

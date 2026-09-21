@@ -24,12 +24,14 @@ A	src/libslic3r/QuasiZero/QzSkeleton.hpp
 A	src/slic3r/Utils/QzEngine.cpp                (LITE: client of the external qz-sim process, no engine code)
 A	src/slic3r/Utils/QzEngine.hpp
 A	src/slic3r/GUI/QuasiZero/QzProHooks.hpp      (LITE: interface of the PRO extension of the preview)
+A	src/slic3r/Utils/QzPlayClock.hpp             (LITE: the player's instant for the deformation view - interpolation, transients)
 A	src/slic3r/GUI/QuasiZero/QzProClient.cpp     (LITE: the extension through the external engine + activation UI)
 A	src/slic3r/GUI/QuasiZero/QzProClient.hpp
 A	src/slic3r/GUI/QuasiZero/QzProView.hpp       (PRO integrated only, built with QZ_PRO=ON)
 A	src/slic3r/GUI/QuasiZero/QzProView.cpp       (PRO integrated only)
 A	tests/qzmini/test_qz_skeleton_lite.cpp
 A	tests/qzmini/test_qz_engine_client.cpp
+A	tests/qzmini/test_qz_play_clock.cpp
 A	.gitmodules                                  (PRO only: engine/ = qz-sim-engine, private)
 A	tests/qzmini/test_qz_stability.cpp
 A	SUPPORTED_PRINTERS.md

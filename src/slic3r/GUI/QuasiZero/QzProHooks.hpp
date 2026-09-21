@@ -51,6 +51,8 @@ public:
     virtual void on_play_layer_change() = 0;
     // called every frame of the moves capsule with the play state
     virtual void on_play_frame(bool playing) = 0;
+    // after the play loop advanced: progress towards the next vertex, 0..1 (0 when paused)
+    virtual void on_play_fraction(double fraction) = 0;
     // the extension's rows of the Stability card (after the Level 0/1 rows)
     virtual void render_card(const QzProCardContext &ctx) = 0;
 };

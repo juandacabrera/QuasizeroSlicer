@@ -87,8 +87,7 @@ void QzProClient::reset()
     m_skeleton = QuasiZero::QzSkeleton();
     m_tube_geos.clear();
     m_frame_error.clear();
-    m_cache_vertex = size_t(-1); m_cache_time = -1.0;
-    m_playing = false; m_play_transient = false;
+    m_clock.reset();
     for (GLModel &gm : m_models) gm.reset();
 }
 
@@ -109,7 +108,7 @@ void QzProClient::build_job()
     m_job_loaded = false;
     m_load = QzEngineLoadInfo();
     m_frame = QzEngineFrame();
-    m_cache_vertex = size_t(-1);
+    m_clock.invalidate();
     for (GLModel &gm : m_models) gm.reset();
     if (!st.result.valid || st.geom.empty() || !m_client.connected()) return;
     const size_t n = viewer.get_vertices_count();
@@ -155,7 +154,7 @@ void QzProClient::build_job()
     m_job_loaded = true;
 }
 
-void QzProClient::rebuild_deformed_mesh()
+void QzProClient::rebuild_deformed_mesh(double t)
 {
     libvgcode::Viewer &viewer = m_v.m_viewer;
     if (!m_job_loaded || !m_load.sim_valid) return;
@@ -170,9 +169,7 @@ void QzProClient::rebuild_deformed_mesh()
         if (sg >= 0) { top = m_v.m_qz_stability.layer_index_of_id[viewer.get_vertex_at(i).layer_id]; break; }
         if (vis[1] - i > 20000) break;
     }
-    const double t = (double) viewer.get_estimated_time_at(vis[1]);
-    m_cache_vertex = vis[1];
-    m_cache_time   = t;
+    m_clock.mark(vis[1], t);
     // visible segments: from the first extrusion of the layers range to the player position
     const size_t start = std::max<size_t>(full[0], 1);
     int seg_lo = -1, seg_hi = -1;
@@ -232,13 +229,14 @@ void QzProClient::render_deformed()
 {
     libvgcode::Viewer &viewer = m_v.m_viewer;
     const libvgcode::Interval &vis = viewer.get_view_visible_range();
-    const double t = (viewer.get_vertices_count() > vis[1]) ? (double) viewer.get_estimated_time_at(vis[1]) : 0.0;
-    // a layer change in the play leaves the visible range at the END of the new layer for a
-    // frame or two: keep the last mesh instead of flashing the state of the end of the layer
-    const bool transient = m_play_transient ||
-        (m_playing && m_cache_vertex != size_t(-1) && vis[1] > m_cache_vertex && t - m_cache_time > 10.0);
-    if (!transient && (vis[1] != m_cache_vertex || std::fabs(t - m_cache_time) > 0.25))
-        rebuild_deformed_mesh();
+    const size_t nverts = viewer.get_vertices_count();
+    const double t_vertex = (nverts > vis[1]) ? (double) viewer.get_estimated_time_at(vis[1]) : 0.0;
+    const double t_next   = (nverts > vis[1] + 1) ? (double) viewer.get_estimated_time_at(vis[1] + 1) : t_vertex;
+    const double t = m_clock.instant(t_vertex, t_next);
+    // slow motion around the collapse: every frame counts
+    const bool fine = m_load.collapse_step >= 0 && std::fabs(t - m_load.collapse_time) < 4.0;
+    if (m_clock.needs_rebuild(vis[1], t, fine))
+        rebuild_deformed_mesh(t);
 
     GLShaderProgram *shader = wxGetApp().get_shader("gouraud_light");
     if (shader == nullptr) return;
@@ -336,7 +334,7 @@ void QzProClient::render_card(const QzProCardContext &ctx)
     bool deform = m_deform_view;
     if (ImGui::Checkbox((_u8L("Show deformation") + "##qzdef").c_str(), &deform)) {
         m_deform_view = deform;
-        m_cache_vertex = size_t(-1);
+        m_clock.invalidate();
     }
     if (!deform) {
         ImGui::SetWindowFontScale(0.85f);

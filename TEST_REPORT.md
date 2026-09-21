@@ -89,15 +89,16 @@ machine + 3 subdivision + 7 volumetric & calibration + 13 stability + 8 stack-si
 4 skeleton/tube + 3 bead-simulation; ~13 s, g++ -O1).
 
 Since the LITE/PRO split (2026-09-15) the same runner reports the two suites separately.
-State on 2026-09-20 (external-engine architecture): **56 tests** for the slicer tree — the
-51 above plus 2 on the toolpath skeleton / tube re-skin as the LITE tree has them and 3 on
-the engine client (job document, engine discovery, and the protocol against a real
+State on 2026-09-21 (external-engine architecture): **59 tests** for the slicer tree — the
+51 above plus 2 on the toolpath skeleton / tube re-skin as the LITE tree has them, 3 on the
+play clock of the deformation view (sub-vertex interpolation, the layer-change transient, a
+layers slider dragged while playing) and 3 on the engine client (job document, engine discovery, and the protocol against a real
 `qz-sim serve` process started through a pipe: hello, load, stable and post-collapse frames
 with binary blocks, re-skin of the answered poses; skipped without an engine) — and, when
 the `engine/` submodule is checked out, **40 tests** for the simulation engine
 (`engine/run_tests.sh`: the 15 moved tests, 13 stability-model tests against the engine's
 copy, 3 JSON interface, 5 licence (key pairs, signatures, tampering, expiry, search paths),
-4 serve protocol (hello, licence gating, load/frame/binary blocks, run loop)) — 96 in
+4 serve protocol (hello, licence gating, load/frame/binary blocks, run loop)) — 99 in
 total, 0 failures. Timing through the pipe on the reference cylinder: load 47 ms, frames
 ~2 ms each.
 

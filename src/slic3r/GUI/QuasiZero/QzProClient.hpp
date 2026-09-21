@@ -6,6 +6,7 @@
 #pragma once
 
 #include "QzProHooks.hpp"
+#include "slic3r/Utils/QzPlayClock.hpp"
 
 #include "slic3r/GUI/GLModel.hpp"
 #include "slic3r/Utils/QzEngine.hpp"
@@ -31,8 +32,9 @@ public:
     bool   deform_active() const override;
     void   render_deformed() override;
     double play_rate(double rate) override;
-    void   on_play_layer_change() override { m_play_transient = true; }
-    void   on_play_frame(bool playing) override { m_playing = playing; m_play_transient = false; }
+    void   on_play_layer_change() override { m_clock.layer_transient = true; }
+    void   on_play_frame(bool playing) override { m_clock.on_frame(playing); }
+    void   on_play_fraction(double fraction) override { m_clock.fraction = fraction; }
     void   render_card(const QzProCardContext &ctx) override;
 
     // engine management (also used by the activation UI)
@@ -44,7 +46,7 @@ public:
 
 private:
     void build_job();
-    void rebuild_deformed_mesh();
+    void rebuild_deformed_mesh(double t);   // t: the instant to draw (print time, s)
     void request_locate_engine();
     void request_activate_licence();
 
@@ -65,11 +67,8 @@ private:
     std::vector<QuasiZero::QzTubeGeometry> m_tube_geos;
     std::string                            m_frame_error;
 
-    bool   m_deform_view = false;
-    bool   m_playing = false;
-    bool   m_play_transient = false;
-    size_t m_cache_vertex = size_t(-1);
-    double m_cache_time = -1.0;
+    bool        m_deform_view = false;
+    QzPlayClock m_clock;             // the player's instant, transients, rebuild decisions
 };
 
 } // namespace GUI

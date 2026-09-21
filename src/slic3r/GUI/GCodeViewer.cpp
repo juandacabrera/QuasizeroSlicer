@@ -5035,6 +5035,8 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
                 }
             }
         }
+        // Quasizero PRO: the deformation view interpolates between vertices with this progress
+        if (m_qz_pro) m_qz_pro->on_play_fraction(s_play ? s_acc : 0.0);
 
         imgui.set_next_window_pos(qz_left, bottom_y, ImGuiCond_Always, 0.0f, 1.0f);
         if (g_qz_cap1_size.x > 0.0f) ImGui::SetNextWindowSize(ImVec2(g_qz_cap1_size.x, 0.0f));
@@ -5184,14 +5186,25 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
             qz_dl->AddLine(ImVec2(cx, cy+w), ImVec2(cx+w, cy), IM_COL32(60,58,55,255), 1.5f*m_scale);
         }
         if (qz_mat_open) {
-            const auto &fils = wxGetApp().preset_bundle->filaments;
+            PresetCollection &fils = wxGetApp().preset_bundle->filaments;
+            // compatibility evaluated here, not read from the cached flag: right after the
+            // setup wizard the flags of freshly installed materials are not refreshed yet
+            const PresetWithVendorProfile printer_pv = wxGetApp().preset_bundle->printers.get_edited_preset_with_vendor_profile();
             for (const auto &preset : fils.get_presets()) {
-                if (!preset.is_visible || preset.is_default) continue;
-                if (!preset.is_compatible) continue;
-                // biomaterial identity: Quasizero materials and the user's own presets
-                if (preset.is_system && (preset.vendor == nullptr || preset.vendor->id != "Quasizero")) continue;
+                if (preset.is_default) continue;
+                // biomaterial identity: the Quasizero library (always listed - the wizard installs
+                // only the model's default material; picking one here installs it) and the
+                // user's own presets
+                const bool library = preset.is_system && preset.vendor != nullptr && preset.vendor->id == "Quasizero";
+                if (preset.is_system && !library) continue;
+                if (!library && !preset.is_visible) continue;
+                if (!is_compatible_with_printer(fils.get_preset_with_vendor_profile(preset), printer_pv)) continue;
                 const bool selected = preset.name == mat_name;
                 if (ImGui::Selectable(preset.name.c_str(), selected) && !selected) {
+                    if (!preset.is_visible) {
+                        if (Preset *p = fils.find_preset(preset.name, false, true)) p->is_visible = true;
+                        wxGetApp().app_config->set(AppConfig::SECTION_FILAMENTS, preset.name, "true");
+                    }
                     if (Tab *ft = wxGetApp().get_tab(Preset::TYPE_FILAMENT))
                         ft->select_preset(preset.name);
                     // materials with a dedicated hardware-calibrated process pull it in
@@ -5205,6 +5218,7 @@ void GCodeViewer::render_qz_quickbar(int canvas_width, int canvas_height)
                                 pt2->select_preset(mp.second);
                             break;
                         }
+                    break;   // the selection changed the presets: do not walk the rest of the list
                 }
                 if (selected) ImGui::SetItemDefaultFocus();
             }
